@@ -1,6 +1,5 @@
 import json
-from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -9,6 +8,13 @@ from apps.accounts.sms import (
     SMSDeliveryNotConfigured,
     send_login_code,
 )
+
+
+def mock_response(payload):
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.read.return_value = json.dumps(payload).encode("utf-8")
+    return response
 
 
 def test_sms_provider_is_disabled_by_default(monkeypatch):
@@ -21,9 +27,7 @@ def test_kavenegar_verify_lookup_uses_template_and_does_not_return_otp_in_url(mo
     monkeypatch.setenv("SMS_PROVIDER", "kavenegar")
     monkeypatch.setenv("KAVENEGAR_API_KEY", "test-secret")
     monkeypatch.setenv("KAVENEGAR_OTP_TEMPLATE", "tax_league_login")
-    response = BytesIO(json.dumps({"return": {"status": 200}}).encode())
-    response.__enter__ = lambda self: self
-    response.__exit__ = lambda *args: None
+    response = mock_response({"return": {"status": 200}})
 
     with patch("apps.accounts.sms.urlopen", return_value=response) as mocked:
         result = send_login_code("09121110009", "123456")
@@ -40,9 +44,7 @@ def test_kavenegar_provider_error_is_safely_wrapped(monkeypatch):
     monkeypatch.setenv("SMS_PROVIDER", "kavenegar")
     monkeypatch.setenv("KAVENEGAR_API_KEY", "test-secret")
     monkeypatch.setenv("KAVENEGAR_OTP_TEMPLATE", "tax_league_login")
-    response = BytesIO(json.dumps({"return": {"status": 401}}).encode())
-    response.__enter__ = lambda self: self
-    response.__exit__ = lambda *args: None
+    response = mock_response({"return": {"status": 401}})
 
     with patch("apps.accounts.sms.urlopen", return_value=response):
         with pytest.raises(SMSDeliveryFailed):
