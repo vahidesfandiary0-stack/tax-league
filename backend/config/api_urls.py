@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.urls import include
 
 class HealthView(APIView):
     authentication_classes = []
@@ -10,4 +11,7 @@ class HealthView(APIView):
     def get(self, request):
         return Response({"status": "ok", "service": "tax-league-api"})
 
-urlpatterns = [path("health/", HealthView.as_view(), name="health")]
+urlpatterns = [
+    path("health/", HealthView.as_view(), name="health"),
+    path("questions/", include("apps.questions.urls")),
+]
