@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n humanize %}
+{% load i18n %}
 {% block title %}داشبورد مدیریت | لیگ قهرمانان مالیاتی{% endblock %}
 {% block content %}
 <div dir="rtl">
@@ -26,7 +26,7 @@
         <tr>
           <td><a href="/admin/payments/paymentorder/{{ order.pk }}/change/">{{ order.user.display_name|default:order.user.phone_number }}</a></td>
           <td>{{ order.get_product_type_display }}</td>
-          <td>{{ order.amount_irr|intcomma }}</td>
+          <td>{{ order.amount_irr }}</td>
           <td>{{ order.get_status_display }}</td>
           <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
         </tr>
