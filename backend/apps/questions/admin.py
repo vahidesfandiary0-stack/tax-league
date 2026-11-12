@@ -61,12 +61,15 @@ def reject_selected(modeladmin, request, queryset):
 @admin.action(description="انتشار سؤالات تأییدشده")
 def publish_selected(modeladmin, request, queryset):
     count = 0
+    published = []
     for question in queryset:
         try:
             publish_question(question.pk)
+            published.append(question)
             count += 1
         except (ValidationError, Question.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, published, "انتشار سؤال تأییدشده")
     modeladmin.message_user(request, f"{count} سؤال منتشر شد.")
 
 
