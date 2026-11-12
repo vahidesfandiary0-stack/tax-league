@@ -39,9 +39,28 @@ services:
       timeout: 5s
       start_period: 40s
       retries: 3
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [private]
 volumes:
   postgres_data:
   private_media:
+  caddy_data:
+  caddy_config:
 networks:
   private:
     driver: bridge
