@@ -10,7 +10,7 @@ from apps.questions.models import Question
 from apps.subscriptions.models import UserSubscription
 
 
-@user_passes_test(lambda user: user.is_active and user.is_superuser)
+@user_passes_test(lambda user: user.is_active and user.is_superuser, login_url="admin:login")
 def dashboard(request):
     now = timezone.now()
     context = {
