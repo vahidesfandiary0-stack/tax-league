@@ -3,7 +3,7 @@ from pathlib import Path
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import FileResponse
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -109,9 +109,11 @@ class SubmitPaymentView(APIView):
 
 
 class AdminReceiptDownloadView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, order_id):
+        if not (request.user.is_superuser or request.user.has_perm("payments.view_paymentorder")):
+            raise PermissionDenied("فقط مسئولان مجاز پرداخت به رسیدها دسترسی دارند.")
         try:
             order = PaymentOrder.objects.get(pk=order_id)
         except PaymentOrder.DoesNotExist:
