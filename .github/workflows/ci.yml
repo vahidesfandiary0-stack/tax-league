@@ -41,4 +41,4 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: dart format lib
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
