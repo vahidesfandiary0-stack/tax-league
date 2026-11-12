@@ -17,6 +17,18 @@ def validate_receipt_size(file_obj):
         raise ValidationError("حجم رسید نباید بیشتر از ۵ مگابایت باشد.")
 
 
+def validate_receipt_content(file_obj):
+    head = file_obj.read(8)
+    file_obj.seek(0)
+    valid = (
+        head.startswith(b"\xff\xd8\xff")
+        or head.startswith(b"\x89PNG\r\n\x1a\n")
+        or head.startswith(b"%PDF-")
+    )
+    if not valid:
+        raise ValidationError("محتوای فایل با فرمت مجاز رسید مطابقت ندارد.")
+
+
 class PaymentSettings(models.Model):
     """Singleton-like admin-managed bank transfer configuration; never expose via public serializers."""
     card_number = models.CharField(max_length=32, blank=True)
@@ -56,7 +68,7 @@ class PaymentOrder(models.Model):
     tracking_code = models.CharField(max_length=100, blank=True)
     receipt = models.FileField(
         upload_to=receipt_upload_path,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), validate_receipt_size],
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), validate_receipt_size, validate_receipt_content],
         blank=True,
     )
     user_note = models.CharField(max_length=500, blank=True)
