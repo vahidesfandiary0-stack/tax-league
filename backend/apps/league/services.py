@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F
