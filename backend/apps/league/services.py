@@ -1,0 +1,61 @@
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Sum
+from django.utils import timezone
+
+from apps.exams.models import ExamAttempt
+from .models import LeagueScoreEntry, LeagueSeason
+
+
+@transaction.atomic
+def record_attempt_score(attempt_id):
+    attempt = ExamAttempt.objects.select_for_update().select_related("exam", "user").get(pk=attempt_id)
+    if attempt.status not in (ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED):
+        raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
+    if attempt.score is None or attempt.submitted_at is None:
+        raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
+    if not attempt.exam.counts_for_league:
+        return None
+
+    existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
+    if existing:
+        return existing
+
+    season = LeagueSeason.objects.select_for_update().filter(
+        status=LeagueSeason.Status.ACTIVE,
+        starts_at__lte=attempt.started_at,
+        ends_at__gte=attempt.submitted_at,
+    ).first()
+    if season is None:
+        raise ValidationError("برای زمان این آزمون فصل فعال لیگ وجود ندارد.")
+
+    elapsed = max(0, int((attempt.submitted_at - attempt.started_at).total_seconds()))
+    return LeagueScoreEntry.objects.create(
+        season=season,
+        attempt=attempt,
+        user=attempt.user,
+        score=attempt.score,
+        correct_count=attempt.correct_count,
+        wrong_count=attempt.wrong_count,
+        elapsed_seconds=elapsed,
+    )
+
+
+def leaderboard_for_season(season_id, limit=100):
+    """Aggregate ledger entries; no client-supplied scores are accepted."""
+    from django.db.models import Count, F, IntegerField, Value
+    from django.db.models.functions import Coalesce
+
+    season = LeagueSeason.objects.get(pk=season_id, status__in=[
+        LeagueSeason.Status.ACTIVE, LeagueSeason.Status.CLOSED
+    ])
+    rows = LeagueScoreEntry.objects.filter(season=season).values(
+        "user_id", "user__display_name"
+    ).annotate(
+        total_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+        correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
+        wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
+        total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
+        exams_count=Count("id"),
+    ).order_by("-total_score", "-correct_total", "wrong_total", "total_time", "user_id")[:limit]
+    return season, list(rows)
