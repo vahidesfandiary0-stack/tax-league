@@ -1,8 +1,7 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.urls import include
 
 class HealthView(APIView):
     authentication_classes = []
