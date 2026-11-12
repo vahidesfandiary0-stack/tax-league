@@ -53,3 +53,27 @@ jobs:
           name: tax-league-debug-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production Compose syntax
+        run: |
+          set -euo pipefail
+          cat > .env.production <<'EOF'
+          DJANGO_SECRET_KEY=ci-only-not-for-production-12345678901234567890123456789012345678901234567890
+          DJANGO_DEBUG=false
+          DJANGO_ALLOWED_HOSTS=api.example.invalid
+          DJANGO_CSRF_TRUSTED_ORIGINS=https://api.example.invalid
+          DJANGO_CORS_ALLOWED_ORIGINS=https://app.example.invalid
+          DJANGO_SECURE_SSL_REDIRECT=true
+          DJANGO_SECURE_HSTS_SECONDS=31536000
+          POSTGRES_DB=tax_league
+          POSTGRES_USER=tax_league
+          POSTGRES_PASSWORD=ci-only-url-safe-password
+          EOF
+          docker compose --env-file .env.production -f infrastructure/compose.production.yml config --quiet
+          rm -f .env.production
+      - name: Build backend production image
+        run: docker build --tag tax-league-backend:ci ./backend
