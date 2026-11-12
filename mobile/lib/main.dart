@@ -42,7 +42,7 @@ class LeagueApi {
 
   Future<dynamic> publicPost(String path, Map<String, dynamic> body) async {
     final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
+      headers: {'Content-Type': 'application/json'}, body: jsonEncode(body)).timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
@@ -51,7 +51,7 @@ class LeagueApi {
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
       headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
-      body: jsonEncode(body));
+      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
@@ -59,7 +59,7 @@ class LeagueApi {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Authorization': 'Token ' + t});
+      headers: {'Authorization': 'Token ' + t}).timeout(const Duration(seconds: 20));
     return decode(response);
   }
 }
