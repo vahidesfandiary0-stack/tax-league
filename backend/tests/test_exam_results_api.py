@@ -22,12 +22,12 @@ def test_results_endpoint_returns_only_authenticated_users_own_finished_attempts
     )
     ExamAttempt.objects.create(
         exam=exam, user=other, status=ExamAttempt.Status.SUBMITTED,
-        started_at=timezone.now(), deadline_at=timezone.now() + timezone.timedelta(minutes=30),
+        started_at=timezone.now(), deadline_at=timezone.now() + timedelta(minutes=30),
         submitted_at=timezone.now(), score=99,
     )
     ExamAttempt.objects.create(
         exam=exam, user=owner, status=ExamAttempt.Status.IN_PROGRESS,
-        started_at=timezone.now(), deadline_at=timezone.now() + timezone.timedelta(minutes=30),
+        started_at=timezone.now(), deadline_at=timezone.now() + timedelta(minutes=30),
     )
 
     client = APIClient()
