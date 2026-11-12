@@ -38,7 +38,7 @@ ROLE_PERMISSIONS = {
         "league": {
             "leagueseason": ("view", "add", "change"),
             "leagueseasonevent": ("view",),
-            "leaguescoreentry": ("view",),
+            "leaguescoreentry": ("view",),\n            "leaguescoreadjustment": ("view", "add"),
         },
     },
 }
