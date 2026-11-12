@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from .models import Exam, ExamAttempt
 from .serializers import (
-    AnswerInputSerializer, AttemptSerializer, ExamListSerializer, ResultSerializer,
+    AnswerInputSerializer, AttemptSerializer, ExamListSerializer, ResultSerializer, ResultListSerializer,
 )
 from .services import finalize_attempt, save_answer, start_attempt
 
