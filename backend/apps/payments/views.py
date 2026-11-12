@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -81,6 +84,23 @@ class SubmitPaymentView(APIView):
         except (DjangoValidationError, PaymentOrder.DoesNotExist) as exc:
             raise service_error(exc)
         return Response(PaymentOrderSerializer(order).data)
+
+
+class AdminReceiptDownloadView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, order_id):
+        try:
+            order = PaymentOrder.objects.get(pk=order_id)
+        except PaymentOrder.DoesNotExist:
+            return Response({"detail": "سفارش پیدا نشد."}, status=404)
+        if not order.receipt:
+            return Response({"detail": "رسیدی برای این سفارش ثبت نشده است."}, status=404)
+        return FileResponse(
+            order.receipt.open("rb"),
+            as_attachment=True,
+            filename=Path(order.receipt.name).name,
+        )
 
 
 class PaymentOrderDetailView(RetrieveAPIView):
