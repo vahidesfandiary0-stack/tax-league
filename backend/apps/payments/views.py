@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.subscriptions.models import SubscriptionPlan
+from apps.subscriptions.models import SubscriptionPlan, UserSubscription
 from apps.exams.models import Exam
 from .models import PaymentOrder
 from .serializers import (
@@ -31,6 +31,28 @@ class SubscriptionPlanListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SubscriptionPlanSerializer
     queryset = SubscriptionPlan.objects.filter(is_active=True)
+
+
+class MySubscriptionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.utils import timezone
+        now = timezone.now()
+        subscription = UserSubscription.objects.filter(
+            user=request.user,
+            status=UserSubscription.Status.ACTIVE,
+            starts_at__lte=now,
+            ends_at__gt=now,
+        ).select_related("plan").order_by("-ends_at").first()
+        if not subscription:
+            return Response({"active": False, "ends_at": None, "plan": None})
+        return Response({
+            "active": True,
+            "plan": subscription.plan.title,
+            "starts_at": subscription.starts_at,
+            "ends_at": subscription.ends_at,
+        })
 
 
 class PaymentInstructionsView(APIView):
