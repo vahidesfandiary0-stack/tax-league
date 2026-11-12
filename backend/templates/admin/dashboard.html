@@ -13,6 +13,7 @@
         <tr><th scope="row">سؤالات در انتظار بازبینی</th><td><a href="/admin/questions/question/?status=pending_review">{{ pending_question_count }}</a></td></tr>
         <tr><th scope="row">آزمون‌های منتشرشده</th><td>{{ published_exam_count }}</td></tr>
         <tr><th scope="row">اشتراک‌های فعال</th><td>{{ active_subscription_count }}</td></tr>
+        <tr><th scope="row">اعتراض‌های منتظر بررسی</th><td><a href="/admin/league/appeals/">{{ pending_appeal_count }}</a></td></tr>
         <tr><th scope="row">فصل‌های فعال لیگ</th><td>{{ active_season_count }}</td></tr>
       </tbody>
     </table>
@@ -36,6 +37,7 @@
       </tbody>
     </table>
   </div>
+  <p><a href="/admin/league/appeals/">بررسی اعتراض‌های لیگ</a></p>
   <p><a href="/admin/">ورود به فهرست کامل بخش‌های مدیریت</a></p>
 </div>
 {% endblock %}
