@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -46,7 +47,8 @@ def test_season_activation_and_closure_create_immutable_audit_events():
     assert active.events.count() == 1
     assert active.events.first().kind == LeagueSeasonEvent.Kind.ACTIVATED
 
-    closed = close_season(season.pk, user, note="پایان فصل")
+    with patch("apps.league.services.timezone.now", return_value=season.ends_at + timedelta(seconds=1)):
+        closed = close_season(season.pk, user, note="پایان فصل")
     assert closed.status == LeagueSeason.Status.CLOSED
     assert closed.events.count() == 2
     assert list(closed.events.values_list("kind", flat=True)) == [
