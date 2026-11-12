@@ -18,6 +18,15 @@ def start_attempt(exam_id, user):
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
     if exam.ends_at and now > exam.ends_at:
         raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
+    if exam.requires_purchase:
+        from apps.payments.models import PurchasedExamAccess
+        from apps.subscriptions.models import UserSubscription
+        has_exam_access = PurchasedExamAccess.objects.filter(user=user, exam=exam).exists()
+        has_active_subscription = UserSubscription.objects.filter(
+            user=user, status=UserSubscription.Status.ACTIVE, ends_at__gt=now
+        ).exists()
+        if not (has_exam_access or has_active_subscription):
+            raise ValidationError("برای شرکت در این آزمون باید خرید انجام دهید یا اشتراک فعال داشته باشید.")
     if not exam.exam_questions.exists():
         raise ValidationError("این آزمون هنوز سؤالی ندارد.")
     existing = ExamAttempt.objects.select_for_update().filter(
