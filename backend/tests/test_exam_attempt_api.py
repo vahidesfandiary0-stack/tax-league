@@ -14,7 +14,6 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
         subject=Question.Subject.DIRECT_TAX,
         prompt="نرخ نمونه چقدر است؟",
         author=user,
-        status=Question.Status.PUBLISHED,
     )
     correct = QuestionOption.objects.create(
         question=question, position=1, text="گزینه الف", is_correct=True,
@@ -28,14 +27,18 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     QuestionOption.objects.create(
         question=question, position=4, text="گزینه د", is_correct=False,
     )
+    question.status = Question.Status.PUBLISHED
+    question.save(update_fields=["status"])
     exam = Exam.objects.create(
         title="آزمون API", kind=Exam.Kind.DAILY, duration_minutes=20,
-        max_attempts=1, status=Exam.Status.PUBLISHED,
+        max_attempts=1,
     )
     ExamQuestion.objects.create(
         exam=exam, question=question, position=1,
         points_correct=10, points_wrong=-3,
     )
+    exam.status = Exam.Status.PUBLISHED
+    exam.save(update_fields=["status"])
 
     client = APIClient()
     client.force_authenticate(user=user)
