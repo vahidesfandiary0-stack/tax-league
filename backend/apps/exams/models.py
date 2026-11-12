@@ -67,6 +67,11 @@ class ExamQuestion(models.Model):
             raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
+            raise ValidationError("سؤال‌های آزمون منتشرشده قابل حذف نیستند.")
+        return super().delete(*args, **kwargs)
+
 
 class ExamAttempt(models.Model):
     class Status(models.TextChoices):
