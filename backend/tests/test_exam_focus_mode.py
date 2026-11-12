@@ -1,3 +1,4 @@
+import json
 import pytest
 from datetime import timedelta
 from types import SimpleNamespace
@@ -30,7 +31,7 @@ def test_focus_mode_blocks_non_exam_features_but_keeps_exam_and_staff_access():
     question_request.user = regular_user
     blocked = middleware(question_request)
     assert blocked.status_code == 423
-    assert blocked.json()["code"] == "EXAM_FOCUS_MODE"
+    assert json.loads(blocked.content)["code"] == "EXAM_FOCUS_MODE"
 
     exam_request = factory.get(f"/api/v1/exams/{exam.pk}/start/")
     exam_request.user = regular_user
