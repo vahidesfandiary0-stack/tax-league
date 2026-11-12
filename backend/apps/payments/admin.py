@@ -65,8 +65,5 @@ class PaymentOrderAdmin(admin.ModelAdmin):
                 self.message_user(request, f"{order.pk}: {exc}", level=messages.ERROR)
         record_admin_action(request.user, rejected, "رد سفارش پرداخت")
 
-    def has_change_permission(self, request, obj=None):
-        return request.user.is_staff
-
     def has_delete_permission(self, request, obj=None):
         return False
