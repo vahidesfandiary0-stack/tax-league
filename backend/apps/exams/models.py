@@ -98,6 +98,17 @@ class ExamAttempt(models.Model):
     class Meta:
         ordering = ["-started_at"]
         indexes = [models.Index(fields=["user", "exam", "status"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["exam", "user"],
+                condition=models.Q(status="in_progress"),
+                name="uq_exam_user_active_attempt",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(deadline_at__gt=models.F("started_at")),
+                name="ck_attempt_deadline_after_start",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.user_id} · {self.exam_id}"
