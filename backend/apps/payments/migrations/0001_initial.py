@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ("amount_irr", models.PositiveBigIntegerField()),
                 ("status", models.CharField(choices=[("awaiting_payment", "در انتظار پرداخت"), ("under_review", "در انتظار بررسی"), ("approved", "تأییدشده"), ("rejected", "ردشده"), ("cancelled", "لغوشده")], default="awaiting_payment", max_length=20)),
                 ("tracking_code", models.CharField(blank=True, max_length=100)),
-                ("receipt", models.FileField(blank=True, upload_to=apps.payments.models.receipt_upload_path, validators=[django.core.validators.FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), apps.payments.models.validate_receipt_size])),
+                ("receipt", models.FileField(blank=True, upload_to=apps.payments.models.receipt_upload_path, validators=[django.core.validators.FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), apps.payments.models.validate_receipt_size, apps.payments.models.validate_receipt_content])),
                 ("user_note", models.CharField(blank=True, max_length=500)),
                 ("review_note", models.CharField(blank=True, max_length=500)),
                 ("reviewed_at", models.DateTimeField(blank=True, null=True)),
