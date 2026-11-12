@@ -22,6 +22,11 @@ class LeagueSeason(models.Model):
         ordering = ["-starts_at"]
         constraints = [
             models.CheckConstraint(condition=models.Q(ends_at__gt=models.F("starts_at")), name="league_season_dates_valid"),
+            models.UniqueConstraint(
+                fields=["status"],
+                condition=models.Q(status="active"),
+                name="uq_single_active_league_season",
+            ),
         ]
 
     def clean(self):
@@ -65,3 +70,30 @@ class LeagueScoreEntry(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("رکورد امتیاز لیگ قابل حذف نیست.")
+
+
+
+class LeagueSeasonEvent(models.Model):
+    class Kind(models.TextChoices):
+        ACTIVATED = "activated", "فعال‌سازی فصل"
+        CLOSED = "closed", "بستن فصل"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    season = models.ForeignKey(LeagueSeason, on_delete=models.PROTECT, related_name="events")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="league_season_events"
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    note = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def save(self, *args, **kwargs):
+        if self.pk and LeagueSeasonEvent.objects.filter(pk=self.pk).exists():
+            raise ValidationError("سوابق تغییر وضعیت فصل غیرقابل‌ویرایش هستند.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("سوابق تغییر وضعیت فصل قابل حذف نیستند.")
