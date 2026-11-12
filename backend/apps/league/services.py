@@ -84,7 +84,7 @@ def close_season(season_id, actor, note=""):
 
 def leaderboard_for_season(season_id, limit=100):
     """Aggregate ledger entries; no client-supplied scores are accepted."""
-    from django.db.models import Count, F, IntegerField, Value
+    from django.db.models import Count, IntegerField, Value
     from django.db.models.functions import Coalesce
 
     season = LeagueSeason.objects.get(pk=season_id, status__in=[
