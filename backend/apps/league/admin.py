@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
-from apps.config.admin_audit import record_admin_action
+from config.admin_audit import record_admin_action
 from .models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 from .services import activate_season, close_season
 
