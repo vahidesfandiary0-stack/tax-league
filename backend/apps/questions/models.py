@@ -57,7 +57,7 @@ class Question(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["id", "version"], name="uq_question_id_version"),
         ]
-        indexes = [models.Index(fields=["status", "subject"]), models.Index(fields=["provenance"])]
+        indexes = [models.Index(fields=["status", "subject"], name="questions_status_subject_idx"), models.Index(fields=["provenance"], name="questions_provenance_idx")]
 
     def save(self, *args, **kwargs):
         if self.pk and Question.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
