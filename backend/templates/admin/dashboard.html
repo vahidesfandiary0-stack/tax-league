@@ -1,0 +1,41 @@
+{% extends "admin/base_site.html" %}
+{% load i18n humanize %}
+{% block title %}داشبورد مدیریت | لیگ قهرمانان مالیاتی{% endblock %}
+{% block content %}
+<div dir="rtl">
+  <h1>داشبورد مدیریت لیگ قهرمانان مالیاتی</h1>
+  <p>نمای کلی وضعیت سامانه در زمان حاضر</p>
+  <div class="module">
+    <table>
+      <tbody>
+        <tr><th scope="row">کل کاربران</th><td>{{ user_count }}</td></tr>
+        <tr><th scope="row">پرداخت‌های در انتظار بررسی</th><td><a href="/admin/payments/paymentorder/?status=under_review">{{ pending_payment_count }}</a></td></tr>
+        <tr><th scope="row">سؤالات در انتظار بازبینی</th><td><a href="/admin/questions/question/?status=pending_review">{{ pending_question_count }}</a></td></tr>
+        <tr><th scope="row">آزمون‌های منتشرشده</th><td>{{ published_exam_count }}</td></tr>
+        <tr><th scope="row">اشتراک‌های فعال</th><td>{{ active_subscription_count }}</td></tr>
+        <tr><th scope="row">فصل‌های فعال لیگ</th><td>{{ active_season_count }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h2>آخرین سفارش‌های پرداخت</h2>
+  <div class="module">
+    <table>
+      <thead><tr><th>کاربر</th><th>نوع</th><th>مبلغ (ریال)</th><th>وضعیت</th><th>تاریخ ثبت</th></tr></thead>
+      <tbody>
+      {% for order in recent_payments %}
+        <tr>
+          <td><a href="/admin/payments/paymentorder/{{ order.pk }}/change/">{{ order.user.display_name|default:order.user.phone_number }}</a></td>
+          <td>{{ order.get_product_type_display }}</td>
+          <td>{{ order.amount_irr|intcomma }}</td>
+          <td>{{ order.get_status_display }}</td>
+          <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">هنوز سفارشی ثبت نشده است.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p><a href="/admin/">ورود به فهرست کامل بخش‌های مدیریت</a></p>
+</div>
+{% endblock %}
