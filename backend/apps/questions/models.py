@@ -35,6 +35,8 @@ class Question(models.Model):
     subject = models.CharField(max_length=32, choices=Subject.choices)
     difficulty = models.CharField(max_length=12, choices=Difficulty.choices, default=Difficulty.MEDIUM)
     prompt = models.TextField()
+    # Safe numeric/text placeholders: {"variables":{"amount":{"min":100,"max":500,"step":50}}}
+    variant_config = models.JSONField(default=dict, blank=True)
     explanation = models.TextField(blank=True)
     source_reference = models.CharField(max_length=500, blank=True)
     valid_from = models.DateField(null=True, blank=True)
