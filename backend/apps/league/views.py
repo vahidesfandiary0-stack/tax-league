@@ -132,3 +132,43 @@ class MyLeagueStatsView(APIView):
             "total_score": total_score,
             "exams_count": base_totals["exams_count"],
         })
+
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import status
+from .models import LeagueAppeal
+from .serializers import LeagueAppealCreateSerializer, LeagueAppealReviewSerializer, LeagueAppealSerializer
+from .services import file_league_appeal, review_league_appeal
+
+
+class LeagueAppealListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = LeagueAppeal.objects.select_related("attempt", "reviewer", "user")
+        if not (request.user.is_superuser or (request.user.is_staff and request.user.has_perm("league.view_leagueappeal"))):
+            qs = qs.filter(user=request.user)
+        return Response(LeagueAppealSerializer(qs[:100], many=True).data)
+
+    def post(self, request):
+        serializer = LeagueAppealCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            appeal = file_league_appeal(**serializer.validated_data, user=request.user)
+        except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(LeagueAppealSerializer(appeal).data, status=status.HTTP_201_CREATED)
+
+
+class LeagueAppealReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, appeal_id):
+        serializer = LeagueAppealReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            appeal = review_league_appeal(appeal_id, request.user, data["decision"], data["decision_note"], data.get("score_delta"))
+        except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(LeagueAppealSerializer(appeal).data)
