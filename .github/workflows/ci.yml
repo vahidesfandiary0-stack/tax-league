@@ -40,8 +40,9 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: dart format lib
+      - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
+      - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --project-name tax_league .
       - name: Build debug APK
