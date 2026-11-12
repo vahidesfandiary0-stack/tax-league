@@ -110,7 +110,7 @@ def finalize_attempt(attempt_id, user):
         title="نتیجه آزمون ثبت شد",
         body=f"آزمون «{attempt.exam.title}» به پایان رسید؛ امتیاز شما: {attempt.score}.",
         data={
-            "attempt_id": attempt.pk, "exam_id": attempt.exam_id,
+            "attempt_id": str(attempt.pk), "exam_id": str(attempt.exam_id),
             "score": attempt.score, "correct_count": attempt.correct_count,
             "wrong_count": attempt.wrong_count, "blank_count": attempt.blank_count,
         },
