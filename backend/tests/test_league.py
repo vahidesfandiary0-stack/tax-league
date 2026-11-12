@@ -9,8 +9,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.exams.models import Exam, ExamAttempt
-from apps.league.models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
-from apps.league.services import activate_season, close_season, record_attempt_score
+from apps.league.models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
+from apps.league.services import activate_season, adjust_score, close_season, record_attempt_score
 
 
 def make_season(title="فصل آزمایشی", *, starts_at=None, ends_at=None):
@@ -191,3 +191,49 @@ def test_season_status_cannot_be_changed_through_regular_model_save():
 
     with pytest.raises(ValidationError):
         season.save()
+
+
+@pytest.mark.django_db
+def test_closed_season_score_correction_is_append_only_and_idempotent():
+    from uuid import uuid4
+
+    user = get_user_model().objects.create_user(phone_number="09124440008")
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09124440009", password="not-used"
+    )
+    season = make_season("فصل اصلاح امتیاز")
+    activate_season(season.pk, manager)
+    attempt = make_official_attempt(user)
+    entry = LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+    with patch("apps.league.services.timezone.now", return_value=season.ends_at + timedelta(seconds=1)):
+        close_season(season.pk, manager)
+    key = uuid4()
+    first = adjust_score(entry.pk, manager, 3, "اصلاح نتیجه بررسی‌شده", key)
+    second = adjust_score(entry.pk, manager, 3, "اصلاح نتیجه بررسی‌شده", key)
+    assert first.pk == second.pk
+    assert LeagueScoreAdjustment.objects.filter(entry=entry).count() == 1
+    assert entry.score == 17
+    with pytest.raises(ValidationError):
+        first.delete()
+
+
+@pytest.mark.django_db
+def test_score_correction_requires_closed_season_and_reason():
+    from uuid import uuid4
+
+    user = get_user_model().objects.create_user(phone_number="09124440010")
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09124440011", password="not-used"
+    )
+    season = make_season("فصل هنوز فعال")
+    activate_season(season.pk, manager)
+    attempt = make_official_attempt(user)
+    entry = LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+    with pytest.raises(ValidationError):
+        adjust_score(entry.pk, manager, 2, "اصلاح", uuid4())
