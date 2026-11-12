@@ -97,7 +97,7 @@ class ExamAttempt(models.Model):
 
     class Meta:
         ordering = ["-started_at"]
-        indexes = [models.Index(fields=["user", "exam", "status"])]
+        indexes = [models.Index(fields=["user", "exam", "status"], name="exams_user_exam_status_idx")]
         constraints = [
             models.UniqueConstraint(
                 fields=["exam", "user"],
