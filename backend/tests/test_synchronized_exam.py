@@ -42,12 +42,15 @@ def test_scheduled_exam_gives_every_participant_the_same_server_deadline(monkeyp
     later_now = scheduled_start + timezone.timedelta(minutes=12)
     monkeypatch.setattr("apps.exams.services.timezone.now", lambda: later_now)
     second_attempt = start_attempt(exam.pk, second)
+    # Repeated starts by the same participant resume the existing attempt.
+    repeated_first_attempt = start_attempt(exam.pk, first)
 
     expected_deadline = scheduled_start + timezone.timedelta(minutes=30)
     assert first_attempt.started_at == scheduled_start
     assert second_attempt.started_at == scheduled_start
     assert first_attempt.deadline_at == expected_deadline
     assert second_attempt.deadline_at == expected_deadline
+    assert repeated_first_attempt.pk == first_attempt.pk
 
 
 @pytest.mark.django_db
