@@ -361,6 +361,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   }
 
   Future<void> _choose(int questionId, int optionId) async {
+    final previousOption = selected[questionId];
     setState(() { selected[questionId] = optionId; busy = true; error = null; });
     try {
       await widget.api.requestPost(
@@ -370,7 +371,11 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          selected.remove(questionId);
+          if (previousOption == null) {
+            selected.remove(questionId);
+          } else {
+            selected[questionId] = previousOption;
+          }
           error = e.toString().replaceFirst('Exception: ', '');
         });
       }
