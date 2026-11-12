@@ -36,6 +36,8 @@ class Exam(models.Model):
     def clean(self):
         if self.duration_minutes < 1 or self.max_attempts < 1:
             raise ValidationError("مدت آزمون و تعداد دفعات مجاز باید حداقل یک باشد.")
+        if self.requires_purchase and self.price_irr < 1:
+            raise ValidationError({"price_irr": "برای آزمون پولی، مبلغ باید بیشتر از صفر باشد."})
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
             raise ValidationError({"ends_at": "پایان آزمون باید بعد از شروع آن باشد."})
 
