@@ -34,9 +34,15 @@ class LeagueSeason(models.Model):
             raise ValidationError({"ends_at": "پایان فصل باید بعد از شروع آن باشد."})
 
     def save(self, *args, **kwargs):
-        if self.pk and LeagueSeason.objects.filter(pk=self.pk).exclude(status=self.Status.DRAFT).exists():
+        if self.pk and LeagueSeason.objects.filter(pk=self.pk).exists():
             old = LeagueSeason.objects.get(pk=self.pk)
-            if old.status != self.status or old.title != self.title or old.starts_at != self.starts_at or old.ends_at != self.ends_at:
+            if old.status != self.status:
+                raise ValidationError("تغییر وضعیت فصل فقط از مسیر سرویس کنترل‌شده مجاز است.")
+            if old.status != self.Status.DRAFT and (
+                old.title != self.title
+                or old.starts_at != self.starts_at
+                or old.ends_at != self.ends_at
+            ):
                 raise ValidationError("فصل فعال یا پایان‌یافته قابل ویرایش نیست.")
         super().save(*args, **kwargs)
 
