@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F\nfrom django.db.models.functions import Coalesce
+from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.exams.models import ExamAttempt
