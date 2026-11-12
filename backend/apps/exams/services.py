@@ -12,6 +12,8 @@ from .models import (
 
 
 def _render_variant_text(template, values):
+    if not values:
+        return template
     try:
         return template.format_map(values)
     except (KeyError, ValueError, IndexError) as exc:
