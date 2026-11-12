@@ -16,8 +16,17 @@ def start_attempt(exam_id, user):
     now = timezone.now()
     if exam.starts_at and now < exam.starts_at:
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
-    if exam.ends_at and now >= exam.ends_at:
-        raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
+    # Scheduled exams share one deadline across all participants.
+    if exam.starts_at:
+        shared_deadline = exam.starts_at + timedelta(minutes=exam.duration_minutes)
+        if exam.ends_at:
+            shared_deadline = min(shared_deadline, exam.ends_at)
+        if now >= shared_deadline:
+            raise ValidationError("مهلت شرکت در این آزمون به پایان رسیده است.")
+    else:
+        shared_deadline = None
+        if exam.ends_at and now >= exam.ends_at:
+            raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
     if exam.requires_purchase:
         from apps.payments.models import PurchasedExamAccess
         from apps.subscriptions.models import UserSubscription
@@ -37,11 +46,12 @@ def start_attempt(exam_id, user):
         return existing
     if ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
-    deadline_at = now + timedelta(minutes=exam.duration_minutes)
-    if exam.ends_at:
+    started_at = exam.starts_at if exam.starts_at else now
+    deadline_at = shared_deadline or (now + timedelta(minutes=exam.duration_minutes))
+    if not exam.starts_at and exam.ends_at:
         deadline_at = min(deadline_at, exam.ends_at)
     attempt = ExamAttempt.objects.create(
-        exam=exam, user=user, started_at=now, deadline_at=deadline_at,
+        exam=exam, user=user, started_at=started_at, deadline_at=deadline_at,
     )
     for item in exam.exam_questions.select_related("question").prefetch_related("question__options").all():
         snapshot = AttemptQuestion.objects.create(
@@ -82,9 +92,9 @@ def finalize_attempt(attempt_id, user):
     if attempt.status != ExamAttempt.Status.IN_PROGRESS:
         return attempt
     now = timezone.now()
-    if now < attempt.deadline_at:
-        # Early submission is allowed; the client cannot extend the server deadline.
-        pass
+    if now < attempt.deadline_at and attempt.exam.starts_at:
+        raise ValidationError("تحویل آزمون سراسری پیش از زمان پایان مجاز نیست.")
+    # Unscheduled practice exams may be submitted early.
     score = correct = wrong = blank = 0
     for question in attempt.questions.prefetch_related("options", "answer__selected_option"):
         answer = getattr(question, "answer", None)
