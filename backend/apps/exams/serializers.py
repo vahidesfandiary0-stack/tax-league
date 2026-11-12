@@ -19,13 +19,18 @@ class AttemptOptionSerializer(serializers.Serializer):
 
 class AttemptQuestionSerializer(serializers.ModelSerializer):
     options = serializers.SerializerMethodField()
+    selected_option_id = serializers.SerializerMethodField()
 
     class Meta:
         model = AttemptQuestion
-        fields = ["id", "position", "prompt", "subject", "options"]
+        fields = ["id", "position", "prompt", "subject", "options", "selected_option_id"]
 
     def get_options(self, obj):
         return AttemptOptionSerializer(obj.options.all(), many=True).data
+
+    def get_selected_option_id(self, obj):
+        answer = getattr(obj, "answer", None)
+        return answer.selected_option_id if answer else None
 
 
 class AttemptSerializer(serializers.ModelSerializer):
