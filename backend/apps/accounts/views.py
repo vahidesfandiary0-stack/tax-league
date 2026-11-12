@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
@@ -7,9 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .otp import issue_challenge, verify_challenge
-from django.utils import timezone
 from .serializers import RequestOTPSerializer, VerifyOTPSerializer
-from .sms import SMSDeliveryNotConfigured, send_login_code
+from .sms import SMSDeliveryError, SMSDeliveryNotConfigured, send_login_code
 
 User = get_user_model()
 
@@ -25,15 +25,21 @@ class RequestOTPView(APIView):
         phone = serializer.validated_data["phone_number"]
         ip = request.META.get("REMOTE_ADDR")
 
+        challenge = None
         try:
             challenge, code = issue_challenge(phone, ip)
             send_login_code(phone, code)
-        except SMSDeliveryNotConfigured:
-            if "challenge" in locals():
+        except SMSDeliveryError as exc:
+            if challenge is not None:
                 challenge.consumed_at = timezone.now()
                 challenge.save(update_fields=["consumed_at"])
+            detail = (
+                "ارسال پیامک هنوز پیکربندی نشده است."
+                if isinstance(exc, SMSDeliveryNotConfigured)
+                else "ارسال پیامک در حال حاضر ممکن نیست؛ دوباره تلاش کنید."
+            )
             return Response(
-                {"detail": "ارسال پیامک هنوز پیکربندی نشده است."},
+                {"detail": detail},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         return Response(
