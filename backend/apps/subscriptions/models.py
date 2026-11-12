@@ -48,7 +48,7 @@ class UserSubscription(models.Model):
 
     class Meta:
         ordering = ["-ends_at"]
-        indexes = [models.Index(fields=["user", "status", "ends_at"])]
+        indexes = [models.Index(fields=["user", "status", "ends_at"], name="subs_user_status_end_idx")]
 
     def clean(self):
         if self.ends_at <= self.starts_at:
