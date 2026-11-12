@@ -1,6 +1,8 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
+from config.admin_audit import record_admin_action
+
 from .models import Question, QuestionOption
 from .services import publish_question, review_question, submit_for_review
 
@@ -14,36 +16,45 @@ class QuestionOptionInline(admin.TabularInline):
 @admin.action(description="ارسال سؤالات انتخاب‌شده برای بررسی (توسط نویسنده)")
 def submit_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for question in queryset:
         try:
             submit_for_review(question.pk, request.user)
+            changed.append(question)
             count += 1
         except (ValidationError, Question.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "ارسال سؤال برای بازبینی")
     modeladmin.message_user(request, f"{count} سؤال ارسال شد.")
 
 
 @admin.action(description="تأیید سؤالات انتخاب‌شده (بازبین غیرنویسنده)")
 def approve_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for question in queryset:
         try:
             review_question(question.pk, request.user, True, "تأیید از پنل مدیریت")
+            changed.append(question)
             count += 1
         except (ValidationError, Question.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "تأیید سؤال توسط بازبین")
     modeladmin.message_user(request, f"{count} سؤال تأیید شد.")
 
 
 @admin.action(description="رد سؤالات انتخاب‌شده")
 def reject_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for question in queryset:
         try:
             review_question(question.pk, request.user, False, "رد از پنل مدیریت")
+            changed.append(question)
             count += 1
         except (ValidationError, Question.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "رد سؤال توسط بازبین")
     modeladmin.message_user(request, f"{count} سؤال رد شد.")
 
 
