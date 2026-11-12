@@ -90,3 +90,22 @@ def finalize_attempt(attempt_id, user):
     attempt.submitted_at = now
     attempt.save(update_fields=["score", "correct_count", "wrong_count", "blank_count", "status", "submitted_at"])
     return attempt
+
+
+
+@transaction.atomic
+def publish_exam(exam_id):
+    exam = Exam.objects.select_for_update().get(pk=exam_id)
+    if exam.status != Exam.Status.DRAFT:
+        raise ValidationError("فقط آزمون پیش‌نویس قابل انتشار است.")
+    items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
+    if not items:
+        raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
+    for item in items:
+        if item.question.status != item.question.Status.PUBLISHED:
+            raise ValidationError("همه سؤال‌های آزمون باید منتشرشده باشند.")
+        if item.question.options.count() != 4 or item.question.options.filter(is_correct=True).count() != 1:
+            raise ValidationError("هر سؤال باید چهار گزینه و دقیقاً یک پاسخ صحیح داشته باشد.")
+    exam.status = Exam.Status.PUBLISHED
+    exam.save(update_fields=["status"])
+    return exam
