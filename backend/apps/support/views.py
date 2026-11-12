@@ -13,12 +13,16 @@ from .serializers import (
 )
 
 
+def can_manage_support(user):
+    return user.is_superuser or user.has_perm("support.view_supportticket")
+
+
 class SupportTicketListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = SupportTicket.objects.select_related("user").prefetch_related("messages")
-        if self.request.user.is_staff:
+        if can_manage_support(self.request.user):
             return queryset
         return queryset.filter(user=self.request.user)
 
@@ -54,7 +58,7 @@ class SupportTicketDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         queryset = SupportTicket.objects.prefetch_related("messages__sender")
-        if self.request.user.is_staff:
+        if can_manage_support(self.request.user):
             return queryset
         return queryset.filter(user=self.request.user)
 
@@ -65,14 +69,14 @@ class SupportMessageCreateView(APIView):
     @transaction.atomic
     def post(self, request, ticket_id):
         queryset = SupportTicket.objects.select_for_update()
-        if not request.user.is_staff:
+        if not can_manage_support(request.user):
             queryset = queryset.filter(user=request.user)
         ticket = get_object_or_404(queryset, pk=ticket_id)
         if ticket.status == SupportTicket.Status.CLOSED:
             raise ValidationError("این درخواست بسته شده و امکان ارسال پیام ندارد.")
         serializer = SupportMessageCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        is_staff_reply = bool(request.user.is_staff)
+        is_staff_reply = can_manage_support(request.user)
         SupportMessage.objects.create(
             ticket=ticket, sender=request.user,
             body=serializer.validated_data["body"],
@@ -101,9 +105,9 @@ class SupportTicketStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, ticket_id):
-        if not request.user.is_staff:
+        if not (request.user.is_superuser or request.user.has_perm("support.change_supportticket")):
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("فقط پشتیبانی مجاز به تغییر وضعیت است.")
+            raise PermissionDenied("فقط کارکنان مجاز پشتیبانی می‌توانند وضعیت را تغییر دهند.")
         ticket = get_object_or_404(SupportTicket, pk=ticket_id)
         new_status = request.data.get("status")
         valid = {choice for choice, _ in SupportTicket.Status.choices}
