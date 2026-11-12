@@ -392,6 +392,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   }
 
   Future<void> _choose(int questionId, int optionId) async {
+    final previousOption = selected[questionId];
     setState(() {
       selected[questionId] = optionId;
       pendingAnswers[questionId] = optionId;
@@ -400,6 +401,22 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
     });
     try {
       await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          if (previousOption == null) {
+            selected.remove(questionId);
+          } else {
+            selected[questionId] = previousOption;
+          }
+          pendingAnswers.remove(questionId);
+          error = 'ذخیره امن پاسخ روی گوشی ناموفق بود؛ پاسخ ارسال نشد. فضای ذخیره‌سازی دستگاه را بررسی کنید.';
+        });
+      }
+      if (mounted) setState(() => busy = false);
+      return;
+    }
+    try {
       await widget.api.requestPost(
         'exams/attempts/' + widget.attempt['id'].toString() + '/answers/',
         {'question_id': questionId, 'option_id': optionId},
@@ -409,7 +426,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
     } catch (e) {
       if (mounted) setState(() => error =
-        'پاسخ روی گوشی نگه داشته شد اما هنوز به سرور نرسیده است. اینترنت را بررسی و «ارسال پاسخ‌های ذخیره‌شده» را بزنید. (${e.toString().replaceFirst('Exception: ', '')})');
+        'پاسخ در حافظه امن گوشی ذخیره شد اما هنوز به سرور نرسیده است. اینترنت را بررسی و «ارسال پاسخ‌های ذخیره‌شده» را بزنید. (${e.toString().replaceFirst('Exception: ', '')})');
     } finally {
       if (mounted) setState(() => busy = false);
     }
