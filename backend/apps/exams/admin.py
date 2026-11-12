@@ -29,7 +29,7 @@ class ExamAdmin(admin.ModelAdmin):
     search_fields = ("title",)
     inlines = [ExamQuestionInline]
     actions = [publish_selected_exams]
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "status")
 
 
 @admin.register(ExamQuestion)
