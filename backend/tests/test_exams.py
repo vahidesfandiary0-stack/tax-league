@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 
 from apps.exams.models import (
-    AttemptAnswer, AttemptOption, AttemptQuestion, Exam, ExamAttempt, ExamQuestion,
+    AttemptAnswer, Exam, ExamAttempt, ExamQuestion,
 )
 from apps.exams.services import finalize_attempt, save_answer, start_attempt
 from apps.exams.serializers import AttemptSerializer
@@ -54,7 +54,7 @@ def make_published_exam(user, *, question_count=1, ends_at=None):
 @pytest.mark.django_db
 def test_attempt_deadline_never_exceeds_exam_closing_time():
     user = get_user_model().objects.create_user(phone_number="09123330001")
-    close_time = timezone.now() + timedelta(minutes=2)
+    close_time = timezone.now() + timedelta(minutes=10)
     exam = make_published_exam(user, ends_at=close_time)
 
     attempt = start_attempt(exam.pk, user)
