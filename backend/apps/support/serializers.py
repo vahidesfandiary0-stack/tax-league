@@ -45,6 +45,12 @@ class SupportTicketCreateSerializer(serializers.ModelSerializer):
         fields = ["id", "subject", "category", "first_message"]
         read_only_fields = ["id"]
 
+    def validate_subject(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("عنوان درخواست نمی‌تواند خالی باشد.")
+        return value
+
     def validate_first_message(self, value):
         value = value.strip()
         if not value:
