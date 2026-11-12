@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.subscriptions.models import SubscriptionPlan
+from apps.exams.models import Exam
 from .models import PaymentOrder
 from .serializers import (
     CreateOrderSerializer, PaymentOrderSerializer, SubmitPaymentSerializer,
@@ -59,12 +60,8 @@ class CreatePaymentOrderView(APIView):
                 order = create_subscription_order(request.user, data["plan_id"])
             else:
                 order = create_exam_order(request.user, data["exam_id"])
-        except (DjangoValidationError, SubscriptionPlan.DoesNotExist) as exc:
+        except (DjangoValidationError, SubscriptionPlan.DoesNotExist, Exam.DoesNotExist) as exc:
             raise service_error(exc)
-        except Exception as exc:
-            if exc.__class__.__name__ == "DoesNotExist":
-                raise ValidationError({"detail": "محصول موردنظر پیدا نشد."})
-            raise
         return Response(PaymentOrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
