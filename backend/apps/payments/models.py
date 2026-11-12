@@ -91,7 +91,7 @@ class PaymentOrder(models.Model):
             raise ValidationError("سفارش آزمون باید فقط یک آزمون داشته باشد.")
 
     def save(self, *args, **kwargs):
-        if self.pk:
+        if self.pk and PaymentOrder.objects.filter(pk=self.pk).exists():
             old = PaymentOrder.objects.get(pk=self.pk)
             immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr")
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
@@ -99,6 +99,7 @@ class PaymentOrder(models.Model):
             if old.status == self.Status.APPROVED:
                 if self.status != old.status or self.receipt != old.receipt:
                     raise ValidationError("سفارش تأییدشده قابل تغییر نیست.")
+        self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
