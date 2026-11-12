@@ -123,12 +123,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     try {
       final status = await api.request('exams/focus-status/');
       final active = status['active'] == true;
-      if (!mounted || active == focusMode) return;
-      setState(() {
-        focusMode = active;
-        focusEndsAt = status['ends_at']?.toString();
-      });
-      await loadDashboard();
+      final endsAt = status['ends_at']?.toString();
+      if (!mounted) return;
+      final modeChanged = active != focusMode;
+      if (modeChanged || endsAt != focusEndsAt) {
+        setState(() {
+          focusMode = active;
+          focusEndsAt = endsAt;
+        });
+      }
+      if (modeChanged) await loadDashboard();
     } catch (_) {
       // Keep the current dashboard state if a brief status poll fails.
     }
@@ -182,7 +186,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> logout() async {
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; appeals = []; exams = []; results = []; otpRequested = false; code.clear(); });
+    setState(() { stats = null; board = []; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; code.clear(); });
   }
 
   Future<void> loadDashboard() async {
