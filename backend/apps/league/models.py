@@ -54,8 +54,8 @@ class LeagueScoreEntry(models.Model):
     class Meta:
         ordering = ["-score", "-correct_count", "wrong_count", "elapsed_seconds"]
         indexes = [
-            models.Index(fields=["season", "user"]),
-            models.Index(fields=["season", "-score"]),
+            models.Index(fields=["season", "user"], name="league_lea_season_6d9f1a_idx"),
+            models.Index(fields=["season", "-score"], name="league_lea_season_23b6b1_idx"),
         ]
 
     def save(self, *args, **kwargs):
