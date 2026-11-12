@@ -19,6 +19,10 @@ python manage.py sync_staff_roles
 
 شرح نقش‌ها و مجوزهای هر گروه در [مستند نقش‌های کارکنان](backend/docs/staff-roles.md) آمده است. فقط superuser باید حساب کارکنان و عضویت گروهی آن‌ها را مدیریت کند.
 
+## چرخه فصل و رتبه‌بندی لیگ
+
+قواعد فعال‌سازی/بستن فصل، دفتر امتیاز تغییرناپذیر و API تاریخچه رتبه‌ها در [مستندات لیگ](backend/apps/league/README.md) آمده است.
+
 ## آزمون‌های خودکار backend
 
 برای اجرای محلی از ریشه مخزن: `python -m pip install -r backend/requirements.txt` و سپس `python -m pytest -q`. گردش‌کار GitHub Actions نیز در push و pull request به شاخه main تست‌ها را اجرا می‌کند. وضعیت موفقیت تست‌ها تا زمان مشاهده نتیجه اجرای workflow تأییدشده نیست.
