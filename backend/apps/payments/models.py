@@ -37,6 +37,8 @@ class PaymentSettings(models.Model):
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        # A fixed primary key turns subsequent create() calls into updates.
+        kwargs.pop("force_insert", None)
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
