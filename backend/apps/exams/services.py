@@ -102,6 +102,19 @@ def finalize_attempt(attempt_id, user):
     if attempt.exam.counts_for_league:
         from apps.league.services import record_attempt_score
         record_attempt_score(attempt.pk)
+    from apps.notifications.models import Notification
+    from apps.notifications.services import create_notification
+    create_notification(
+        recipient=attempt.user,
+        kind=Notification.Kind.EXAM_RESULT,
+        title="نتیجه آزمون ثبت شد",
+        body=f"آزمون «{attempt.exam.title}» به پایان رسید؛ امتیاز شما: {attempt.score}.",
+        data={
+            "attempt_id": attempt.pk, "exam_id": attempt.exam_id,
+            "score": attempt.score, "correct_count": attempt.correct_count,
+            "wrong_count": attempt.wrong_count, "blank_count": attempt.blank_count,
+        },
+    )
     return attempt
 
 
