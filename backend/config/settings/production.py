@@ -19,8 +19,11 @@ if not DATABASE_URL:
 if not DATABASE_URL.startswith(("postgres://", "postgresql://")):
     raise RuntimeError("Production DATABASE_URL must use PostgreSQL.")
 
-if not ALLOWED_HOSTS or ALLOWED_HOSTS == ["*"]:
+raw_allowed_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "").strip()
+if not raw_allowed_hosts or "*" in ALLOWED_HOSTS:
     raise RuntimeError("Set explicit DJANGO_ALLOWED_HOSTS values in production.")
+if any(host in {"localhost", "127.0.0.1"} for host in ALLOWED_HOSTS):
+    raise RuntimeError("Production DJANGO_ALLOWED_HOSTS must contain deployment hostnames, not localhost.")
 
 # Basic authentication is disabled: credentials must never be sent through API Basic Auth.
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
@@ -29,6 +32,8 @@ REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
 ]
 
 SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "true").lower() == "true"
+if not SECURE_SSL_REDIRECT:
+    raise RuntimeError("HTTPS redirect must remain enabled in production.")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -40,6 +45,8 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
 
 SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
+if SECURE_HSTS_SECONDS < 1:
+    raise RuntimeError("HSTS must be enabled in production after HTTPS is configured.")
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("DJANGO_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
 SECURE_HSTS_PRELOAD = os.getenv("DJANGO_HSTS_PRELOAD", "false").lower() == "true"
 
