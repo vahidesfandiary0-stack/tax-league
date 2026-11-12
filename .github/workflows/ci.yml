@@ -76,6 +76,7 @@ jobs:
           CADDY_EMAIL=ci@example.invalid
           EOF
           docker compose --env-file .env.production -f infrastructure/compose.production.yml config --quiet
+          docker run --rm --env-file .env.production -v "$PWD/infrastructure/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
           rm -f .env.production
       - name: Build backend production image
         run: docker build --tag tax-league-backend:ci ./backend
