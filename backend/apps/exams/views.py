@@ -31,8 +31,7 @@ class StartAttemptView(APIView):
             attempt = start_attempt(exam_id, request.user)
         except (DjangoValidationError, Exam.DoesNotExist) as exc:
             raise service_error(exc)
-        response_status = status.HTTP_200_OK if attempt.questions.exists() and attempt.started_at < __import__("django.utils.timezone", fromlist=["now"]).now() else status.HTTP_201_CREATED
-        return Response(AttemptSerializer(attempt).data, status=response_status)
+        return Response(AttemptSerializer(attempt).data, status=status.HTTP_200_OK)
 
 
 class AnswerView(APIView):
