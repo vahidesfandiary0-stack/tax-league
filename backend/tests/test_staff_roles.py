@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.accounts.roles import ROLE_PERMISSIONS, sync_staff_roles
+from apps.accounts.roles import sync_staff_roles
 from apps.support.models import SupportTicket
 
 
@@ -23,7 +23,6 @@ def test_role_sync_creates_separate_least_privilege_groups():
 def test_staff_without_support_role_cannot_access_all_tickets_or_change_status():
     user_model = get_user_model()
     customer = user_model.objects.create_user(phone_number="09122220001")
-    other_customer = user_model.objects.create_user(phone_number="09122220002")
     unprivileged_staff = user_model.objects.create_user(
         phone_number="09122220003", is_staff=True
     )
