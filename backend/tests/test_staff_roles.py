@@ -83,3 +83,23 @@ def test_only_payment_role_can_download_private_receipts():
     client.force_authenticate(user=payment_staff)
     not_found = client.get(f"/api/v1/payments/staff/orders/{order_id}/receipt/")
     assert not_found.status_code == 404
+
+
+@pytest.mark.django_db
+def test_non_staff_account_with_group_membership_cannot_use_staff_endpoints():
+    user_model = get_user_model()
+    regular_user = user_model.objects.create_user(phone_number="09122220008")
+    sync_staff_roles()
+    regular_user.groups.add(Group.objects.get(name="پشتیبان"))
+    client = APIClient()
+    client.force_authenticate(user=regular_user)
+
+    listing = client.get("/api/v1/support/tickets/")
+    assert listing.status_code == 200
+    assert listing.data == []
+    status_response = client.patch(
+        f"/api/v1/support/tickets/{uuid4()}/status/",
+        {"status": "closed"},
+        format="json",
+    )
+    assert status_response.status_code == 403
