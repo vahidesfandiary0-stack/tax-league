@@ -65,3 +65,14 @@ class ResultView(RetrieveAPIView):
 
     def get_queryset(self):
         return ExamAttempt.objects.filter(user=self.request.user, status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED])
+
+
+class MyResultsView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ResultListSerializer
+
+    def get_queryset(self):
+        return ExamAttempt.objects.filter(
+            user=self.request.user,
+            status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
+        ).select_related("exam").order_by("-submitted_at")
