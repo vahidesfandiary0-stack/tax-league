@@ -9,6 +9,7 @@
 
 ## APIs
 - `GET /api/v1/payments/plans/`
+- `GET /api/v1/payments/subscription/me/`
 - `GET /api/v1/payments/instructions/` (authenticated; card number is never in public endpoints or order serializers)
 - `GET /api/v1/payments/orders/`
 - `POST /api/v1/payments/orders/create/`
