@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name="Notification",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("kind", models.CharField(choices=[("payment_approved", "تأیید پرداخت"), ("payment_rejected", "رد پرداخت"), ("subscription_activated", "فعال‌شدن اشتراک"), ("exam_result", "نتیجه آزمون")], max_length=40)),
+                ("kind", models.CharField(choices=[("payment_approved", "تأیید پرداخت"), ("payment_rejected", "رد پرداخت"), ("subscription_activated", "فعال‌شدن اشتراک"), ("exam_result", "نتیجه آزمون"), ("support_reply", "پاسخ پشتیبانی")], max_length=40)),
                 ("title", models.CharField(max_length=160)),
                 ("body", models.CharField(max_length=500)),
                 ("data", models.JSONField(blank=True, default=dict)),
