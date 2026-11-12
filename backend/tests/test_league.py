@@ -149,3 +149,27 @@ def test_leaderboard_limit_is_validated():
 
     assert invalid.status_code == 400
     assert malformed.status_code == 400
+
+
+
+@pytest.mark.django_db
+def test_score_ledger_and_season_events_are_immutable():
+    user = get_user_model().objects.create_user(phone_number="09124440007")
+    season = make_season()
+    activate_season(season.pk, user)
+    event = season.events.first()
+
+    event.note = "دستکاری سابقه"
+    with pytest.raises(ValidationError):
+        event.save()
+
+    attempt = make_official_attempt(user)
+    entry = LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+    entry.score = 999
+    with pytest.raises(ValidationError):
+        entry.save()
+    with pytest.raises(ValidationError):
+        entry.delete()
