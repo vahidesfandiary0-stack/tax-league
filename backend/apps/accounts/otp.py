@@ -4,6 +4,7 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from .models import OTPChallenge
@@ -35,9 +36,11 @@ def issue_challenge(phone_number, request_ip=None):
     return challenge, code
 
 
+@transaction.atomic
 def verify_challenge(phone_number, code):
     challenge = (
-        OTPChallenge.objects.filter(phone_number=phone_number, consumed_at__isnull=True)
+        OTPChallenge.objects.select_for_update()
+        .filter(phone_number=phone_number, consumed_at__isnull=True)
         .order_by("-created_at")
         .first()
     )
