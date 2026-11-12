@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from config.admin_audit import record_admin_action
-from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
+from .models import LeagueAppeal, LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 from .services import activate_season, close_season
 
 
@@ -102,6 +102,23 @@ class LeagueScoreAdjustmentAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LeagueAppeal)
+class LeagueAppealAdmin(admin.ModelAdmin):
+    list_display = ("attempt", "user", "status", "reviewer", "created_at", "reviewed_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("user__display_name", "reason", "details")
+    readonly_fields = ("attempt", "user", "reason", "details", "status", "decision_note", "score_delta", "reviewer", "reviewed_at", "adjustment", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser or (request.user.is_staff and request.user.has_perm("league.view_leagueappeal"))
 
     def has_delete_permission(self, request, obj=None):
         return False
