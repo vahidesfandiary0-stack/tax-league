@@ -111,3 +111,59 @@ def leaderboard_for_season(season_id, limit=100):
         total_score=F("base_score") + F("adjustment_total")
     ).order_by("-total_score", "-correct_total", "wrong_total", "total_time", "user_id")[:limit]
     return season, list(rows)
+
+
+@transaction.atomic
+def file_league_appeal(attempt_id, user, reason, details):
+    from datetime import timedelta
+    from .models import LeagueAppeal
+
+    attempt = ExamAttempt.objects.select_for_update().select_related("exam").get(pk=attempt_id)
+    if attempt.user_id != user.pk:
+        raise ValidationError("این نتیجه متعلق به شما نیست.")
+    if attempt.status not in (ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED):
+        raise ValidationError("فقط نتیجه نهایی‌شده قابل اعتراض است.")
+    if not attempt.exam.counts_for_league:
+        raise ValidationError("این آزمون جزو امتیاز رسمی لیگ نیست.")
+    if attempt.submitted_at is None or timezone.now() > attempt.submitted_at + timedelta(days=7):
+        raise ValidationError("مهلت ثبت اعتراض به پایان رسیده است.")
+    reason, details = (reason or "").strip(), (details or "").strip()
+    if not reason or not details:
+        raise ValidationError("موضوع و شرح اعتراض الزامی است.")
+    if hasattr(attempt, "league_appeal"):
+        raise ValidationError("برای این نتیجه قبلاً اعتراض ثبت شده است.")
+    return LeagueAppeal.objects.create(attempt=attempt, user=user, reason=reason[:200], details=details[:4000])
+
+
+@transaction.atomic
+def review_league_appeal(appeal_id, reviewer, decision, decision_note, score_delta=None):
+    from .models import LeagueAppeal
+
+    if not (reviewer.is_superuser or (reviewer.is_staff and reviewer.has_perm("league.change_leagueappeal"))):
+        raise ValidationError("اجازه بررسی اعتراض‌های لیگ را ندارید.")
+    appeal = LeagueAppeal.objects.select_for_update().select_related("attempt", "user").get(pk=appeal_id)
+    if appeal.status != LeagueAppeal.Status.PENDING:
+        raise ValidationError("این اعتراض قبلاً تعیین تکلیف شده است.")
+    note = (decision_note or "").strip()
+    if not note:
+        raise ValidationError("ثبت توضیح تصمیم الزامی است.")
+    if decision == LeagueAppeal.Status.APPROVED:
+        if not isinstance(score_delta, int) or isinstance(score_delta, bool) or score_delta == 0:
+            raise ValidationError("برای پذیرش اعتراض، اصلاح امتیاز صحیح و غیرصفر وارد کنید.")
+        entry = LeagueScoreEntry.objects.filter(attempt=appeal.attempt).first()
+        if entry is None:
+            raise ValidationError("برای این نتیجه هنوز رکورد امتیاز رسمی وجود ندارد.")
+        adjustment = adjust_score(entry.pk, reviewer, score_delta, f"اعتراض {appeal.pk}: {note}", uuid.uuid4())
+        appeal.adjustment, appeal.score_delta, appeal.status = adjustment, score_delta, LeagueAppeal.Status.APPROVED
+    elif decision == LeagueAppeal.Status.REJECTED:
+        if score_delta not in (None, 0):
+            raise ValidationError("برای رد اعتراض نباید اصلاح امتیاز ثبت شود.")
+        appeal.status, appeal.score_delta = LeagueAppeal.Status.REJECTED, None
+    else:
+        raise ValidationError("تصمیم نامعتبر است.")
+    LeagueAppeal.objects.filter(pk=appeal.pk, status=LeagueAppeal.Status.PENDING).update(
+        status=appeal.status, score_delta=appeal.score_delta, adjustment=appeal.adjustment,
+        reviewer=reviewer, decision_note=note, reviewed_at=timezone.now(),
+    )
+    appeal.refresh_from_db()
+    return appeal
