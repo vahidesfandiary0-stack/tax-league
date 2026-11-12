@@ -1,10 +1,10 @@
-from django.db.models import Count, F, IntegerField, Sum, Value, Window
+from django.db.models import Count, F, IntegerField, Sum, Value, Window, OuterRef, Subquery
 from django.db.models.functions import Coalesce, RowNumber
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import LeagueSeason, LeagueScoreEntry
+from .models import LeagueSeason, LeagueScoreEntry, LeagueScoreAdjustment
 from .serializers import LeagueSeasonSerializer
 from .services import leaderboard_for_season
 
@@ -78,21 +78,37 @@ class MyLeagueStatsView(APIView):
             return Response({
                 "season": None, "rank": None, "total_score": 0, "exams_count": 0
             })
-        totals = LeagueScoreEntry.objects.filter(
+        base_totals = LeagueScoreEntry.objects.filter(
             season=season, user=request.user
         ).aggregate(
-            total_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+            base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
             exams_count=Count("id"),
         )
+        correction = LeagueScoreAdjustment.objects.filter(
+            entry__season=season, entry__user=request.user
+        ).aggregate(total=Coalesce(Sum("score_delta"), Value(0), output_field=IntegerField()))["total"]
+        total_score = base_totals["base_score"] + correction
         ranked_user = (
             LeagueScoreEntry.objects.filter(season=season)
             .values("user_id")
             .annotate(
-                total_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+                base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
                 correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
                 wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
                 total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
             )
+            .annotate(
+                adjustment_total=Coalesce(
+                    Subquery(
+                        LeagueScoreAdjustment.objects.filter(
+                            entry__season_id=OuterRef("season_id"),
+                            entry__user_id=OuterRef("user_id"),
+                        ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1],
+                        output_field=IntegerField(),
+                    ), Value(0), output_field=IntegerField(),
+                )
+            )
+            .annotate(total_score=F("base_score") + F("adjustment_total"))
             .annotate(
                 rank=Window(
                     expression=RowNumber(),
@@ -113,6 +129,6 @@ class MyLeagueStatsView(APIView):
         return Response({
             "season": LeagueSeasonSerializer(season).data,
             "rank": rank,
-            "total_score": totals["total_score"],
+            "total_score": total_score,
             "exams_count": totals["exams_count"],
         })
