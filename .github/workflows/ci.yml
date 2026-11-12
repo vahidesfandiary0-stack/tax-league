@@ -72,6 +72,8 @@ jobs:
           POSTGRES_DB=tax_league
           POSTGRES_USER=tax_league
           POSTGRES_PASSWORD=ci-only-url-safe-password
+          DOMAIN=api.example.invalid
+          CADDY_EMAIL=ci@example.invalid
           EOF
           docker compose --env-file .env.production -f infrastructure/compose.production.yml config --quiet
           rm -f .env.production
