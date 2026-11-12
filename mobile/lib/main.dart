@@ -100,10 +100,39 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Map<String, dynamic>? stats;
   List<dynamic> board = [], appeals = [], exams = [], results = [];
 
+  Timer? focusPoller;
+  bool focusMode = false;
+  String? focusEndsAt;
+
   @override
-  void initState() { super.initState(); _loadIfSignedIn(); }
+  void initState() {
+    super.initState();
+    _loadIfSignedIn();
+    focusPoller = Timer.periodic(const Duration(seconds: 10), (_) => _refreshFocusMode());
+  }
   @override
-  void dispose() { phone.dispose(); code.dispose(); super.dispose(); }
+  void dispose() {
+    focusPoller?.cancel();
+    phone.dispose();
+    code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshFocusMode() async {
+    if (await api.token == null) return;
+    try {
+      final status = await api.request('exams/focus-status/');
+      final active = status['active'] == true;
+      if (!mounted || active == focusMode) return;
+      setState(() {
+        focusMode = active;
+        focusEndsAt = status['ends_at']?.toString();
+      });
+      await loadDashboard();
+    } catch (_) {
+      // Keep the current dashboard state if a brief status poll fails.
+    }
+  }
 
   Future<void> _loadIfSignedIn() async {
     if (await api.token != null) await loadDashboard();
@@ -159,21 +188,40 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> loadDashboard() async {
     setState(() { busy = true; error = null; });
     try {
-      final data = await Future.wait([
-        api.request('league/me/'),
-        api.request('league/leaderboard/?limit=20'),
-        api.request('league/appeals/'),
-        api.request('exams/'),
-        api.request('exams/results/'),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        stats = Map<String, dynamic>.from(data[0] as Map);
-        board = List<dynamic>.from((data[1] as Map)['results'] ?? []);
-        appeals = List<dynamic>.from(data[2] as List);
-        exams = List<dynamic>.from(data[3] as List);
-        results = List<dynamic>.from(data[4] as List);
-      });
+      final focus = await api.request('exams/focus-status/');
+      final active = focus['active'] == true;
+      if (active) {
+        final data = await Future.wait([
+          api.request('exams/'),
+          api.request('exams/results/'),
+        ]);
+        if (!mounted) return;
+        setState(() {
+          focusMode = true;
+          focusEndsAt = focus['ends_at']?.toString();
+          stats ??= <String, dynamic>{};
+          exams = List<dynamic>.from(data[0] as List);
+          results = List<dynamic>.from(data[1] as List);
+        });
+      } else {
+        final data = await Future.wait([
+          api.request('league/me/'),
+          api.request('league/leaderboard/?limit=20'),
+          api.request('league/appeals/'),
+          api.request('exams/'),
+          api.request('exams/results/'),
+        ]);
+        if (!mounted) return;
+        setState(() {
+          focusMode = false;
+          focusEndsAt = null;
+          stats = Map<String, dynamic>.from(data[0] as Map);
+          board = List<dynamic>.from((data[1] as Map)['results'] ?? []);
+          appeals = List<dynamic>.from(data[2] as List);
+          exams = List<dynamic>.from(data[3] as List);
+          results = List<dynamic>.from(data[4] as List);
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
@@ -268,7 +316,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     details.dispose();
   }
 
-  List<Widget> _content() => [
+  List<Widget> _content() {
+    final cards = [
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       Text('رتبه: ' + (stats?['rank']?.toString() ?? '—')),
@@ -319,7 +368,28 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         trailing: Text(_status(item['status'])),
       ),
     ]))),
-  ];
+    ];
+    if (!focusMode) return cards;
+    return [
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Row(children: [
+              Icon(Icons.timer, color: Color(0xFFC6A96A)),
+              SizedBox(width: 8),
+              Text('حالت تمرکز آزمون فعال است', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 8),
+            const Text('در زمان آزمون، امکانات غیرضروری موقتاً کنار گذاشته شده‌اند. شرکت در آزمون و ثبت پاسخ‌ها فعال است.'),
+            if (focusEndsAt != null) Text('پایان رسمی: ${DateTime.parse(focusEndsAt!).toLocal()}'),
+          ]),
+        ),
+      ),
+      cards[1],
+      cards[2],
+    ];
+  }
 
   String _status(dynamic status) => switch (status) {
     'pending' => 'در انتظار', 'approved' => 'پذیرفته', 'rejected' => 'ردشده', _ => 'نامشخص',
