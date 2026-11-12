@@ -23,7 +23,8 @@ def start_attempt(exam_id, user):
         from apps.subscriptions.models import UserSubscription
         has_exam_access = PurchasedExamAccess.objects.filter(user=user, exam=exam).exists()
         has_active_subscription = UserSubscription.objects.filter(
-            user=user, status=UserSubscription.Status.ACTIVE, ends_at__gt=now
+            user=user, status=UserSubscription.Status.ACTIVE,
+            starts_at__lte=now, ends_at__gt=now
         ).exists()
         if not (has_exam_access or has_active_subscription):
             raise ValidationError("برای شرکت در این آزمون باید خرید انجام دهید یا اشتراک فعال داشته باشید.")
