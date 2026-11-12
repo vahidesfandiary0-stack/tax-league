@@ -1,4 +1,4 @@
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.admin.views.decorators import user_passes_test
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -10,7 +10,7 @@ from apps.questions.models import Question
 from apps.subscriptions.models import UserSubscription
 
 
-@staff_member_required
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
 def dashboard(request):
     now = timezone.now()
     context = {
