@@ -57,10 +57,10 @@ def send_login_code(phone_number, code):
     try:
         with urlopen(request, timeout=10) as response:
             result = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError):
         # Never include provider response, API key, phone number, or OTP in the
         # exception text returned to the API client or application logs.
-        raise SMSDeliveryFailed("SMS provider request failed") from exc
+        raise SMSDeliveryFailed("SMS provider request failed") from None
 
     provider_status = result.get("return", {}).get("status")
     if provider_status != 200:
