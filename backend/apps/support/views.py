@@ -83,6 +83,16 @@ class SupportMessageCreateView(APIView):
             else SupportTicket.Status.IN_PROGRESS
         )
         ticket.save(update_fields=["status", "updated_at"])
+        if is_staff_reply:
+            from apps.notifications.models import Notification
+            from apps.notifications.services import create_notification
+            create_notification(
+                recipient=ticket.user,
+                kind=Notification.Kind.PAYMENT_APPROVED,
+                title="پاسخ جدید از پشتیبانی",
+                body=f"برای درخواست «{ticket.subject}» پاسخ جدیدی ثبت شده است.",
+                data={"ticket_id": str(ticket.pk)},
+            )
         ticket.refresh_from_db()
         return Response(SupportTicketDetailSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
