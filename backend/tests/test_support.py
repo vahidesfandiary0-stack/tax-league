@@ -1,7 +1,9 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
+from apps.accounts.roles import sync_staff_roles
 from apps.notifications.models import Notification
 from apps.support.models import SupportTicket
 
@@ -34,6 +36,8 @@ def test_staff_reply_creates_private_in_app_notification():
     user_model = get_user_model()
     owner = user_model.objects.create_user(phone_number="09121110003")
     staff = user_model.objects.create_user(phone_number="09121110004", is_staff=True)
+    sync_staff_roles()
+    staff.groups.add(Group.objects.get(name="پشتیبان"))
     ticket = SupportTicket.objects.create(
         user=owner, subject="سؤال درباره آزمون",
         category=SupportTicket.Category.EXAM,
