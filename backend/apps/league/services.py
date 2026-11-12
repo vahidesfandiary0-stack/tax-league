@@ -169,3 +169,30 @@ def review_league_appeal(appeal_id, reviewer, decision, decision_note, score_del
     )
     appeal.refresh_from_db()
     return appeal
+
+
+@transaction.atomic
+def adjust_score(entry_id, actor, score_delta, reason, idempotency_key):
+    from .models import LeagueScoreAdjustment
+
+    if not (actor.is_superuser or (
+        actor.is_staff and actor.has_perm("league.add_leaguescoreadjustment")
+    )):
+        raise ValidationError("اجازه اصلاح امتیاز لیگ را ندارید.")
+    if not isinstance(score_delta, int) or isinstance(score_delta, bool) or score_delta == 0:
+        raise ValidationError("مقدار اصلاح امتیاز باید عدد صحیح و غیرصفر باشد.")
+    reason = (reason or "").strip()
+    if not reason:
+        raise ValidationError("علت اصلاح امتیاز الزامی است.")
+    entry = LeagueScoreEntry.objects.select_for_update().select_related("season").get(pk=entry_id)
+    if entry.season.status != LeagueSeason.Status.CLOSED:
+        raise ValidationError("اصلاح امتیاز فقط پس از بسته‌شدن فصل مجاز است.")
+    existing = LeagueScoreAdjustment.objects.filter(idempotency_key=idempotency_key).first()
+    if existing:
+        if existing.entry_id == entry.pk and existing.score_delta == score_delta and existing.reason == reason:
+            return existing
+        raise ValidationError("کلید تکرار قبلاً برای اصلاح دیگری استفاده شده است.")
+    return LeagueScoreAdjustment.objects.create(
+        entry=entry, actor=actor, score_delta=score_delta,
+        reason=reason[:500], idempotency_key=idempotency_key,
+    )
