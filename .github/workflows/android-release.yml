@@ -58,12 +58,20 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          cat > android/key.properties <<EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=app/upload-keystore.jks
-          EOF
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          values = {
+              "storePassword": os.environ["KEYSTORE_PASSWORD"],
+              "keyPassword": os.environ["KEY_PASSWORD"],
+              "keyAlias": os.environ["KEY_ALIAS"],
+              "storeFile": "app/upload-keystore.jks",
+          }
+          Path("android/key.properties").write_text(
+              "".join(f"{key}={value}\\n" for key, value in values.items()),
+              encoding="utf-8",
+          )
+          PY
           python scripts/configure_android_signing.py
 
       - name: Build signed release APK
