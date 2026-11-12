@@ -34,7 +34,7 @@ android_open = source.find("{", android.start())
 android_close = block_end(source, android_open)
 
 if "import java.util.Properties" not in source:
-    source = "import java.util.Properties\\n\\n" + source
+    source = "import java.util.Properties\n\n" + source
     plugins = re.search(r"\bplugins\s*\{", source)
     plugins_open = source.find("{", plugins.start())
     plugins_close = block_end(source, plugins_open)
@@ -69,6 +69,6 @@ source = source[:android_close] + signing + source[android_close:]
 plugins = re.search(r"\bplugins\s*\{", source)
 plugins_open = source.find("{", plugins.start())
 plugins_close = block_end(source, plugins_open) + 1
-source = source[:plugins_close] + "\n\\n" + properties + source[plugins_close:]
+source = source[:plugins_close] + "\n\n" + properties + source[plugins_close:]
 gradle_file.write_text(source, encoding="utf-8")
 print(f"Configured release signing in {gradle_file}")
