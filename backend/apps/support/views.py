@@ -14,7 +14,9 @@ from .serializers import (
 
 
 def can_manage_support(user):
-    return user.is_superuser or user.has_perm("support.view_supportticket")
+    return user.is_superuser or (
+        user.is_staff and user.has_perm("support.view_supportticket")
+    )
 
 
 class SupportTicketListCreateView(generics.ListCreateAPIView):
