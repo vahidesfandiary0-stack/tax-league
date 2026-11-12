@@ -23,5 +23,9 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install dependencies
         run: python -m pip install -r backend/requirements.txt
+      - name: Check Django configuration
+        run: python backend/manage.py check
+      - name: Check migration consistency
+        run: python backend/manage.py makemigrations --check --dry-run
       - name: Run backend tests
         run: python -m pytest -q
