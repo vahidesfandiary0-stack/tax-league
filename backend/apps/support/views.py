@@ -88,7 +88,7 @@ class SupportMessageCreateView(APIView):
             from apps.notifications.services import create_notification
             create_notification(
                 recipient=ticket.user,
-                kind=Notification.Kind.PAYMENT_APPROVED,
+                kind=Notification.Kind.SUPPORT_REPLY,
                 title="پاسخ جدید از پشتیبانی",
                 body=f"برای درخواست «{ticket.subject}» پاسخ جدیدی ثبت شده است.",
                 data={"ticket_id": str(ticket.pk)},
