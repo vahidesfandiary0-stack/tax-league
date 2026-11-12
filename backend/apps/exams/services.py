@@ -20,7 +20,7 @@ def _render_variant_text(template, values):
         raise ValidationError("قالب سؤال یا گزینه با متغیرهای تعریف‌شده سازگار نیست.") from exc
 
 
-def _build_attempt_question(attempt, item, rng):
+def _build_attempt_question(attempt, item, rng, position):
     question = item.question
     config = question.variant_config or {}
     variables_config = config.get("variables", {})
@@ -40,7 +40,7 @@ def _build_attempt_question(attempt, item, rng):
         values[name] = minimum + rng.randrange((maximum - minimum) // step + 1) * step
 
     snapshot = AttemptQuestion.objects.create(
-        attempt=attempt, source_question_id=question.pk, position=0,
+        attempt=attempt, source_question_id=question.pk, position=position,
         prompt=_render_variant_text(question.prompt, values),
         explanation=_render_variant_text(question.explanation, values),
         subject=question.subject, points_correct=item.points_correct,
@@ -110,9 +110,7 @@ def start_attempt(exam_id, user):
     rng = random.SystemRandom()
     rng.shuffle(items)
     for position, item in enumerate(items, start=1):
-        snapshot = _build_attempt_question(attempt, item, rng)
-        snapshot.position = position
-        snapshot.save(update_fields=["position"])
+        _build_attempt_question(attempt, item, rng, position)
     return attempt
 
 
