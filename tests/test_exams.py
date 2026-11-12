@@ -16,18 +16,22 @@ class ExamEngineTests(TestCase):
         reviewer = get_user_model().objects.create_user(phone_number="09123333333")
         question = Question.objects.create(
             subject=Question.Subject.DIRECT_TAX, prompt="سؤال تستی؟",
-            author=author, reviewer=reviewer, status=Question.Status.PUBLISHED,
+            author=author, reviewer=reviewer, status=Question.Status.DRAFT,
         )
         self.options = []
         for pos in range(1, 5):
             self.options.append(QuestionOption.objects.create(
                 question=question, position=pos, text=f"گزینه {pos}", is_correct=(pos == 1)
             ))
+        question.status = Question.Status.PUBLISHED
+        question.save()
         self.exam = Exam.objects.create(
             title="آزمون آزمایشی", kind=Exam.Kind.DAILY,
-            duration_minutes=20, status=Exam.Status.PUBLISHED,
+            duration_minutes=20, status=Exam.Status.DRAFT,
         )
         ExamQuestion.objects.create(exam=self.exam, question=question, position=1)
+        self.exam.status = Exam.Status.PUBLISHED
+        self.exam.save()
 
     def test_attempt_snapshots_questions_and_hides_correctness(self):
         attempt = start_attempt(self.exam.pk, self.user)
