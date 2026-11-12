@@ -4,7 +4,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.exams.models import ExamAttempt
-from .models import LeagueScoreEntry, LeagueSeason
+from .models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 
 
 @transaction.atomic
@@ -40,6 +40,45 @@ def record_attempt_score(attempt_id):
         elapsed_seconds=elapsed,
     )
 
+
+
+@transaction.atomic
+def activate_season(season_id, actor, note=""):
+    season = LeagueSeason.objects.select_for_update().get(pk=season_id)
+    now = timezone.now()
+    if season.status != LeagueSeason.Status.DRAFT:
+        raise ValidationError("فقط فصل پیش‌نویس قابل فعال‌سازی است.")
+    if not (season.starts_at <= now < season.ends_at):
+        raise ValidationError("فصل فقط در بازه زمانی تعریف‌شده قابل فعال‌سازی است.")
+    if LeagueSeason.objects.filter(status=LeagueSeason.Status.ACTIVE).exclude(pk=season.pk).exists():
+        raise ValidationError("یک فصل فعال دیگر وجود دارد؛ ابتدا آن را ببندید.")
+    # QuerySet.update is intentional: the model prevents ordinary edits after activation.
+    LeagueSeason.objects.filter(pk=season.pk, status=LeagueSeason.Status.DRAFT).update(
+        status=LeagueSeason.Status.ACTIVE
+    )
+    LeagueSeasonEvent.objects.create(
+        season=season, actor=actor, kind=LeagueSeasonEvent.Kind.ACTIVATED, note=note
+    )
+    season.refresh_from_db()
+    return season
+
+
+@transaction.atomic
+def close_season(season_id, actor, note=""):
+    season = LeagueSeason.objects.select_for_update().get(pk=season_id)
+    now = timezone.now()
+    if season.status != LeagueSeason.Status.ACTIVE:
+        raise ValidationError("فقط فصل فعال قابل بستن است.")
+    if now < season.ends_at:
+        raise ValidationError("فصل تا پیش از زمان پایان برنامه‌ریزی‌شده قابل بستن نیست.")
+    LeagueSeason.objects.filter(pk=season.pk, status=LeagueSeason.Status.ACTIVE).update(
+        status=LeagueSeason.Status.CLOSED
+    )
+    LeagueSeasonEvent.objects.create(
+        season=season, actor=actor, kind=LeagueSeasonEvent.Kind.CLOSED, note=note
+    )
+    season.refresh_from_db()
+    return season
 
 def leaderboard_for_season(season_id, limit=100):
     """Aggregate ledger entries; no client-supplied scores are accepted."""
