@@ -19,7 +19,7 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
-        indexes = [models.Index(fields=["recipient", "read_at", "-created_at"])]
+        indexes = [models.Index(fields=["recipient", "read_at", "-created_at"], name="notif_recipient_read_idx")]
 
     def __str__(self):
         return f"{self.recipient_id}: {self.title}"
