@@ -90,7 +90,7 @@ class MyLeagueStatsView(APIView):
         total_score = base_totals["base_score"] + correction
         ranked_user = (
             LeagueScoreEntry.objects.filter(season=season)
-            .values("user_id")
+            .values("season_id", "user_id")
             .annotate(
                 base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
                 correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
@@ -130,5 +130,5 @@ class MyLeagueStatsView(APIView):
             "season": LeagueSeasonSerializer(season).data,
             "rank": rank,
             "total_score": total_score,
-            "exams_count": totals["exams_count"],
+            "exams_count": base_totals["exams_count"],
         })
