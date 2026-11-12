@@ -271,3 +271,81 @@ def test_score_correction_rejects_non_manager_and_reused_key_with_different_payl
     adjust_score(entry.pk, manager, 1, "اصلاح معتبر", key)
     with pytest.raises(ValidationError):
         adjust_score(entry.pk, manager, 2, "اصلاح متفاوت", key)
+
+
+@pytest.mark.django_db
+def test_user_can_file_one_appeal_and_manager_approval_adjusts_official_score():
+    from apps.league.models import LeagueAppeal
+
+    user = get_user_model().objects.create_user(phone_number="09124440014", display_name="معترض")
+    manager = get_user_model().objects.create_superuser(phone_number="09124440015", password="unused")
+    season = make_season("فصل اعتراض", ends_at=timezone.now() + timedelta(hours=1))
+    activate_season(season.pk, manager)
+    attempt = make_official_attempt(user)
+    entry = LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    filed = client.post("/api/v1/league/appeals/", {
+        "attempt_id": str(attempt.pk), "reason": "اشکال در تصحیح",
+        "details": "لطفاً پاسخ سؤال دوم دوباره بررسی شود.",
+    }, format="json")
+    assert filed.status_code == 201
+    appeal_id = filed.data["id"]
+    duplicate = client.post("/api/v1/league/appeals/", {
+        "attempt_id": str(attempt.pk), "reason": "اعتراض مجدد",
+        "details": "ثبت تکراری",
+    }, format="json")
+    assert duplicate.status_code == 400
+
+    with patch("apps.league.services.timezone.now", return_value=season.ends_at + timedelta(seconds=1)):
+        close_season(season.pk, manager)
+    client.force_authenticate(user=manager)
+    reviewed = client.post(f"/api/v1/league/appeals/{appeal_id}/review/", {
+        "decision": "approved", "decision_note": "بررسی مجدد انجام شد.",
+        "score_delta": 2,
+    }, format="json")
+    assert reviewed.status_code == 200
+    assert reviewed.data["status"] == LeagueAppeal.Status.APPROVED
+    assert reviewed.data["score_delta"] == 2
+    entry.refresh_from_db()
+    assert entry.score == 17
+    assert entry.adjustments.get().score_delta == 2
+
+
+@pytest.mark.django_db
+def test_user_cannot_read_or_appeal_another_users_attempt():
+    owner = get_user_model().objects.create_user(phone_number="09124440016")
+    other = get_user_model().objects.create_user(phone_number="09124440017")
+    attempt = make_official_attempt(owner)
+    client = APIClient()
+    client.force_authenticate(user=other)
+    response = client.post("/api/v1/league/appeals/", {
+        "attempt_id": str(attempt.pk), "reason": "اعتراض",
+        "details": "این تلاش متعلق به من نیست.",
+    }, format="json")
+    assert response.status_code == 400
+    assert not hasattr(attempt, "league_appeal")
+
+
+@pytest.mark.django_db
+def test_appeal_review_requires_league_permission():
+    user = get_user_model().objects.create_user(phone_number="09124440018")
+    staff = get_user_model().objects.create_user(phone_number="09124440019", is_staff=True)
+    season = make_season("فصل اعتراض بدون مجوز")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    attempt = make_official_attempt(user)
+    from apps.league.models import LeagueAppeal
+    appeal = LeagueAppeal.objects.create(
+        attempt=attempt, user=user, reason="بررسی", details="شرح"
+    )
+    client = APIClient()
+    client.force_authenticate(user=staff)
+    response = client.post(f"/api/v1/league/appeals/{appeal.pk}/review/", {
+        "decision": "rejected", "decision_note": "بررسی شد.",
+    }, format="json")
+    assert response.status_code == 400
+    appeal.refresh_from_db()
+    assert appeal.status == LeagueAppeal.Status.PENDING
