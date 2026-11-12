@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% block title %}اعتراض‌های لیگ | لیگ قهرمانان مالیاتی{% endblock %}
+{% block content %}
+<div dir="rtl">
+  <h1>بررسی اعتراض‌های لیگ</h1>
+  <p>اعتراض‌های باز به ترتیب زمان ثبت نمایش داده می‌شوند. تصمیم‌ها و اصلاح امتیاز در سوابق مدیریتی ثبت می‌شوند.</p>
+  <h2>در انتظار بررسی ({{ pending_count }})</h2>
+  {% for appeal in pending_appeals %}
+    <section class="module" style="margin-bottom:18px;padding:16px">
+      <h3>{{ appeal.reason }}</h3>
+      <p>شناسه اعتراض: <code>{{ appeal.pk }}</code></p>
+      <p>شرکت‌کننده: {{ appeal.user.display_name|default:"کاربر" }}</p>
+      <p>آزمون: {{ appeal.attempt.exam.title|default:"آزمون" }}</p>
+      <p>زمان ثبت: {{ appeal.created_at|date:"Y/m/d H:i" }}</p>
+      <p><strong>شرح اعتراض:</strong></p>
+      <blockquote>{{ appeal.details|linebreaksbr }}</blockquote>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="appeal_id" value="{{ appeal.pk }}">
+        <p><label for="note-{{ appeal.pk }}">توضیح تصمیم (الزامی)</label><br>
+        <textarea id="note-{{ appeal.pk }}" name="decision_note" rows="3" required maxlength="1000" style="width:100%"></textarea></p>
+        <p><label for="delta-{{ appeal.pk }}">تغییر امتیاز در صورت پذیرش (عدد صحیح غیرصفر)</label><br>
+        <input id="delta-{{ appeal.pk }}" name="score_delta" type="number"></p>
+        <button type="submit" name="decision" value="approved">پذیرش اعتراض و اعمال اصلاح</button>
+        <button type="submit" name="decision" value="rejected">رد اعتراض</button>
+      </form>
+    </section>
+  {% empty %}
+    <p>اعتراض منتظر بررسی وجود ندارد.</p>
+  {% endfor %}
+  <h2>تصمیم‌های اخیر</h2>
+  <div class="module">
+    <table>
+      <thead><tr><th>موضوع</th><th>وضعیت</th><th>بررسی‌کننده</th><th>توضیح تصمیم</th><th>تاریخ</th></tr></thead>
+      <tbody>
+      {% for appeal in recent_appeals %}
+        <tr><td>{{ appeal.reason }}</td><td>{{ appeal.get_status_display }}</td>
+        <td>{{ appeal.reviewer.display_name|default:"—" }}</td><td>{{ appeal.decision_note }}</td>
+        <td>{{ appeal.reviewed_at|date:"Y/m/d H:i" }}</td></tr>
+      {% empty %}<tr><td colspan="5">هنوز تصمیمی ثبت نشده است.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p><a href="{% url 'admin:index' %}">بازگشت به مدیریت</a></p>
+</div>
+{% endblock %}
