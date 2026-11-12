@@ -14,4 +14,4 @@ class PublicQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ["id", "subject", "difficulty", "prompt", "explanation", "options", "version"]
+        fields = ["id", "subject", "difficulty", "prompt", "options", "version"]
