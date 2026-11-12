@@ -1,6 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from uuid import uuid4
 from rest_framework.test import APIClient
 
 from apps.accounts.roles import sync_staff_roles
@@ -59,3 +60,26 @@ def test_staff_roles_do_not_receive_user_or_payment_settings_permissions():
     assert not support_group.permissions.filter(codename__in=[
         "change_user", "add_user", "delete_user", "change_paymentsettings"
     ]).exists()
+
+
+@pytest.mark.django_db
+def test_only_payment_role_can_download_private_receipts():
+    user_model = get_user_model()
+    staff_without_role = user_model.objects.create_user(
+        phone_number="09122220006", is_staff=True
+    )
+    payment_staff = user_model.objects.create_user(
+        phone_number="09122220007", is_staff=True
+    )
+    sync_staff_roles()
+    payment_staff.groups.add(Group.objects.get(name="مسئول پرداخت"))
+    order_id = uuid4()
+    client = APIClient()
+
+    client.force_authenticate(user=staff_without_role)
+    denied = client.get(f"/api/v1/payments/staff/orders/{order_id}/receipt/")
+    assert denied.status_code == 403
+
+    client.force_authenticate(user=payment_staff)
+    not_found = client.get(f"/api/v1/payments/staff/orders/{order_id}/receipt/")
+    assert not_found.status_code == 404
