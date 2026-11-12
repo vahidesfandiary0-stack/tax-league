@@ -88,7 +88,7 @@ class MyLeagueStatsView(APIView):
             entry__season=season, entry__user=request.user
         ).aggregate(total=Coalesce(Sum("score_delta"), Value(0), output_field=IntegerField()))["total"]
         total_score = base_totals["base_score"] + correction
-        ranked_user = (
+        ranked_users = list(
             LeagueScoreEntry.objects.filter(season=season)
             .values("season_id", "user_id")
             .annotate(
@@ -122,10 +122,9 @@ class MyLeagueStatsView(APIView):
                 )
             )
             .filter(user_id=request.user.pk)
-            .values_list("rank", flat=True)
-            .first()
+            .values_list("rank", flat=True)[:1]
         )
-        rank = int(ranked_user) if ranked_user is not None else None
+        rank = int(ranked_users[0]) if ranked_users else None
         return Response({
             "season": LeagueSeasonSerializer(season).data,
             "rank": rank,
