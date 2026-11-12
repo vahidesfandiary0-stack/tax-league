@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (
-    CreatePaymentOrderView, PaymentInstructionsView, PaymentOrderDetailView,
+    AdminReceiptDownloadView, CreatePaymentOrderView, PaymentInstructionsView, PaymentOrderDetailView,
     PaymentOrderListView, SubmitPaymentView, SubscriptionPlanListView,
 )
 
@@ -12,4 +12,5 @@ urlpatterns = [
     path("orders/create/", CreatePaymentOrderView.as_view(), name="payment-order-create"),
     path("orders/<uuid:order_id>/", PaymentOrderDetailView.as_view(), name="payment-order-detail"),
     path("orders/<uuid:order_id>/submit/", SubmitPaymentView.as_view(), name="payment-submit"),
+    path("staff/orders/<uuid:order_id>/receipt/", AdminReceiptDownloadView.as_view(), name="payment-admin-receipt"),
 ]
