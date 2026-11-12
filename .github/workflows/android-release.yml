@@ -65,7 +65,7 @@ jobs:
               "storePassword": os.environ["KEYSTORE_PASSWORD"],
               "keyPassword": os.environ["KEY_PASSWORD"],
               "keyAlias": os.environ["KEY_ALIAS"],
-              "storeFile": "app/upload-keystore.jks",
+              "storeFile": "upload-keystore.jks",
           }
           Path("android/key.properties").write_text(
               "".join(f"{key}={value}\n" for key, value in values.items()),
