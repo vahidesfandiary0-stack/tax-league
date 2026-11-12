@@ -45,6 +45,15 @@ class LeagueApi {
     return decode(response);
   }
 
+  Future<dynamic> requestPost(String path, Map<String, dynamic> body) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
+      body: jsonEncode(body));
+    return decode(response);
+  }
+
   Future<dynamic> request(String path) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
@@ -171,6 +180,54 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     ]),
   ));
 
+
+  Future<void> _showAppealForm(String attemptId, String examTitle) async {
+    final reason = TextEditingController();
+    final details = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text('اعتراض به ' + examTitle),
+          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: reason, maxLength: 200,
+              decoration: const InputDecoration(labelText: 'موضوع اعتراض')),
+            TextField(controller: details, minLines: 3, maxLines: 5, maxLength: 4000,
+              decoration: const InputDecoration(labelText: 'شرح اعتراض')),
+          ])),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () async {
+                if (reason.text.trim().isEmpty || details.text.trim().isEmpty) return;
+                Navigator.pop(dialogContext);
+                setState(() { busy = true; error = null; });
+                try {
+                  await api.requestPost('league/appeals/', {
+                    'attempt_id': attemptId,
+                    'reason': reason.text.trim(),
+                    'details': details.text.trim(),
+                  });
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('اعتراض ثبت شد.')));
+                  await loadDashboard();
+                } catch (e) {
+                  if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+                } finally {
+                  if (mounted) setState(() => busy = false);
+                }
+              },
+              child: const Text('ثبت اعتراض'),
+            ),
+          ],
+        ),
+      ),
+    );
+    reason.dispose();
+    details.dispose();
+  }
+
   List<Widget> _content() => [
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -197,6 +254,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         subtitle: Text('شناسه: ' + item['id'].toString() + '\nصحیح: ' + item['correct_count'].toString() +
           ' · غلط: ' + item['wrong_count'].toString() + ' · نزده: ' + item['blank_count'].toString()),
         isThreeLine: true,
+        onTap: () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
         trailing: Text((item['score'] ?? 0).toString() + ' امتیاز'),
       ),
     ]))),
