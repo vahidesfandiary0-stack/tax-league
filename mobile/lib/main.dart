@@ -29,6 +29,22 @@ class LeagueApi {
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
+  Future<Map<int, int>> readPendingAnswers(String attemptId) async {
+    final raw = await storage.read(key: 'pending_answers_$attemptId');
+    if (raw == null || raw.isEmpty) return {};
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return decoded.map((key, value) => MapEntry(int.parse(key), value as int));
+  }
+  Future<void> writePendingAnswers(String attemptId, Map<int, int> answers) async {
+    final key = 'pending_answers_$attemptId';
+    if (answers.isEmpty) {
+      await storage.delete(key: key);
+    } else {
+      await storage.write(key: key, value: jsonEncode(
+        answers.map((questionId, optionId) => MapEntry(questionId.toString(), optionId)),
+      ));
+    }
+  }
 
   dynamic decode(http.Response response) {
     final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -318,6 +334,7 @@ class ExamTakingPage extends StatefulWidget {
 class _ExamTakingPageState extends State<ExamTakingPage> {
   late final List<dynamic> questions;
   final Map<int, int> selected = {};
+  final Map<int, int> pendingAnswers = {};
   Timer? ticker;
   late DateTime deadline;
   Duration remaining = Duration.zero;
@@ -336,6 +353,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       }
     }
     deadline = DateTime.parse(widget.attempt['deadline_at']).toLocal();
+    _restorePendingAnswers();
     _updateClock();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
   }
@@ -344,6 +362,19 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   void dispose() {
     ticker?.cancel();
     super.dispose();
+  }
+
+  Future<void> _restorePendingAnswers() async {
+    try {
+      final saved = await widget.api.readPendingAnswers(widget.attempt['id'].toString());
+      if (!mounted || saved.isEmpty) return;
+      setState(() {
+        pendingAnswers.addAll(saved);
+        selected.addAll(saved);
+      });
+    } catch (_) {
+      if (mounted) setState(() => error = 'بازیابی پاسخ‌های ذخیره‌شده از حافظه امن انجام نشد.');
+    }
   }
 
   void _updateClock() {
@@ -361,24 +392,51 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   }
 
   Future<void> _choose(int questionId, int optionId) async {
-    final previousOption = selected[questionId];
-    setState(() { selected[questionId] = optionId; busy = true; error = null; });
+    setState(() {
+      selected[questionId] = optionId;
+      pendingAnswers[questionId] = optionId;
+      busy = true;
+      error = null;
+    });
     try {
+      await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
       await widget.api.requestPost(
         'exams/attempts/' + widget.attempt['id'].toString() + '/answers/',
         {'question_id': questionId, 'option_id': optionId},
       );
+      if (!mounted) return;
+      setState(() => pendingAnswers.remove(questionId));
+      await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          if (previousOption == null) {
-            selected.remove(questionId);
-          } else {
-            selected[questionId] = previousOption;
-          }
-          error = e.toString().replaceFirst('Exception: ', '');
-        });
+      if (mounted) setState(() => error =
+        'پاسخ روی گوشی نگه داشته شد اما هنوز به سرور نرسیده است. اینترنت را بررسی و «ارسال پاسخ‌های ذخیره‌شده» را بزنید. (${e.toString().replaceFirst('Exception: ', '')})');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _syncPendingAnswers() async {
+    if (busy || pendingAnswers.isEmpty) return;
+    setState(() { busy = true; error = null; });
+    try {
+      final snapshot = Map<int, int>.from(pendingAnswers);
+      for (final entry in snapshot.entries) {
+        await widget.api.requestPost(
+          'exams/attempts/' + widget.attempt['id'].toString() + '/answers/',
+          {'question_id': entry.key, 'option_id': entry.value},
+        );
+        if (!mounted) return;
+        setState(() => pendingAnswers.remove(entry.key));
+        await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('همه پاسخ‌های ذخیره‌شده به سرور ارسال شدند.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => error =
+        'ارسال پاسخ‌ها کامل نشد؛ پاسخ‌های ارسال‌نشده روی گوشی باقی مانده‌اند. ${e.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -386,6 +444,10 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
   Future<void> _finalize({bool auto = false}) async {
     if (busy || finished) return;
+    if (pendingAnswers.isNotEmpty) {
+      await _syncPendingAnswers();
+      if (!mounted || pendingAnswers.isNotEmpty) return;
+    }
     setState(() { busy = true; error = null; });
     try {
       final result = await widget.api.requestPost(
@@ -445,6 +507,20 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
               LinearProgressIndicator(value: (currentIndex + 1) / questions.length),
               const SizedBox(height: 12),
               Text('سؤال ${currentIndex + 1} از ${questions.length}', style: const TextStyle(color: Color(0xFFC6A96A))),
+              if (pendingAnswers.isNotEmpty) Card(
+                child: Padding(padding: const EdgeInsets.all(12), child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('${pendingAnswers.length} پاسخ هنوز به سرور ارسال نشده است.'),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : _syncPendingAnswers,
+                      icon: const Icon(Icons.sync),
+                      label: const Text('ارسال پاسخ‌های ذخیره‌شده'),
+                    ),
+                  ],
+                )),
+              ),
               if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(
                 question['prompt'] ?? '', style: const TextStyle(fontSize: 18, height: 1.8),
@@ -474,10 +550,10 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
               ]),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: busy ? null : () => _finalize(),
+                onPressed: busy || pendingAnswers.isNotEmpty ? null : () => _finalize(),
                 child: Text(busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون'),
               ),
-              const Text('پاسخ‌ها هنگام انتخاب به سرور ارسال می‌شوند. امتیاز نهایی توسط سرور محاسبه می‌شود.',
+              const Text('پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
                 style: TextStyle(color: Colors.white60, height: 1.6)),
             ]),
         ),
