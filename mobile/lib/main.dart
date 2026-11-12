@@ -330,6 +330,11 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   void initState() {
     super.initState();
     questions = List<dynamic>.from(widget.attempt['questions'] ?? []);
+    for (final q in questions) {
+      if (q['selected_option_id'] != null) {
+        selected[q['id'] as int] = q['selected_option_id'] as int;
+      }
+    }
     deadline = DateTime.parse(widget.attempt['deadline_at']).toLocal();
     _updateClock();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
