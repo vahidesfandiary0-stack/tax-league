@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -15,7 +17,7 @@ def test_results_endpoint_returns_only_authenticated_users_own_finished_attempts
     exam = Exam.objects.create(title="آزمون تاریخچه", kind=Exam.Kind.DAILY)
     own = ExamAttempt.objects.create(
         exam=exam, user=owner, status=ExamAttempt.Status.SUBMITTED,
-        started_at=timezone.now(), deadline_at=timezone.now() + timezone.timedelta(minutes=30),
+        started_at=timezone.now(), deadline_at=timezone.now() + timedelta(minutes=30),
         submitted_at=timezone.now(), score=17, correct_count=2, wrong_count=1, blank_count=0,
     )
     ExamAttempt.objects.create(
