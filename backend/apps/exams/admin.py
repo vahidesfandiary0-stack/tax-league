@@ -1,8 +1,19 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
+from .focus import get_exam_focus_state
 from .models import Exam, ExamQuestion
 from .services import publish_exam
+
+
+def warn_admin_during_exam(request):
+    if get_exam_focus_state()["active"]:
+        messages.warning(
+            request,
+            "حالت تمرکز آزمون فعال است؛ دسترسی مدیریتی شما محفوظ است. برای حفظ عدالت، "
+            "آزمون منتشرشده و سؤال منتشرشده طبق سیاست یکپارچگی قابل ویرایش مستقیم نیستند؛ "
+            "اصلاحات را در نسخه یا آزمون جدید اعمال کنید.",
+        )
 
 
 @admin.action(description="انتشار آزمون‌های پیش‌نویسِ معتبر")
@@ -30,6 +41,14 @@ class ExamAdmin(admin.ModelAdmin):
     inlines = [ExamQuestionInline]
     actions = [publish_selected_exams]
     readonly_fields = ("created_at", "status")
+
+    def changelist_view(self, request, extra_context=None):
+        warn_admin_during_exam(request)
+        return super().changelist_view(request, extra_context)
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        warn_admin_during_exam(request)
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
 
 @admin.register(ExamQuestion)
