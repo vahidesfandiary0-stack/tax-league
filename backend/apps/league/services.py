@@ -27,7 +27,9 @@ def record_attempt_score(attempt_id):
         ends_at__gte=attempt.submitted_at,
     ).first()
     if season is None:
-        raise ValidationError("برای زمان این آزمون فصل فعال لیگ وجود ندارد.")
+        # A completed exam must remain finalized even if no eligible season is active.
+        # It simply does not contribute to an official season leaderboard.
+        return None
 
     elapsed = max(0, int((attempt.submitted_at - attempt.started_at).total_seconds()))
     return LeagueScoreEntry.objects.create(
