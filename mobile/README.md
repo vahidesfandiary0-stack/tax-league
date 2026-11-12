@@ -4,8 +4,10 @@
 
 ## راه‌اندازی
 1. Flutter SDK و Android SDK را نصب کنید.
-2. در این پوشه اجرا کنید: `flutter pub get`
-3. نشانی واقعی API را تعیین کنید: `flutter run --dart-define=API_BASE_URL=https://api.example.ir`
+2. در پوشه `mobile` برای ساخت فایل‌های بومی اندروید اجرا کنید: `flutter create --platforms=android --project-name tax_league .`
+3. وابستگی‌ها را نصب کنید: `flutter pub get`
+4. نشانی واقعی API را تعیین کنید: `flutter run --dart-define=API_BASE_URL=https://api.example.ir`
+5. برای ساخت APK آزمایشی: `flutter build apk --debug --dart-define=API_BASE_URL=https://api.example.ir`
 
 پس از پیکربندی سرویس پیامک در backend، کاربر می‌تواند با OTP وارد شود. توکن دریافتی با flutter_secure_storage در حافظه امن دستگاه ذخیره می‌شود.
 
