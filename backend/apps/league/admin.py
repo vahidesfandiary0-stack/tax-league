@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from config.admin_audit import record_admin_action
-from .models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
+from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 from .services import activate_season, close_season
 
 
@@ -79,6 +79,23 @@ class LeagueScoreEntryAdmin(admin.ModelAdmin):
         "season", "attempt", "user", "score", "correct_count",
         "wrong_count", "elapsed_seconds", "recorded_at",
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LeagueScoreAdjustment)
+class LeagueScoreAdjustmentAdmin(admin.ModelAdmin):
+    list_display = ("entry", "score_delta", "actor", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("entry__user__display_name", "reason", "actor__display_name")
+    readonly_fields = ("entry", "actor", "score_delta", "reason", "idempotency_key", "created_at")
 
     def has_add_permission(self, request):
         return False
