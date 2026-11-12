@@ -68,7 +68,7 @@ class PaymentOrder(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "status"])]
+        indexes = [models.Index(fields=["user", "status"], name="pay_user_status_idx")]
 
     def clean(self):
         if self.amount_irr < 1:
