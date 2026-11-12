@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 import django.core.validators
+import apps.payments.models
 
 
 class Migration(migrations.Migration):
@@ -32,14 +33,13 @@ class Migration(migrations.Migration):
                 ("amount_irr", models.PositiveBigIntegerField()),
                 ("status", models.CharField(choices=[("awaiting_payment", "در انتظار پرداخت"), ("under_review", "در انتظار بررسی"), ("approved", "تأییدشده"), ("rejected", "ردشده"), ("cancelled", "لغوشده")], default="awaiting_payment", max_length=20)),
                 ("tracking_code", models.CharField(blank=True, max_length=100)),
-                ("receipt", models.FileField(blank=True, upload_to="private-payment-receipts/%Y/%m/")),
+                ("receipt", models.FileField(blank=True, upload_to=apps.payments.models.receipt_upload_path, validators=[django.core.validators.FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), apps.payments.models.validate_receipt_size])),
                 ("user_note", models.CharField(blank=True, max_length=500)),
                 ("review_note", models.CharField(blank=True, max_length=500)),
                 ("reviewed_at", models.DateTimeField(blank=True, null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("exam", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to="exams.exam")),
-                ("plan", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to="subscriptions.subscriptionplan")),
                 ("reviewer", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name="reviewed_payment_orders", to=settings.AUTH_USER_MODEL)),
                 ("user", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="payment_orders", to=settings.AUTH_USER_MODEL)),
             ],
