@@ -1,4 +1,5 @@
 import pytest
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -25,7 +26,7 @@ def test_scheduled_exam_gives_every_participant_the_same_server_deadline(monkeyp
     question.status = Question.Status.PUBLISHED
     question.save(update_fields=["status"])
 
-    scheduled_start = timezone.now() - timezone.timedelta(minutes=2)
+    scheduled_start = timezone.now() - timedelta(minutes=2)
     exam = Exam.objects.create(
         title="آزمون سراسری", kind=Exam.Kind.WEEKLY, duration_minutes=30,
         starts_at=scheduled_start, ends_at=scheduled_start + timezone.timedelta(minutes=30),
