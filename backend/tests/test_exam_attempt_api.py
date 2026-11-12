@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.exams.models import Exam, ExamQuestion
+from apps.exams.models import AttemptOption, Exam, ExamQuestion
 from apps.questions.models import Question, QuestionOption
 
 
@@ -50,16 +50,19 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     assert "is_correct" not in question_data["options"][0]
     assert "explanation" not in question_data
 
+    correct_snapshot_option = AttemptOption.objects.get(
+        attempt_question_id=question_data["id"], source_option_id=correct.pk,
+    )
     answered = client.post(
         reverse("attempt-answer", args=[attempt_id]),
-        {"question_id": question_data["id"], "option_id": correct.pk},
+        {"question_id": question_data["id"], "option_id": correct_snapshot_option.pk},
         format="json",
     )
     assert answered.status_code == 200
 
     resumed = client.post(reverse("exam-start", args=[exam.pk]), {}, format="json")
     assert resumed.data["id"] == attempt_id
-    assert resumed.data["questions"][0]["selected_option_id"] == correct.pk
+    assert resumed.data["questions"][0]["selected_option_id"] == correct_snapshot_option.pk
 
     result = client.post(reverse("attempt-finalize", args=[attempt_id]), {}, format="json")
     assert result.status_code == 200
