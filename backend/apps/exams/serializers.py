@@ -45,3 +45,14 @@ class ResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamAttempt
         fields = ["id", "status", "score", "correct_count", "wrong_count", "blank_count", "submitted_at"]
+
+
+class ResultListSerializer(serializers.ModelSerializer):
+    exam_title = serializers.CharField(source="exam.title", read_only=True)
+
+    class Meta:
+        model = ExamAttempt
+        fields = [
+            "id", "exam", "exam_title", "status", "score",
+            "correct_count", "wrong_count", "blank_count", "submitted_at",
+        ]
