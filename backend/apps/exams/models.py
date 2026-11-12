@@ -26,6 +26,8 @@ class Exam(models.Model):
     ends_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     counts_for_league = models.BooleanField(default=False)
+    requires_purchase = models.BooleanField(default=False)
+    price_irr = models.PositiveBigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
