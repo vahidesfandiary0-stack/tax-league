@@ -28,7 +28,7 @@ def league_appeals(request):
             messages.success(request, f"اعتراض با وضعیت «{appeal.get_status_display()}» ثبت شد.")
         except (ValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
             messages.error(request, str(exc))
-        return redirect("league-appeals")
+        return redirect("admin-league-appeals")
 
     pending = LeagueAppeal.objects.filter(status=LeagueAppeal.Status.PENDING).select_related(
         "attempt", "user", "attempt__exam"
