@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .otp import issue_challenge, verify_challenge
+from django.utils import timezone
 from .serializers import RequestOTPSerializer, VerifyOTPSerializer
 from .sms import SMSDeliveryNotConfigured, send_login_code
 
@@ -28,6 +29,9 @@ class RequestOTPView(APIView):
             challenge, code = issue_challenge(phone, ip)
             send_login_code(phone, code)
         except SMSDeliveryNotConfigured:
+            if "challenge" in locals():
+                challenge.consumed_at = timezone.now()
+                challenge.save(update_fields=["consumed_at"])
             return Response(
                 {"detail": "ارسال پیامک هنوز پیکربندی نشده است."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
