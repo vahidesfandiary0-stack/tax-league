@@ -10,6 +10,7 @@ from apps.exams.models import (
     AttemptAnswer, AttemptOption, AttemptQuestion, Exam, ExamAttempt, ExamQuestion,
 )
 from apps.exams.services import finalize_attempt, save_answer, start_attempt
+from apps.exams.serializers import AttemptSerializer
 from apps.notifications.models import Notification
 from apps.questions.models import Question, QuestionOption
 
@@ -146,3 +147,44 @@ def test_user_cannot_answer_or_finalize_another_users_attempt():
         save_answer(attempt.pk, question.pk, option.pk, stranger)
     with pytest.raises(ExamAttempt.DoesNotExist):
         finalize_attempt(attempt.pk, stranger)
+
+
+
+@pytest.mark.django_db
+def test_restarting_active_exam_returns_same_attempt():
+    user = get_user_model().objects.create_user(phone_number="09123330008")
+    exam = make_published_exam(user)
+
+    first = start_attempt(exam.pk, user)
+    second = start_attempt(exam.pk, user)
+
+    assert first.pk == second.pk
+    assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 1
+
+
+@pytest.mark.django_db
+def test_attempt_payload_never_exposes_correct_answer_flag():
+    user = get_user_model().objects.create_user(phone_number="09123330009")
+    exam = make_published_exam(user)
+    attempt = start_attempt(exam.pk, user)
+
+    payload = AttemptSerializer(attempt).data
+    for question in payload["questions"]:
+        for option in question["options"]:
+            assert "is_correct" not in option
+    assert "explanation" not in payload["questions"][0]
+
+
+@pytest.mark.django_db
+def test_finalization_after_deadline_marks_attempt_expired():
+    user = get_user_model().objects.create_user(phone_number="09123330010")
+    exam = make_published_exam(user)
+    attempt = start_attempt(exam.pk, user)
+    attempt.started_at = timezone.now() - timedelta(minutes=10)
+    attempt.deadline_at = timezone.now() - timedelta(minutes=1)
+    attempt.save(update_fields=["started_at", "deadline_at"])
+
+    result = finalize_attempt(attempt.pk, user)
+
+    assert result.status == ExamAttempt.Status.EXPIRED
+    assert result.submitted_at is not None
