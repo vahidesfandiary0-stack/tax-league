@@ -91,3 +91,19 @@ class PaymentOrder(models.Model):
 
     def __str__(self):
         return f"{self.id} · {self.amount_irr:,} ریال"
+
+
+class PurchasedExamAccess(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="purchased_exam_access")
+    exam = models.ForeignKey("exams.Exam", on_delete=models.PROTECT)
+    source_order = models.OneToOneField(PaymentOrder, on_delete=models.PROTECT, related_name="granted_exam_access")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "exam"], name="uq_user_purchased_exam"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} · {self.exam}"
