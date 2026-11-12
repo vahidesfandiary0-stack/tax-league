@@ -8,6 +8,7 @@ class Notification(models.Model):
         PAYMENT_REJECTED = "payment_rejected", "رد پرداخت"
         SUBSCRIPTION_ACTIVATED = "subscription_activated", "فعال‌شدن اشتراک"
         EXAM_RESULT = "exam_result", "نتیجه آزمون"
+        SUPPORT_REPLY = "support_reply", "پاسخ پشتیبانی"
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     kind = models.CharField(max_length=40, choices=Kind.choices)
