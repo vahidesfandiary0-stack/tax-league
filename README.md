@@ -19,6 +19,10 @@ python manage.py sync_staff_roles
 
 شرح نقش‌ها و مجوزهای هر گروه در [مستند نقش‌های کارکنان](backend/docs/staff-roles.md) آمده است. فقط superuser باید حساب کارکنان و عضویت گروهی آن‌ها را مدیریت کند.
 
+## آزمون‌های خودکار backend
+
+برای اجرای محلی از ریشه مخزن: `python -m pip install -r backend/requirements.txt` و سپس `python -m pytest -q`. گردش‌کار GitHub Actions نیز در push و pull request به شاخه main تست‌ها را اجرا می‌کند. وضعیت موفقیت تست‌ها تا زمان مشاهده نتیجه اجرای workflow تأییدشده نیست.
+
 ## تنظیمات انتشار امن backend
 
 برای انتشار از `config.settings.production` استفاده کنید، نه تنظیمات پایه. نمونه متغیرها در [.env.production.example](.env.production.example) و چک‌لیست در [راهنمای امنیت انتشار](backend/docs/production-security.md) قرار دارد. تنظیمات production بدون کلید قوی، PostgreSQL و دامنه‌های مجاز اجرا نمی‌شود.
