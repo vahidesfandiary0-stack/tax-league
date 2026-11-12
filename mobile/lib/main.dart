@@ -11,9 +11,13 @@ class TaxLeagueApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'لیگ قهرمانان مالیاتی',
-    theme: ThemeData(useMaterial3: true, brightness: Brightness.dark,
+    theme: ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF101827),
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC6A96A), brightness: Brightness.dark)),
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC6A96A), brightness: Brightness.dark),
+      cardTheme: CardThemeData(color: const Color(0xFF1B2940), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+    ),
     home: const LeagueHomePage(),
   );
 }
@@ -23,18 +27,30 @@ class LeagueApi {
   static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://YOUR_API_HOST');
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
-  Future<dynamic> request(String path, {Map<String, dynamic>? body}) async {
-    final t = await token;
-    if (t == null || t.isEmpty) throw Exception('ابتدا کلید دسترسی حساب خود را وارد کنید.');
-    final uri = Uri.parse('$baseUrl/api/v1/$path');
-    final response = body == null
-      ? await http.get(uri, headers: {'Authorization': 'Token $t'})
-      : await http.post(uri, headers: {'Authorization': 'Token $t', 'Content-Type': 'application/json'}, body: jsonEncode(body));
+  Future<void> clearToken() => storage.delete(key: 'api_token');
+
+  dynamic decode(http.Response response) {
     final data = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(data is Map ? (data['detail'] ?? 'خطا در ارتباط با سرور') : 'خطای ارتباط');
+      var message = 'خطای ارتباط با سرور';
+      if (data is Map && data['detail'] != null) message = data['detail'].toString();
+      throw Exception(message);
     }
     return data;
+  }
+
+  Future<dynamic> publicPost(String path, Map<String, dynamic> body) async {
+    final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
+    return decode(response);
+  }
+
+  Future<dynamic> request(String path) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Authorization': 'Token ' + t});
+    return decode(response);
   }
 }
 
@@ -46,101 +62,165 @@ class LeagueHomePage extends StatefulWidget {
 
 class _LeagueHomePageState extends State<LeagueHomePage> {
   final api = LeagueApi();
-  final token = TextEditingController(), attempt = TextEditingController();
-  final reason = TextEditingController(), details = TextEditingController();
-  bool busy = false;
+  final phone = TextEditingController(), code = TextEditingController();
+  bool busy = false, otpRequested = false;
   String? error;
   Map<String, dynamic>? stats;
-  List<dynamic> board = [], appeals = [];
+  List<dynamic> board = [], appeals = [], exams = [], results = [];
 
   @override
-  void initState() { super.initState(); load(); }
+  void initState() { super.initState(); _loadIfSignedIn(); }
   @override
-  void dispose() { token.dispose(); attempt.dispose(); reason.dispose(); details.dispose(); super.dispose(); }
+  void dispose() { phone.dispose(); code.dispose(); super.dispose(); }
 
-  Future<void> load() async {
+  Future<void> _loadIfSignedIn() async {
+    if (await api.token != null) await loadDashboard();
+  }
+
+  Future<void> requestCode() async {
+    setState(() { busy = true; error = null; });
+    try {
+      await api.publicPost('auth/request-otp/', {'phone_number': phone.text.trim()});
+      if (mounted) setState(() => otpRequested = true);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+
+  Future<void> verifyCode() async {
+    setState(() { busy = true; error = null; });
+    try {
+      final data = await api.publicPost('auth/verify-otp/', {
+        'phone_number': phone.text.trim(), 'code': code.text.trim(),
+      });
+      await api.saveToken(data['token'].toString());
+      if (mounted) { setState(() { otpRequested = false; code.clear(); }); }
+      await loadDashboard();
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+
+  Future<void> logout() async {
+    await api.clearToken();
+    if (!mounted) return;
+    setState(() { stats = null; board = []; appeals = []; exams = []; results = []; otpRequested = false; code.clear(); });
+  }
+
+  Future<void> loadDashboard() async {
     setState(() { busy = true; error = null; });
     try {
       final data = await Future.wait([
-        api.request('league/me/'), api.request('league/leaderboard/?limit=20'), api.request('league/appeals/'),
+        api.request('league/me/'),
+        api.request('league/leaderboard/?limit=20'),
+        api.request('league/appeals/'),
+        api.request('exams/'),
+        api.request('exams/results/'),
       ]);
       if (!mounted) return;
       setState(() {
         stats = Map<String, dynamic>.from(data[0] as Map);
         board = List<dynamic>.from((data[1] as Map)['results'] ?? []);
         appeals = List<dynamic>.from(data[2] as List);
+        exams = List<dynamic>.from(data[3] as List);
+        results = List<dynamic>.from(data[4] as List);
       });
-    } catch (e) { if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', '')); }
-    finally { if (mounted) setState(() => busy = false); }
-  }
-
-  Future<void> connect() async {
-    if (token.text.trim().isEmpty) return;
-    await api.saveToken(token.text.trim()); token.clear(); await load();
-  }
-
-  Future<void> submitAppeal() async {
-    setState(() { busy = true; error = null; });
-    try {
-      await api.request('league/appeals/', body: {
-        'attempt_id': attempt.text.trim(), 'reason': reason.text.trim(), 'details': details.text.trim(),
-      });
-      attempt.clear(); reason.clear(); details.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اعتراض ثبت شد.')));
-      await load();
-    } catch (e) { if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', '')); }
-    finally { if (mounted) setState(() => busy = false); }
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally { if (mounted) setState(() => busy = false); }
   }
 
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
-      appBar: AppBar(title: const Text('لیگ قهرمانان مالیاتی'), actions: [IconButton(onPressed: busy ? null : load, icon: const Icon(Icons.refresh))]),
-      body: RefreshIndicator(onRefresh: load, child: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('رقابت کن، رتبه بگیر، قهرمان شو!', style: TextStyle(color: Color(0xFFC6A96A), fontSize: 17)),
-        if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
-          const Text('اتصال امن حساب', style: TextStyle(fontSize: 18)),
-          TextField(controller: token, obscureText: true, decoration: const InputDecoration(labelText: 'کلید دسترسی API')),
-          Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: busy ? null : connect, child: const Text('ذخیره امن و اتصال'))),
-        ]))),
-        if (stats != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text('رتبه: ' + (stats!['rank']?.toString() ?? '—')),
-          Text('امتیاز کل: ' + (stats!['total_score']?.toString() ?? '۰')),
-          Text('تعداد آزمون رسمی: ' + (stats!['exams_count']?.toString() ?? '۰')),
-        ]))),
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('جدول برترین‌ها', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          if (board.isEmpty) const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
-          for (final row in board) ListTile(
-            leading: CircleAvatar(child: Text(row['rank'].toString())),
-            title: Text(row['display_name'] ?? 'کاربر'),
-            trailing: Text(row['total_score'].toString() + ' امتیاز'),
-          ),
-        ]))),
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
-          const Text('ثبت اعتراض به نتیجه', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const Text('تا ۷ روز پس از نهایی‌شدن آزمون رسمی فرصت دارید.'),
-          TextField(controller: attempt, decoration: const InputDecoration(labelText: 'شناسه نتیجه آزمون (UUID)')),
-          TextField(controller: reason, maxLength: 200, decoration: const InputDecoration(labelText: 'موضوع اعتراض')),
-          TextField(controller: details, minLines: 3, maxLines: 5, maxLength: 4000, decoration: const InputDecoration(labelText: 'شرح اعتراض')),
-          SizedBox(width: double.infinity, child: FilledButton(onPressed: busy ? null : submitAppeal, child: const Text('ثبت اعتراض'))),
-        ]))),
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('پیگیری اعتراض‌های من', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          if (appeals.isEmpty) const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
-          for (final item in appeals) ListTile(
-            title: Text(item['reason'] ?? 'اعتراض'),
-            subtitle: Text((item['decision_note'] ?? '').toString().isEmpty ? 'در انتظار بررسی' : item['decision_note']),
-            trailing: Text(_status(item['status'])),
-          ),
-        ]))),
-        if (busy) const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator())),
-      ])),
+      appBar: AppBar(
+        title: const Text('لیگ قهرمانان مالیاتی'),
+        actions: [
+          if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
+          IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: loadDashboard,
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          const Text('رقابت کن، رتبه بگیر، قهرمان شو!', style: TextStyle(color: Color(0xFFC6A96A), fontSize: 17)),
+          if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
+          if (stats == null) _loginCard() else ..._content(),
+          if (busy) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+        ]),
+      ),
     ),
   );
+
+  Widget _loginCard() => Card(child: Padding(
+    padding: const EdgeInsets.all(18),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('ورود یا ساخت حساب', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+      const Text('شماره تلفن همراه را وارد کنید تا کد یک‌بارمصرف برایتان ارسال شود.'),
+      TextField(controller: phone, keyboardType: TextInputType.phone,
+        decoration: const InputDecoration(labelText: 'شماره تلفن همراه', hintText: '09xxxxxxxxx')),
+      if (otpRequested) TextField(controller: code, keyboardType: TextInputType.number, maxLength: 6,
+        decoration: const InputDecoration(labelText: 'کد شش‌رقمی پیامک‌شده')),
+      const SizedBox(height: 10),
+      SizedBox(width: double.infinity, child: FilledButton(
+        onPressed: busy ? null : (otpRequested ? verifyCode : requestCode),
+        child: Text(otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود'))),
+      if (otpRequested) Align(alignment: Alignment.centerLeft,
+        child: TextButton(onPressed: busy ? null : requestCode, child: const Text('ارسال دوباره کد'))),
+    ]),
+  ));
+
+  List<Widget> _content() => [
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      Text('رتبه: ' + (stats?['rank']?.toString() ?? '—')),
+      Text('امتیاز کل: ' + (stats?['total_score']?.toString() ?? '۰')),
+      Text('تعداد آزمون رسمی: ' + (stats?['exams_count']?.toString() ?? '۰')),
+    ]))),
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('آزمون‌های منتشرشده', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (exams.isEmpty) const Text('فعلاً آزمون منتشرشده‌ای وجود ندارد.'),
+      for (final exam in exams) ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(exam['title'] ?? 'آزمون'),
+        subtitle: Text((exam['duration_minutes'] ?? '—').toString() + ' دقیقه · ' + (exam['question_count'] ?? '—').toString() + ' سؤال'),
+        trailing: const Icon(Icons.assignment_outlined),
+      ),
+    ]))),
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('تاریخچه نتایج من', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (results.isEmpty) const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
+      for (final item in results) ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(item['exam_title'] ?? 'آزمون'),
+        subtitle: Text('شناسه: ' + item['id'].toString() + '\nصحیح: ' + item['correct_count'].toString() +
+          ' · غلط: ' + item['wrong_count'].toString() + ' · نزده: ' + item['blank_count'].toString()),
+        isThreeLine: true,
+        trailing: Text((item['score'] ?? 0).toString() + ' امتیاز'),
+      ),
+    ]))),
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('جدول برترین‌ها', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (board.isEmpty) const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
+      for (final row in board) ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: CircleAvatar(child: Text(row['rank'].toString())),
+        title: Text(row['display_name'] ?? 'کاربر'),
+        trailing: Text(row['total_score'].toString() + ' امتیاز'),
+      ),
+    ]))),
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('اعتراض‌های من', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (appeals.isEmpty) const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
+      for (final item in appeals) ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(item['reason'] ?? 'اعتراض'),
+        subtitle: Text((item['decision_note'] ?? '').toString().isEmpty ? 'در انتظار بررسی' : item['decision_note']),
+        trailing: Text(_status(item['status'])),
+      ),
+    ]))),
+  ];
 
   String _status(dynamic status) => switch (status) {
     'pending' => 'در انتظار', 'approved' => 'پذیرفته', 'rejected' => 'ردشده', _ => 'نامشخص',
