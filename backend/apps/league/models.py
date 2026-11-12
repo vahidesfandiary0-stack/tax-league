@@ -124,3 +124,33 @@ class LeagueSeasonEvent(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("سوابق تغییر وضعیت فصل قابل حذف نیستند.")
+
+
+class LeagueScoreAdjustment(models.Model):
+    """Append-only, audited correction to an existing score ledger entry."""
+    objects = ImmutableManager()
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    entry = models.ForeignKey(
+        LeagueScoreEntry, on_delete=models.PROTECT, related_name="adjustments"
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="league_score_adjustments"
+    )
+    score_delta = models.IntegerField()
+    reason = models.CharField(max_length=500)
+    idempotency_key = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["entry", "created_at"], name="league_adj_entry_time_idx")]
+
+    def save(self, *args, **kwargs):
+        if self.pk and LeagueScoreAdjustment.objects.filter(pk=self.pk).exists():
+            raise ValidationError("اصلاح امتیاز ثبت‌شده غیرقابل‌ویرایش است.")
+        if not self.reason.strip():
+            raise ValidationError({"reason": "علت اصلاح امتیاز الزامی است."})
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("سوابق اصلاح امتیاز قابل حذف نیستند.")
