@@ -1,8 +1,10 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import PaymentOrder, PaymentSettings
+from .models import PaymentOrder, PaymentSettings, PurchasedExamAccess
 
 
 @transaction.atomic
@@ -60,7 +62,7 @@ def approve_order(order_id, reviewer):
         starts_at = latest.ends_at if latest else now
         UserSubscription.objects.create(
             user=order.user, plan=order.plan, starts_at=starts_at,
-            ends_at=starts_at + timezone.timedelta(days=order.plan.duration_days),
+            ends_at=starts_at + timedelta(days=order.plan.duration_days),
             source_order=order,
         )
     else:
