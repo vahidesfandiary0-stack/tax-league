@@ -37,6 +37,7 @@ class ExamParticipant(HttpUser):
     wait_time = between(1, 3)
 
     def on_start(self):
+        self.token = None
         try:
             self.token = token_pool.get_nowait()
         except Empty:
