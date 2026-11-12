@@ -103,3 +103,15 @@ def test_non_staff_account_with_group_membership_cannot_use_staff_endpoints():
         format="json",
     )
     assert status_response.status_code == 403
+
+
+
+@pytest.mark.django_db
+def test_league_manager_can_view_but_not_edit_season_audit_events():
+    sync_staff_roles()
+    league_group = Group.objects.get(name="مدیر لیگ")
+    assert league_group.permissions.filter(codename="view_leagueseasonevent").exists()
+    assert not league_group.permissions.filter(codename__in=[
+        "add_leagueseasonevent", "change_leagueseasonevent",
+        "delete_leagueseasonevent",
+    ]).exists()
