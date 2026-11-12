@@ -237,3 +237,29 @@ def test_score_correction_requires_closed_season_and_reason():
     )
     with pytest.raises(ValidationError):
         adjust_score(entry.pk, manager, 2, "اصلاح", uuid4())
+
+
+@pytest.mark.django_db
+def test_score_correction_rejects_non_manager_and_reused_key_with_different_payload():
+    from uuid import uuid4
+
+    user = get_user_model().objects.create_user(phone_number="09124440012")
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09124440013", password="not-used"
+    )
+    season = make_season("فصل کنترل اصلاح")
+    activate_season(season.pk, manager)
+    attempt = make_official_attempt(user)
+    entry = LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+    with patch("apps.league.services.timezone.now", return_value=season.ends_at + timedelta(seconds=1)):
+        close_season(season.pk, manager)
+    with pytest.raises(ValidationError):
+        adjust_score(entry.pk, user, 1, "بدون مجوز", uuid4())
+
+    key = uuid4()
+    adjust_score(entry.pk, manager, 1, "اصلاح معتبر", key)
+    with pytest.raises(ValidationError):
+        adjust_score(entry.pk, manager, 2, "اصلاح متفاوت", key)
