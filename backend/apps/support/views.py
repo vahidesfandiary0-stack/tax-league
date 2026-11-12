@@ -107,7 +107,7 @@ class SupportTicketStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, ticket_id):
-        if not (request.user.is_superuser or request.user.has_perm("support.change_supportticket")):
+        if not can_manage_support(request.user):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("فقط کارکنان مجاز پشتیبانی می‌توانند وضعیت را تغییر دهند.")
         ticket = get_object_or_404(SupportTicket, pk=ticket_id)
