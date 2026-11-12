@@ -42,6 +42,6 @@ class Migration(migrations.Migration):
                 ("attempts", models.PositiveSmallIntegerField(default=0)),
                 ("request_ip", models.GenericIPAddressField(blank=True, null=True)),
             ],
-            options={"indexes": [models.Index(fields=["phone_number", "created_at"], name="accounts_ot_phone_n_45bc26_idx")]},
+            options={"indexes": [models.Index(fields=["phone_number", "created_at"])]},
         ),
     ]
