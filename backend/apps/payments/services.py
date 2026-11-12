@@ -79,6 +79,19 @@ def approve_order(order_id, reviewer):
     order.review_note = "پرداخت تأیید شد."
     order.reviewed_at = now
     order.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+    from apps.notifications.models import Notification
+    from apps.notifications.services import create_notification
+    create_notification(
+        recipient=order.user, kind=Notification.Kind.PAYMENT_APPROVED,
+        title="پرداخت تأیید شد", body="پرداخت شما با موفقیت تأیید شد.",
+        data={"order_id": str(order.pk), "product_type": order.product_type},
+    )
+    if order.product_type == PaymentOrder.ProductType.SUBSCRIPTION:
+        create_notification(
+            recipient=order.user, kind=Notification.Kind.SUBSCRIPTION_ACTIVATED,
+            title="اشتراک فعال شد", body="اشتراک شما فعال شده و اکنون قابل استفاده است.",
+            data={"order_id": str(order.pk)},
+        )
     return order
 
 
@@ -92,6 +105,14 @@ def reject_order(order_id, reviewer, reason):
     order.review_note = reason.strip()[:500] or "رسید تأیید نشد."
     order.reviewed_at = timezone.now()
     order.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+    from apps.notifications.models import Notification
+    from apps.notifications.services import create_notification
+    create_notification(
+        recipient=order.user, kind=Notification.Kind.PAYMENT_REJECTED,
+        title="پرداخت تأیید نشد",
+        body="رسید پرداخت شما تأیید نشد. لطفاً جزئیات سفارش را بررسی و در صورت نیاز دوباره ارسال کنید.",
+        data={"order_id": str(order.pk)},
+    )
     return order
 
 
