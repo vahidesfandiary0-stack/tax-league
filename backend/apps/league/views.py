@@ -133,7 +133,7 @@ class MyLeagueStatsView(APIView):
         })
 
 
-from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from rest_framework import status
 from .models import LeagueAppeal
 from .serializers import LeagueAppealCreateSerializer, LeagueAppealReviewSerializer, LeagueAppealSerializer
@@ -154,7 +154,7 @@ class LeagueAppealListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             appeal = file_league_appeal(**serializer.validated_data, user=request.user)
-        except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
+        except (DjangoValidationError, ObjectDoesNotExist, ValueError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(LeagueAppealSerializer(appeal).data, status=status.HTTP_201_CREATED)
 
