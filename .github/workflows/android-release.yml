@@ -68,7 +68,7 @@ jobs:
               "storeFile": "app/upload-keystore.jks",
           }
           Path("android/key.properties").write_text(
-              "".join(f"{key}={value}\\n" for key, value in values.items()),
+              "".join(f"{key}={value}\n" for key, value in values.items()),
               encoding="utf-8",
           )
           PY
