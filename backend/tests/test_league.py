@@ -214,7 +214,7 @@ def test_closed_season_score_correction_is_append_only_and_idempotent():
     first = adjust_score(entry.pk, manager, 3, "اصلاح نتیجه بررسی‌شده", key)
     second = adjust_score(entry.pk, manager, 3, "اصلاح نتیجه بررسی‌شده", key)
     assert first.pk == second.pk
-    assert LeagueScoreAdjustment.objects.filter(entry=entry).count() == 1
+    assert LeagueScoreAdjustment.objects.filter(entry=entry).count() == 1\n    client = APIClient()\n    client.force_authenticate(user=user)\n    stats = client.get(f"/api/v1/league/me/?season={season.pk}")\n    assert stats.data["total_score"] == 20\n    assert stats.data["rank"] == 1
     assert entry.score == 17
     with pytest.raises(ValidationError):
         first.delete()
