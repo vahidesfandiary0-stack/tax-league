@@ -5,6 +5,24 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+class ImmutableQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("این سوابق قابل ویرایش گروهی نیستند.")
+
+    def delete(self):
+        raise ValidationError("این سوابق قابل حذف گروهی نیستند.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise ValidationError("این سوابق قابل ویرایش گروهی نیستند.")
+
+    def bulk_create(self, objs, **kwargs):
+        raise ValidationError("ثبت گروهی این سوابق مجاز نیست.")
+
+
+class ImmutableManager(models.Manager.from_queryset(ImmutableQuerySet)):
+    pass
+
+
 class LeagueSeason(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"
@@ -52,6 +70,7 @@ class LeagueSeason(models.Model):
 
 class LeagueScoreEntry(models.Model):
     """Immutable, one-per-attempt ledger entry for an official league exam."""
+    objects = ImmutableManager()
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     season = models.ForeignKey(LeagueSeason, on_delete=models.PROTECT, related_name="score_entries")
     attempt = models.OneToOneField("exams.ExamAttempt", on_delete=models.PROTECT, related_name="league_entry")
@@ -80,6 +99,8 @@ class LeagueScoreEntry(models.Model):
 
 
 class LeagueSeasonEvent(models.Model):
+    objects = ImmutableManager()
+
     class Kind(models.TextChoices):
         ACTIVATED = "activated", "فعال‌سازی فصل"
         CLOSED = "closed", "بستن فصل"
