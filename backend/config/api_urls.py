@@ -14,4 +14,5 @@ urlpatterns = [
     path("health/", HealthView.as_view(), name="health"),
     path("questions/", include("apps.questions.urls")),
     path("exams/", include("apps.exams.urls")),
+    path("league/", include("apps.league.urls")),
 ]
