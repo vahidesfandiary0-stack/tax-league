@@ -89,6 +89,9 @@ def finalize_attempt(attempt_id, user):
     attempt.status = ExamAttempt.Status.SUBMITTED if now < attempt.deadline_at else ExamAttempt.Status.EXPIRED
     attempt.submitted_at = now
     attempt.save(update_fields=["score", "correct_count", "wrong_count", "blank_count", "status", "submitted_at"])
+    if attempt.exam.counts_for_league:
+        from apps.league.services import record_attempt_score
+        record_attempt_score(attempt.pk)
     return attempt
 
 
