@@ -1,4 +1,5 @@
 from datetime import timedelta
+import random
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -8,6 +9,50 @@ from .models import (
     AttemptAnswer, AttemptOption, AttemptQuestion, Exam, ExamAttempt,
     ExamQuestion,
 )
+
+
+def _render_variant_text(template, values):
+    try:
+        return template.format_map(values)
+    except (KeyError, ValueError, IndexError) as exc:
+        raise ValidationError("قالب سؤال یا گزینه با متغیرهای تعریف‌شده سازگار نیست.") from exc
+
+
+def _build_attempt_question(attempt, item, rng):
+    question = item.question
+    config = question.variant_config or {}
+    variables_config = config.get("variables", {})
+    if not isinstance(variables_config, dict):
+        raise ValidationError("تعریف متغیرهای سؤال نامعتبر است.")
+    values = {}
+    for name, spec in variables_config.items():
+        if not isinstance(name, str) or not name.isidentifier() or not isinstance(spec, dict):
+            raise ValidationError("تعریف متغیر عددی سؤال نامعتبر است.")
+        minimum, maximum = spec.get("min"), spec.get("max")
+        step = spec.get("step", 1)
+        if (not isinstance(minimum, int) or isinstance(minimum, bool)
+                or not isinstance(maximum, int) or isinstance(maximum, bool)
+                or not isinstance(step, int) or isinstance(step, bool)
+                or step < 1 or maximum < minimum or (maximum - minimum) // step > 100000):
+            raise ValidationError("بازه یا گام متغیر عددی سؤال نامعتبر است.")
+        values[name] = minimum + rng.randrange((maximum - minimum) // step + 1) * step
+
+    snapshot = AttemptQuestion.objects.create(
+        attempt=attempt, source_question_id=question.pk, position=0,
+        prompt=_render_variant_text(question.prompt, values),
+        explanation=_render_variant_text(question.explanation, values),
+        subject=question.subject, points_correct=item.points_correct,
+        points_wrong=item.points_wrong,
+    )
+    options = list(question.options.all())
+    rng.shuffle(options)
+    for position, option in enumerate(options, start=1):
+        AttemptOption.objects.create(
+            attempt_question=snapshot, source_option_id=option.pk,
+            position=position, text=_render_variant_text(option.text, values),
+            is_correct=option.is_correct,
+        )
+    return snapshot
 
 
 @transaction.atomic
@@ -56,18 +101,16 @@ def start_attempt(exam_id, user):
     attempt = ExamAttempt.objects.create(
         exam=exam, user=user, started_at=started_at, deadline_at=deadline_at,
     )
-    for item in exam.exam_questions.select_related("question").prefetch_related("question__options").all():
-        snapshot = AttemptQuestion.objects.create(
-            attempt=attempt, source_question_id=item.question_id,
-            position=item.position, prompt=item.question.prompt,
-            explanation=item.question.explanation, subject=item.question.subject,
-            points_correct=item.points_correct, points_wrong=item.points_wrong,
-        )
-        for option in item.question.options.all():
-            AttemptOption.objects.create(
-                attempt_question=snapshot, source_option_id=option.pk,
-                position=option.position, text=option.text, is_correct=option.is_correct,
-            )
+    items = list(
+        exam.exam_questions.select_related("question")
+        .prefetch_related("question__options").all()
+    )
+    rng = random.SystemRandom()
+    rng.shuffle(items)
+    for position, item in enumerate(items, start=1):
+        snapshot = _build_attempt_question(attempt, item, rng)
+        snapshot.position = position
+        snapshot.save(update_fields=["position"])
     return attempt
 
 
