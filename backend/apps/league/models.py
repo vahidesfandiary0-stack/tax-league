@@ -154,3 +154,35 @@ class LeagueScoreAdjustment(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("سوابق اصلاح امتیاز قابل حذف نیستند.")
+
+
+class LeagueAppeal(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "در انتظار بررسی"
+        APPROVED = "approved", "پذیرفته‌شده"
+        REJECTED = "rejected", "ردشده"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    attempt = models.OneToOneField("exams.ExamAttempt", on_delete=models.PROTECT, related_name="league_appeal")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="league_appeals")
+    reason = models.CharField(max_length=200)
+    details = models.TextField(max_length=4000)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    decision_note = models.CharField(max_length=1000, blank=True)
+    score_delta = models.IntegerField(null=True, blank=True)
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="reviewed_league_appeals")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    adjustment = models.OneToOneField(LeagueScoreAdjustment, null=True, blank=True, on_delete=models.PROTECT, related_name="appeal")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status", "created_at"], name="league_appeal_status_idx")]
+
+    def save(self, *args, **kwargs):
+        if self.pk and LeagueAppeal.objects.filter(pk=self.pk).exists():
+            raise ValidationError("اعتراض ثبت‌شده فقط از مسیر بررسی کنترل‌شده قابل تغییر است.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("سوابق اعتراض قابل حذف نیستند.")
