@@ -59,6 +59,11 @@ class Question(models.Model):
         ]
         indexes = [models.Index(fields=["status", "subject"]), models.Index(fields=["provenance"])]
 
+    def save(self, *args, **kwargs):
+        if self.pk and Question.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
+            raise ValidationError("سؤال منتشرشده قابل ویرایش نیست؛ برای اصلاح باید نسخه جدید ساخته شود.")
+        super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
         if self.valid_from and self.valid_until and self.valid_until < self.valid_from:
@@ -82,6 +87,18 @@ class QuestionOption(models.Model):
             models.UniqueConstraint(fields=["question", "position"], name="uq_question_option_position"),
             models.CheckConstraint(condition=models.Q(position__gte=1, position__lte=4), name="ck_question_option_position_1_4"),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
+            raise ValidationError("گزینه سؤال منتشرشده قابل ویرایش نیست.")
+        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
+            raise ValidationError("برای سؤال منتشرشده نمی‌توان گزینه جدید افزود.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
+            raise ValidationError("گزینه سؤال منتشرشده قابل حذف نیست.")
+        return super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.question_id} / گزینه {self.position}"
