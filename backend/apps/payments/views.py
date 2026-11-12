@@ -112,7 +112,10 @@ class AdminReceiptDownloadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, order_id):
-        if not (request.user.is_superuser or request.user.has_perm("payments.view_paymentorder")):
+        if not (
+            request.user.is_superuser
+            or (request.user.is_staff and request.user.has_perm("payments.view_paymentorder"))
+        ):
             raise PermissionDenied("فقط مسئولان مجاز پرداخت به رسیدها دسترسی دارند.")
         try:
             order = PaymentOrder.objects.get(pk=order_id)
