@@ -103,13 +103,11 @@ def test_record_attempt_score_is_idempotent_and_uses_active_season():
 
 
 @pytest.mark.django_db
-def test_score_from_outside_active_season_is_rejected():
+def test_score_from_outside_active_season_is_not_added_to_any_season():
     user = get_user_model().objects.create_user(phone_number="09124440004")
     attempt = make_official_attempt(user)
 
-    with pytest.raises(ValidationError):
-        record_attempt_score(attempt.pk)
-
+    assert record_attempt_score(attempt.pk) is None
     assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
 
 
