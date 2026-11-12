@@ -29,20 +29,26 @@ class LeagueApi {
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
+  static String encodePendingAnswers(Map<int, int> answers) => jsonEncode(
+    answers.map((questionId, optionId) => MapEntry(questionId.toString(), optionId)),
+  );
+
+  static Map<int, int> decodePendingAnswers(String raw) {
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return decoded.map((key, value) => MapEntry(int.parse(key), value as int));
+  }
+
   Future<Map<int, int>> readPendingAnswers(String attemptId) async {
     final raw = await storage.read(key: 'pending_answers_$attemptId');
     if (raw == null || raw.isEmpty) return {};
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    return decoded.map((key, value) => MapEntry(int.parse(key), value as int));
+    return decodePendingAnswers(raw);
   }
   Future<void> writePendingAnswers(String attemptId, Map<int, int> answers) async {
     final key = 'pending_answers_$attemptId';
     if (answers.isEmpty) {
       await storage.delete(key: key);
     } else {
-      await storage.write(key: key, value: jsonEncode(
-        answers.map((questionId, optionId) => MapEntry(questionId.toString(), optionId)),
-      ));
+      await storage.write(key: key, value: encodePendingAnswers(answers));
     }
   }
 
