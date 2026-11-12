@@ -1,5 +1,5 @@
-from django.db.models import Count, IntegerField, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Count, F, IntegerField, Sum, Value, Window
+from django.db.models.functions import Coalesce, RowNumber
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -84,7 +84,7 @@ class MyLeagueStatsView(APIView):
             total_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
             exams_count=Count("id"),
         )
-        all_rows = list(
+        ranked_user = (
             LeagueScoreEntry.objects.filter(season=season)
             .values("user_id")
             .annotate(
@@ -93,13 +93,23 @@ class MyLeagueStatsView(APIView):
                 wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
                 total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
             )
-            .order_by("-total_score", "-correct_total", "wrong_total", "total_time", "user_id")
+            .annotate(
+                rank=Window(
+                    expression=RowNumber(),
+                    order_by=[
+                        F("total_score").desc(),
+                        F("correct_total").desc(),
+                        F("wrong_total").asc(),
+                        F("total_time").asc(),
+                        F("user_id").asc(),
+                    ],
+                )
+            )
+            .filter(user_id=request.user.pk)
+            .values_list("rank", flat=True)
+            .first()
         )
-        rank = next(
-            (index for index, row in enumerate(all_rows, start=1)
-             if row["user_id"] == request.user.pk),
-            None,
-        )
+        rank = int(ranked_user) if ranked_user is not None else None
         return Response({
             "season": LeagueSeasonSerializer(season).data,
             "rank": rank,
