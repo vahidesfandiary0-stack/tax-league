@@ -2,6 +2,8 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from config.admin_audit import record_admin_action
+
 from .models import PaymentOrder, PaymentSettings
 from .services import approve_order, reject_order
 
@@ -43,19 +45,25 @@ class PaymentOrderAdmin(admin.ModelAdmin):
 
     @admin.action(description="تأیید سفارش‌های انتخاب‌شده")
     def approve_selected(self, request, queryset):
+        approved = []
         for order in queryset:
             try:
                 approve_order(order.pk, request.user)
+                approved.append(order)
             except ValidationError as exc:
                 self.message_user(request, f"{order.pk}: {exc}", level=messages.ERROR)
+        record_admin_action(request.user, approved, "تأیید سفارش پرداخت و اعطای دسترسی")
 
     @admin.action(description="رد سفارش‌های انتخاب‌شده")
     def reject_selected(self, request, queryset):
+        rejected = []
         for order in queryset:
             try:
                 reject_order(order.pk, request.user, "ردشده توسط مدیر")
+                rejected.append(order)
             except ValidationError as exc:
                 self.message_user(request, f"{order.pk}: {exc}", level=messages.ERROR)
+        record_admin_action(request.user, rejected, "رد سفارش پرداخت")
 
     def has_change_permission(self, request, obj=None):
         return request.user.is_staff
