@@ -162,6 +162,10 @@ def test_score_ledger_and_season_events_are_immutable():
     event.note = "دستکاری سابقه"
     with pytest.raises(ValidationError):
         event.save()
+    with pytest.raises(ValidationError):
+        LeagueSeasonEvent.objects.filter(pk=event.pk).update(note="تغییر گروهی")
+    with pytest.raises(ValidationError):
+        LeagueSeasonEvent.objects.filter(pk=event.pk).delete()
 
     attempt = make_official_attempt(user)
     entry = LeagueScoreEntry.objects.create(
@@ -173,6 +177,10 @@ def test_score_ledger_and_season_events_are_immutable():
         entry.save()
     with pytest.raises(ValidationError):
         entry.delete()
+    with pytest.raises(ValidationError):
+        LeagueScoreEntry.objects.filter(pk=entry.pk).update(score=1000)
+    with pytest.raises(ValidationError):
+        LeagueScoreEntry.objects.filter(pk=entry.pk).delete()
 
 
 
