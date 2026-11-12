@@ -1,0 +1,151 @@
+from datetime import timedelta
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from apps.exams.models import Exam, ExamAttempt
+from apps.league.models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
+from apps.league.services import activate_season, close_season, record_attempt_score
+
+
+def make_season(title="فصل آزمایشی", *, starts_at=None, ends_at=None):
+    now = timezone.now()
+    return LeagueSeason.objects.create(
+        title=title,
+        starts_at=starts_at or now - timedelta(days=1),
+        ends_at=ends_at or now + timedelta(days=1),
+    )
+
+
+def make_official_attempt(user, *, submitted_at=None, score=17):
+    now = submitted_at or timezone.now()
+    exam = Exam.objects.create(
+        title="آزمون رسمی", kind=Exam.Kind.DAILY,
+        duration_minutes=30, max_attempts=1, counts_for_league=True,
+    )
+    return ExamAttempt.objects.create(
+        exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
+        started_at=now - timedelta(minutes=10),
+        deadline_at=now + timedelta(minutes=20),
+        submitted_at=now, score=score, correct_count=2,
+        wrong_count=1, blank_count=0,
+    )
+
+
+@pytest.mark.django_db
+def test_season_activation_and_closure_create_immutable_audit_events():
+    user = get_user_model().objects.create_user(phone_number="09124440001")
+    season = make_season()
+
+    active = activate_season(season.pk, user, note="شروع رسمی")
+    assert active.status == LeagueSeason.Status.ACTIVE
+    assert active.events.count() == 1
+    assert active.events.first().kind == LeagueSeasonEvent.Kind.ACTIVATED
+
+    closed = close_season(season.pk, user, note="پایان فصل")
+    assert closed.status == LeagueSeason.Status.CLOSED
+    assert closed.events.count() == 2
+    assert list(closed.events.values_list("kind", flat=True)) == [
+        LeagueSeasonEvent.Kind.ACTIVATED, LeagueSeasonEvent.Kind.CLOSED
+    ]
+
+
+@pytest.mark.django_db
+def test_season_cannot_activate_before_start_or_close_early():
+    user = get_user_model().objects.create_user(phone_number="09124440002")
+    future = make_season(
+        "فصل آینده",
+        starts_at=timezone.now() + timedelta(days=1),
+        ends_at=timezone.now() + timedelta(days=2),
+    )
+    with pytest.raises(ValidationError):
+        activate_season(future.pk, user)
+
+    active = make_season("فصل جاری")
+    activate_season(active.pk, user)
+    with pytest.raises(ValidationError):
+        close_season(active.pk, user)
+
+
+@pytest.mark.django_db
+def test_database_allows_only_one_active_season():
+    first = make_season("اول")
+    second = make_season("دوم")
+    LeagueSeason.objects.filter(pk=first.pk).update(status=LeagueSeason.Status.ACTIVE)
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            LeagueSeason.objects.filter(pk=second.pk).update(
+                status=LeagueSeason.Status.ACTIVE
+            )
+
+
+@pytest.mark.django_db
+def test_record_attempt_score_is_idempotent_and_uses_active_season():
+    user = get_user_model().objects.create_user(phone_number="09124440003")
+    season = make_season()
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    attempt = make_official_attempt(user)
+
+    first = record_attempt_score(attempt.pk)
+    second = record_attempt_score(attempt.pk)
+
+    assert first.pk == second.pk
+    assert LeagueScoreEntry.objects.filter(attempt=attempt).count() == 1
+    assert first.season_id == season.pk
+    assert first.score == 17
+
+
+@pytest.mark.django_db
+def test_score_from_outside_active_season_is_rejected():
+    user = get_user_model().objects.create_user(phone_number="09124440004")
+    attempt = make_official_attempt(user)
+
+    with pytest.raises(ValidationError):
+        record_attempt_score(attempt.pk)
+
+    assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
+
+
+@pytest.mark.django_db
+def test_my_stats_can_read_closed_season_history():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(
+        phone_number="09124440005", display_name="شرکت‌کننده"
+    )
+    season = make_season("فصل بایگانی")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.CLOSED)
+    attempt = make_official_attempt(user)
+    LeagueScoreEntry.objects.create(
+        season=season, attempt=attempt, user=user, score=17,
+        correct_count=2, wrong_count=1, elapsed_seconds=600,
+    )
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    response = client.get(f"/api/v1/league/me/?season={season.pk}")
+
+    assert response.status_code == 200
+    assert response.data["season"]["status"] == LeagueSeason.Status.CLOSED
+    assert response.data["rank"] == 1
+    assert response.data["total_score"] == 17
+    assert response.data["exams_count"] == 1
+
+
+@pytest.mark.django_db
+def test_leaderboard_limit_is_validated():
+    user = get_user_model().objects.create_user(phone_number="09124440006")
+    season = make_season()
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    invalid = client.get("/api/v1/league/leaderboard/?limit=10000")
+    malformed = client.get("/api/v1/league/leaderboard/?limit=abc")
+
+    assert invalid.status_code == 400
+    assert malformed.status_code == 400
