@@ -346,6 +346,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   Duration remaining = Duration.zero;
   int currentIndex = 0;
   bool busy = false;
+  bool restoringPending = true;
   bool finished = false;
   String? error;
 
@@ -373,13 +374,17 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   Future<void> _restorePendingAnswers() async {
     try {
       final saved = await widget.api.readPendingAnswers(widget.attempt['id'].toString());
-      if (!mounted || saved.isEmpty) return;
-      setState(() {
-        pendingAnswers.addAll(saved);
-        selected.addAll(saved);
-      });
+      if (!mounted) return;
+      if (saved.isNotEmpty) {
+        setState(() {
+          pendingAnswers.addAll(saved);
+          selected.addAll(saved);
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => error = 'بازیابی پاسخ‌های ذخیره‌شده از حافظه امن انجام نشد.');
+    } finally {
+      if (mounted) setState(() => restoringPending = false);
     }
   }
 
@@ -466,7 +471,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   }
 
   Future<void> _finalize({bool auto = false}) async {
-    if (busy || finished) return;
+    if (busy || finished || restoringPending) return;
     if (pendingAnswers.isNotEmpty) {
       await _syncPendingAnswers();
       if (!mounted || pendingAnswers.isNotEmpty) return;
@@ -530,6 +535,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
               LinearProgressIndicator(value: (currentIndex + 1) / questions.length),
               const SizedBox(height: 12),
               Text('سؤال ${currentIndex + 1} از ${questions.length}', style: const TextStyle(color: Color(0xFFC6A96A))),
+              if (restoringPending) const LinearProgressIndicator(),
               if (pendingAnswers.isNotEmpty) Card(
                 child: Padding(padding: const EdgeInsets.all(12), child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -553,7 +559,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                   child: RadioListTile<int>(
                     value: option['id'] as int,
                     groupValue: selected[question['id'] as int],
-                    onChanged: busy || finished ? null : (value) {
+                    onChanged: busy || finished || restoringPending ? null : (value) {
                       if (value != null) _choose(question['id'] as int, value);
                     },
                     title: Text(option['text'] ?? ''),
@@ -573,7 +579,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
               ]),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: busy || pendingAnswers.isNotEmpty ? null : () => _finalize(),
+                onPressed: busy || restoringPending || pendingAnswers.isNotEmpty ? null : () => _finalize(),
                 child: Text(busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون'),
               ),
               const Text('پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
