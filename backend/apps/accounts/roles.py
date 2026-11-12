@@ -37,6 +37,7 @@ ROLE_PERMISSIONS = {
     "مدیر لیگ": {
         "league": {
             "leagueseason": ("view", "add", "change"),
+            "leagueseasonevent": ("view",),
             "leaguescoreentry": ("view",),
         },
     },
