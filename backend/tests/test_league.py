@@ -173,3 +173,13 @@ def test_score_ledger_and_season_events_are_immutable():
         entry.save()
     with pytest.raises(ValidationError):
         entry.delete()
+
+
+
+@pytest.mark.django_db
+def test_season_status_cannot_be_changed_through_regular_model_save():
+    season = make_season("فصل فقط پیش‌نویس")
+    season.status = LeagueSeason.Status.ACTIVE
+
+    with pytest.raises(ValidationError):
+        season.save()
