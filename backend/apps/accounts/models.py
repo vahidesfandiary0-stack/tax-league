@@ -59,7 +59,7 @@ class OTPChallenge(models.Model):
     request_ip = models.GenericIPAddressField(null=True, blank=True)
 
     class Meta:
-        indexes = [models.Index(fields=["phone_number", "created_at"])]
+        indexes = [models.Index(fields=["phone_number", "created_at"], name="otp_phone_created_idx")]
 
     @property
     def is_valid(self):
