@@ -30,8 +30,9 @@ class PaymentOrderAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "product_type", "amount_irr", "status", "created_at")
     list_filter = ("status", "product_type")
     search_fields = ("id", "user__phone_number", "tracking_code")
+    exclude = ("receipt",)
     readonly_fields = (
-        "user", "product_type", "plan", "exam", "amount_irr",
+        "user", "product_type", "plan", "exam", "amount_irr", "status",
         "tracking_code", "user_note", "reviewer", "review_note", "reviewed_at",
         "created_at", "updated_at",
     )
