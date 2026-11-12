@@ -16,7 +16,7 @@ def start_attempt(exam_id, user):
     now = timezone.now()
     if exam.starts_at and now < exam.starts_at:
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
-    if exam.ends_at and now > exam.ends_at:
+    if exam.ends_at and now >= exam.ends_at:
         raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
     if exam.requires_purchase:
         from apps.payments.models import PurchasedExamAccess
@@ -37,9 +37,11 @@ def start_attempt(exam_id, user):
         return existing
     if ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
+    deadline_at = now + timedelta(minutes=exam.duration_minutes)
+    if exam.ends_at:
+        deadline_at = min(deadline_at, exam.ends_at)
     attempt = ExamAttempt.objects.create(
-        exam=exam, user=user, started_at=now,
-        deadline_at=now + timedelta(minutes=exam.duration_minutes),
+        exam=exam, user=user, started_at=now, deadline_at=deadline_at,
     )
     for item in exam.exam_questions.select_related("question").prefetch_related("question__options").all():
         snapshot = AttemptQuestion.objects.create(
@@ -63,8 +65,11 @@ def save_answer(attempt_id, question_id, option_id, user):
         raise ValidationError("این تلاش آزمون فعال نیست.")
     if timezone.now() >= attempt.deadline_at:
         raise ValidationError("زمان پاسخ‌گویی به پایان رسیده است.")
-    question = AttemptQuestion.objects.get(pk=question_id, attempt=attempt)
-    option = AttemptOption.objects.get(pk=option_id, attempt_question=question)
+    try:
+        question = AttemptQuestion.objects.get(pk=question_id, attempt=attempt)
+        option = AttemptOption.objects.get(pk=option_id, attempt_question=question)
+    except (AttemptQuestion.DoesNotExist, AttemptOption.DoesNotExist):
+        raise ValidationError("سؤال یا گزینه انتخاب‌شده متعلق به این آزمون نیست.")
     answer, _ = AttemptAnswer.objects.update_or_create(
         attempt_question=question, defaults={"selected_option": option}
     )
