@@ -1,10 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F\nfrom django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.exams.models import ExamAttempt
-from .models import LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
+from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 
 
 @transaction.atomic
@@ -90,13 +90,23 @@ def leaderboard_for_season(season_id, limit=100):
     season = LeagueSeason.objects.get(pk=season_id, status__in=[
         LeagueSeason.Status.ACTIVE, LeagueSeason.Status.CLOSED
     ])
+    adjustment_totals = LeagueScoreAdjustment.objects.filter(
+        entry__season_id=OuterRef("season_id"),
+        entry__user_id=OuterRef("user_id"),
+    ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
     rows = LeagueScoreEntry.objects.filter(season=season).values(
-        "user_id", "user__display_name"
+        "season_id", "user_id", "user__display_name"
     ).annotate(
-        total_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+        base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+        adjustment_total=Coalesce(
+            Subquery(adjustment_totals, output_field=IntegerField()),
+            Value(0), output_field=IntegerField(),
+        ),
         correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
         wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
         total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
         exams_count=Count("id"),
+    ).annotate(
+        total_score=F("base_score") + F("adjustment_total")
     ).order_by("-total_score", "-correct_total", "wrong_total", "total_time", "user_id")[:limit]
     return season, list(rows)
