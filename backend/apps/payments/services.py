@@ -23,6 +23,11 @@ def create_exam_order(user, exam_id):
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
     if not exam.requires_purchase:
         raise ValidationError("این آزمون نیازی به خرید ندارد.")
+    if exam.price_irr < 1:
+        raise ValidationError("مبلغ خرید این آزمون هنوز توسط مدیر تنظیم نشده است.")
+    from .models import PurchasedExamAccess
+    if PurchasedExamAccess.objects.filter(user=user, exam=exam).exists():
+        raise ValidationError("شما قبلاً به این آزمون دسترسی خریده‌اید.")
     # Exam price is captured from the published exam and cannot be changed on the order.
     return PaymentOrder.objects.create(
         user=user, product_type=PaymentOrder.ProductType.EXAM,
@@ -37,6 +42,8 @@ def submit_payment(order_id, user, receipt, tracking_code="", note=""):
         raise ValidationError("این سفارش در وضعیت قابل ارسال رسید نیست.")
     if not receipt:
         raise ValidationError("تصویر یا فایل رسید الزامی است.")
+    for validator in PaymentOrder._meta.get_field("receipt").validators:
+        validator(receipt)
     order.receipt = receipt
     order.tracking_code = tracking_code.strip()[:100]
     order.user_note = note.strip()[:500]
