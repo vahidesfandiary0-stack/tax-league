@@ -220,6 +220,9 @@ def test_closed_season_score_correction_is_append_only_and_idempotent():
     stats = client.get(f"/api/v1/league/me/?season={season.pk}")
     assert stats.data["total_score"] == 20
     assert stats.data["rank"] == 1
+    board = client.get(f"/api/v1/league/leaderboard/?season={season.pk}")
+    assert board.status_code == 200
+    assert board.data["results"][0]["total_score"] == 20
     assert entry.score == 17
     with pytest.raises(ValidationError):
         first.delete()
