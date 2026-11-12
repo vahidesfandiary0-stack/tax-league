@@ -12,7 +12,10 @@ from .models import (
 
 @transaction.atomic
 def start_attempt(exam_id, user):
-    exam = Exam.objects.select_for_update().get(pk=exam_id, status=Exam.Status.PUBLISHED)
+    # Serialize starts only for the same participant. Locking the shared Exam row
+    # here would queue every participant behind one database row at the league start.
+    user = user.__class__.objects.select_for_update().get(pk=user.pk)
+    exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
     now = timezone.now()
     if exam.starts_at and now < exam.starts_at:
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
