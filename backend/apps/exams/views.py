@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .focus import get_exam_focus_state
 from .models import Exam, ExamAttempt
 from .serializers import (
     AnswerInputSerializer, AttemptSerializer, ExamListSerializer, ResultSerializer, ResultListSerializer,
@@ -15,6 +16,21 @@ from .services import finalize_attempt, save_answer, start_attempt
 
 def service_error(exc):
     return ValidationError({"detail": exc.messages if hasattr(exc, "messages") else str(exc)})
+
+
+class ExamFocusStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        focus = get_exam_focus_state()
+        return Response({
+            **focus,
+            "message": (
+                "حالت تمرکز آزمون فعال است؛ فقط امکانات ضروری آزمون در دسترس هستند."
+                if focus["active"] else
+                "همه امکانات سامانه در دسترس هستند."
+            ),
+        })
 
 
 class ExamListView(ListAPIView):
