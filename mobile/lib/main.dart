@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -108,6 +109,23 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
+  }
+
+
+  Future<void> _startExam(Map<String, dynamic> exam) async {
+    setState(() { busy = true; error = null; });
+    try {
+      final attempt = await api.requestPost('exams/' + exam['id'].toString() + '/start/', {});
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ExamTakingPage(api: api, attempt: Map<String, dynamic>.from(attempt), examTitle: exam['title'] ?? 'آزمون'),
+      ));
+      await loadDashboard();
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   Future<void> logout() async {
@@ -242,7 +260,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         contentPadding: EdgeInsets.zero,
         title: Text(exam['title'] ?? 'آزمون'),
         subtitle: Text((exam['duration_minutes'] ?? '—').toString() + ' دقیقه · ' + (exam['question_count'] ?? '—').toString() + ' سؤال'),
-        trailing: const Icon(Icons.assignment_outlined),
+        onTap: busy ? null : () => _startExam(exam),
+        trailing: const Icon(Icons.play_circle_outline),
       ),
     ]))),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -283,4 +302,176 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   String _status(dynamic status) => switch (status) {
     'pending' => 'در انتظار', 'approved' => 'پذیرفته', 'rejected' => 'ردشده', _ => 'نامشخص',
   };
+}
+
+
+class ExamTakingPage extends StatefulWidget {
+  const ExamTakingPage({super.key, required this.api, required this.attempt, required this.examTitle});
+  final LeagueApi api;
+  final Map<String, dynamic> attempt;
+  final String examTitle;
+
+  @override
+  State<ExamTakingPage> createState() => _ExamTakingPageState();
+}
+
+class _ExamTakingPageState extends State<ExamTakingPage> {
+  late final List<dynamic> questions;
+  final Map<int, int> selected = {};
+  Timer? ticker;
+  late DateTime deadline;
+  Duration remaining = Duration.zero;
+  int currentIndex = 0;
+  bool busy = false;
+  bool finished = false;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    questions = List<dynamic>.from(widget.attempt['questions'] ?? []);
+    deadline = DateTime.parse(widget.attempt['deadline_at']).toLocal();
+    _updateClock();
+    ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
+  }
+
+  @override
+  void dispose() {
+    ticker?.cancel();
+    super.dispose();
+  }
+
+  void _updateClock() {
+    if (!mounted || finished) return;
+    final now = DateTime.now();
+    final diff = deadline.difference(now);
+    setState(() => remaining = diff.isNegative ? Duration.zero : diff);
+    if (diff <= Duration.zero) _finalize(auto: true);
+  }
+
+  String get clockText {
+    final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${remaining.inHours.toString().padLeft(2, '0')}:$minutes:$seconds';
+  }
+
+  Future<void> _choose(int questionId, int optionId) async {
+    setState(() { selected[questionId] = optionId; busy = true; error = null; });
+    try {
+      await widget.api.requestPost(
+        'exams/attempts/' + widget.attempt['id'].toString() + '/answers/',
+        {'question_id': questionId, 'option_id': optionId},
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          selected.remove(questionId);
+          error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _finalize({bool auto = false}) async {
+    if (busy || finished) return;
+    setState(() { busy = true; error = null; });
+    try {
+      final result = await widget.api.requestPost(
+        'exams/attempts/' + widget.attempt['id'].toString() + '/finalize/', {},
+      );
+      if (!mounted) return;
+      setState(() => finished = true);
+      ticker?.cancel();
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('آزمون پایان یافت'),
+            content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('امتیاز: ${result['score']}'),
+              Text('پاسخ صحیح: ${result['correct_count']}'),
+              Text('پاسخ غلط: ${result['wrong_count']}'),
+              Text('بدون پاسخ: ${result['blank_count']}'),
+              if (auto) const Text('زمان آزمون به پایان رسیده بود.'),
+            ]),
+            actions: [FilledButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('مشاهده داشبورد'))],
+          ),
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final question = questions.isEmpty ? null : Map<String, dynamic>.from(questions[currentIndex]);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: PopScope(
+        canPop: finished,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            title: Text(widget.examTitle),
+            actions: [Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              child: Text(clockText, style: TextStyle(
+                color: remaining.inMinutes < 2 ? Colors.orangeAccent : const Color(0xFFC6A96A),
+                fontWeight: FontWeight.bold,
+              )),
+            )],
+          ),
+          body: question == null
+            ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
+            : ListView(padding: const EdgeInsets.all(16), children: [
+              LinearProgressIndicator(value: (currentIndex + 1) / questions.length),
+              const SizedBox(height: 12),
+              Text('سؤال ${currentIndex + 1} از ${questions.length}', style: const TextStyle(color: Color(0xFFC6A96A))),
+              if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!))),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(
+                question['prompt'] ?? '', style: const TextStyle(fontSize: 18, height: 1.8),
+              ))),
+              for (final option in List<dynamic>.from(question['options'] ?? []))
+                Card(
+                  child: RadioListTile<int>(
+                    value: option['id'] as int,
+                    groupValue: selected[question['id'] as int],
+                    onChanged: busy || finished ? null : (value) {
+                      if (value != null) _choose(question['id'] as int, value);
+                    },
+                    title: Text(option['text'] ?? ''),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: OutlinedButton(
+                  onPressed: currentIndex == 0 ? null : () => setState(() => currentIndex--),
+                  child: const Text('سؤال قبلی'),
+                )),
+                const SizedBox(width: 10),
+                Expanded(child: OutlinedButton(
+                  onPressed: currentIndex >= questions.length - 1 ? null : () => setState(() => currentIndex++),
+                  child: const Text('سؤال بعدی'),
+                )),
+              ]),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: busy ? null : () => _finalize(),
+                child: Text(busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون'),
+              ),
+              const Text('پاسخ‌ها هنگام انتخاب به سرور ارسال می‌شوند. امتیاز نهایی توسط سرور محاسبه می‌شود.',
+                style: TextStyle(color: Colors.white60, height: 1.6)),
+            ]),
+        ),
+      ),
+    );
+  }
 }
