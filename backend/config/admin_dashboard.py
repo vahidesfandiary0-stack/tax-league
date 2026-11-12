@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.exams.models import Exam
-from apps.league.models import LeagueSeason
+from apps.league.models import LeagueAppeal, LeagueSeason
 from apps.payments.models import PaymentOrder
 from apps.questions.models import Question
 from apps.subscriptions.models import UserSubscription
@@ -29,6 +29,7 @@ def dashboard(request):
             starts_at__lte=now,
             ends_at__gt=now,
         ).count(),
+        "pending_appeal_count": LeagueAppeal.objects.filter(status=LeagueAppeal.Status.PENDING).count(),
         "active_season_count": LeagueSeason.objects.filter(
             status=LeagueSeason.Status.ACTIVE
         ).count(),
