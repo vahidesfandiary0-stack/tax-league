@@ -2,9 +2,19 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from config.admin_audit import record_admin_action
+from apps.exams.focus import get_exam_focus_state
 
 from .models import Question, QuestionOption
 from .services import publish_question, review_question, submit_for_review
+
+
+def warn_admin_during_exam(request):
+    if get_exam_focus_state()["active"]:
+        messages.warning(
+            request,
+            "حالت تمرکز آزمون فعال است؛ دسترسی مدیریتی شما محفوظ است. سؤال‌های منتشرشده "
+            "به‌دلیل حفظ نسخهٔ پاسخ‌های آزمون قابل ویرایش مستقیم نیستند؛ برای اصلاح، نسخهٔ جدید بسازید.",
+        )
 
 
 class QuestionOptionInline(admin.TabularInline):
@@ -81,3 +91,11 @@ class QuestionAdmin(admin.ModelAdmin):
     readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
     actions = [submit_selected, approve_selected, reject_selected, publish_selected]
+
+    def changelist_view(self, request, extra_context=None):
+        warn_admin_during_exam(request)
+        return super().changelist_view(request, extra_context)
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        warn_admin_during_exam(request)
+        return super().changeform_view(request, object_id, form_url, extra_context)
