@@ -17,3 +17,6 @@ dev_dependencies:
   flutter_lints: ^4.0.0
 flutter:
   uses-material-design: true
+  assets:
+    - assets/brand/logo_full.png
+    - assets/brand/founder_vahid_esfandiary.jpg

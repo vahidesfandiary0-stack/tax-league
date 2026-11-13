@@ -11,7 +11,7 @@ class TaxLeagueApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    title: 'لیگ قهرمانان مالیاتی',
+    title: 'لیگ نخبگان مالیاتی',
     theme: ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -236,7 +236,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     textDirection: TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
-        title: const Text('لیگ قهرمانان مالیاتی'),
+        title: const Text('لیگ نخبگان مالیاتی'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -245,7 +245,19 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       body: RefreshIndicator(
         onRefresh: loadDashboard,
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('رقابت کن، رتبه بگیر، قهرمان شو!', style: TextStyle(color: Color(0xFFC6A96A), fontSize: 17)),
+          Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Image.asset("assets/brand/logo_full.png", height: 120, fit: BoxFit.contain))),
+          const Center(child: Text("رقابت کن، رتبه بگیر، نخبه شو!", style: TextStyle(color: Color(0xFFC6A96A), fontSize: 17))),
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
+            ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset("assets/brand/founder_vahid_esfandiary.jpg", width: 88, height: 100, fit: BoxFit.cover)),
+            const SizedBox(width: 14),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text("درباره بنیان‌گذار", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+              SizedBox(height: 6),
+              Text("وحید اسفندیاری", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Text("بنیان‌گذار لیگ نخبگان مالیاتی"),
+            ])),
+          ]))),
           if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
           if (stats == null) _loginCard() else ..._content(),
           if (busy) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
