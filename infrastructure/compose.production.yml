@@ -29,12 +29,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
     expose: ["8000"]
     volumes:
       - private_media:/app/media
     networks: [private]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/v1/health/', headers={'X-Forwarded-Proto': 'https'}), timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/v1/health/', headers={'Host': 'raqtiva.ir', 'X-Forwarded-Proto': 'https'}), timeout=3)"]
       interval: 30s
       timeout: 5s
       start_period: 40s
