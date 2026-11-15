@@ -15,6 +15,7 @@ def test_otp_request_route_is_mounted_and_does_not_leak_code_without_sms_provide
             reverse("request-otp"),
             {"phone_number": "09121110009"},
             format="json",
+            secure=True,
         )
 
     assert response.status_code == 503
@@ -32,6 +33,7 @@ def test_otp_request_consumes_challenge_after_provider_failure():
             reverse("request-otp"),
             {"phone_number": "09121110008"},
             format="json",
+            secure=True,
         )
 
     assert response.status_code == 503
