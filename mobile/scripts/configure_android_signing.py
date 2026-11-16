@@ -55,6 +55,7 @@ signing = """
             keyAlias = keystoreProperties["keyAlias"] as String
             keyPassword = keystoreProperties["keyPassword"] as String
             storeFile = file(keystoreProperties["storeFile"] as String)
+                storeType = "JKS"
             storePassword = keystoreProperties["storePassword"] as String
         }
     }
