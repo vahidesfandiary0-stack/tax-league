@@ -60,7 +60,7 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           ACTUAL_SHA256=$(sha256sum android/app/upload-keystore.jks | cut -d ' ' -f 1)
           EXPECTED_SHA256=87fa733f659a864667a03e8eb040d2423b7751ba7a822c0e8b74048672ec7fb0
-          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then echo "ERROR: GitHub Secret decoded to a different keystore file" >&2; exit 1; fi
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then echo "ERROR: GitHub Secret decoded to a different keystore file" >&2; echo "Received SHA256: $ACTUAL_SHA256"; echo "Received bytes: $(wc -c < android/app/upload-keystore.jks)"; exit 1; fi
           echo "PASS: Decoded keystore matches the verified original file."
           keytool -list -storetype JKS -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
           echo "PASS: JKS format, store password, and alias verified."
