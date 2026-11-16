@@ -47,7 +47,6 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --project-name tax_league .
-
       - name: Generate official Android app icon and name
         working-directory: mobile
         run: |
@@ -121,9 +120,13 @@ jobs:
           set -euo pipefail
           APK=build/app/outputs/flutter-apk/app-release.apk
           AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner"
           REPORT=build/reports/android-diagnostics.txt
           mkdir -p build/reports
           {
+            echo "=== APK signing certificate ==="
+            "$APKSIGNER" verify --verbose --print-certs "$APK"
+            echo
             echo "=== APK permissions ==="
             "$AAPT" dump permissions "$APK"
             echo
