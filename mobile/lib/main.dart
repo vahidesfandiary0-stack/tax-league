@@ -95,10 +95,21 @@ class LeagueHomePage extends StatefulWidget {
 class _LeagueHomePageState extends State<LeagueHomePage> {
   final api = LeagueApi();
   final phone = TextEditingController(), code = TextEditingController();
+  static const List<String> provinces = [
+    'آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام',
+    'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی',
+    'خراسان شمالی', 'خوزستان', 'زنجان', 'سمنان', 'سیستان و بلوچستان',
+    'فارس', 'قزوین', 'قم', 'کردستان', 'کرمان', 'کرمانشاه',
+    'کهگیلویه و بویراحمد', 'گلستان', 'گیلان', 'لرستان', 'مازندران',
+    'مرکزی', 'هرمزگان', 'همدان', 'یزد',
+  ];
+  String? selectedProvince;
   bool busy = false, otpRequested = false;
   String? error;
   Map<String, dynamic>? stats;
-  List<dynamic> board = [], appeals = [], exams = [], results = [];
+  List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [];
+  String? provincialName;
+  String? provincialMessage;
 
   Timer? focusPoller;
   bool focusMode = false;
@@ -155,9 +166,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> verifyCode() async {
     setState(() { busy = true; error = null; });
     try {
-      final data = await api.publicPost('auth/verify-otp/', {
-        'phone_number': phone.text.trim(), 'code': code.text.trim(),
-      });
+      final payload = <String, dynamic>{
+        'phone_number': phone.text.trim(),
+        'code': code.text.trim(),
+      };
+      if (selectedProvince != null) payload['province'] = selectedProvince;
+      final data = await api.publicPost('auth/verify-otp/', payload);
       await api.saveToken(data['token'].toString());
       if (mounted) { setState(() { otpRequested = false; code.clear(); }); }
       await loadDashboard();
@@ -186,7 +200,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> logout() async {
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; code.clear(); });
+    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; code.clear(); });
   }
 
   Future<void> loadDashboard() async {
@@ -215,12 +229,28 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           api.request('exams/'),
           api.request('exams/results/'),
         ]);
+        List<dynamic> provincialRows = [];
+        String? province;
+        String? provinceNotice;
+        try {
+          final provincial = await api.request('league/provincial-leaderboard/?limit=20');
+          provincialRows = List<dynamic>.from(provincial['results'] ?? []);
+          province = provincial['province']?.toString();
+          if (provincialRows.isEmpty) {
+            provinceNotice = 'هنوز امتیاز معتبری برای رتبه‌بندی این استان ثبت نشده است.';
+          }
+        } catch (e) {
+          provinceNotice = e.toString().replaceFirst('Exception: ', '');
+        }
         if (!mounted) return;
         setState(() {
           focusMode = false;
           focusEndsAt = null;
           stats = Map<String, dynamic>.from(data[0] as Map);
           board = List<dynamic>.from((data[1] as Map)['results'] ?? []);
+          provincialBoard = provincialRows;
+          provincialName = province;
+          provincialMessage = provinceNotice;
           appeals = List<dynamic>.from(data[2] as List);
           exams = List<dynamic>.from(data[3] as List);
           results = List<dynamic>.from(data[4] as List);
@@ -255,7 +285,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               SizedBox(height: 6),
               Text("وحید اسفندیاری", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
-              Text("بنیان‌گذار لیگ نخبگان مالیاتی"),
+              Text("مالک و بنیان‌گذار لیگ نخبگان مالیاتی"),
             ])),
           ]))),
           if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
@@ -270,7 +300,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     padding: const EdgeInsets.all(18),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('ورود یا ساخت حساب', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-      const Text('شماره تلفن همراه را وارد کنید تا کد یک‌بارمصرف برایتان ارسال شود.'),
+      const Text('شماره همراه را وارد کنید. اگر حساب جدید دارید یا استان شما هنوز تأیید نشده، استان محل سکونت را هم انتخاب کنید.'),
+      DropdownButtonFormField<String>(
+        value: selectedProvince,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'استان محل سکونت (برای حساب جدید یا تأییدنشده الزامی)'),
+        items: provinces.map((province) => DropdownMenuItem<String>(
+          value: province, child: Text(province),
+        )).toList(),
+        onChanged: busy ? null : (value) => setState(() => selectedProvince = value),
+      ),
       TextField(controller: phone, keyboardType: TextInputType.phone,
         decoration: const InputDecoration(labelText: 'شماره تلفن همراه', hintText: '09xxxxxxxxx')),
       if (otpRequested) TextField(controller: code, keyboardType: TextInputType.number, maxLength: 6,
@@ -372,6 +411,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         leading: CircleAvatar(child: Text(row['rank'].toString())),
         title: Text(row['display_name'] ?? 'کاربر'),
         trailing: Text(row['total_score'].toString() + ' امتیاز'),
+      ),
+    ]))),
+    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(provincialName == null ? 'رتبه‌بندی استانی' : 'برترین‌های استان $provincialName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (provincialBoard.isEmpty) Text(provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
+      for (final row in provincialBoard) ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: CircleAvatar(child: Text(row['rank'].toString())),
+        title: Text(row['display_name'] ?? 'کاربر'),
+        subtitle: Text('آزمون معتبر: ${row['exams_count'] ?? 0}'),
+        trailing: Text('${row['total_score'] ?? 0} امتیاز'),
       ),
     ]))),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

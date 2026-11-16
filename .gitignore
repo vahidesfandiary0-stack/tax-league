@@ -29,3 +29,15 @@ Thumbs.db
 *.key
 secrets/
 tokens.csv
+
+# Local backups and backup copies - never commit
+backups/
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+*.before-*
+*.pre-*
+
+# Mobile brand backup folders - never commit
+mobile/brand-backup-*/
