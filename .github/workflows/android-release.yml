@@ -46,7 +46,15 @@ jobs:
 
       - name: Generate Android project
         working-directory: mobile
-        run: flutter create --platforms=android --project-name tax_league .
+        run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Verify permanent Android application identity
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          GRADLE=android/app/build.gradle.kts
+          grep -F 'namespace = "ir.raqtiva.tax_league"' "$GRADLE"
+          grep -F 'applicationId = "ir.raqtiva.tax_league"' "$GRADLE"
+
       - name: Generate official Android app icon and name
         working-directory: mobile
         run: |
