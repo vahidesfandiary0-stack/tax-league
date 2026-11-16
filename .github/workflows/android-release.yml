@@ -115,6 +115,35 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --verbose "$APK"
 
+      - name: Inspect APK permissions and Android compatibility
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
+          REPORT=build/reports/android-diagnostics.txt
+          mkdir -p build/reports
+          {
+            echo "=== APK permissions ==="
+            "$AAPT" dump permissions "$APK"
+            echo
+            echo "=== APK package and Android SDK information ==="
+            "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
+            echo
+            echo "=== Resolved Flutter dependencies ==="
+            flutter pub deps --style=compact
+          } > "$REPORT"
+          echo "Diagnostic report generated: $REPORT"
+          cat "$REPORT"
+
+      - name: Upload Android diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-league-android-diagnostics
+          path: mobile/build/reports/android-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
