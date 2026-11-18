@@ -450,15 +450,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       trailing: const Icon(Icons.chevron_left),
       onTap: () => setState(() => accountPage = 1),
     )),
-    Card(child: ListTile(
-      leading: const Icon(Icons.psychology_alt, color: Color(0xFFC6A96A)),
-      title: const Text('مربی هوشمند مالیاتی'),
-      subtitle: const Text('پرسش و پاسخ آموزشی مستند به منابع رسمی · ویژه مشترکان'),
-      trailing: const Icon(Icons.lock_outline),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => SmartTutorPage(api: api),
-      )),
-    )),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       Text('رتبه: ' + (stats?['rank']?.toString() ?? '—')),
