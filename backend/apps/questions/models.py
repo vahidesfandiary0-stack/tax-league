@@ -180,6 +180,8 @@ class QuestionPremiumLesson(models.Model):
     def save(self, *args, **kwargs):
         if self.pk:
             previous = type(self).objects.filter(pk=self.pk).values("status").first()
+            if previous is None and self.status != self.Status.DRAFT:
+                raise ValidationError("محتوای جدید باید ابتدا به‌صورت پیش‌نویس ثبت شود.")
             if previous:
                 if previous["status"] == self.Status.PUBLISHED:
                     raise ValidationError("محتوای منتشرشده قابل ویرایش نیست؛ نسخه جدید ایجاد کنید.")
