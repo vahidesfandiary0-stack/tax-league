@@ -9,9 +9,10 @@ from rest_framework.views import APIView
 from .focus import get_exam_focus_state
 from .models import Exam, ExamAttempt
 from .serializers import (
-    AnswerInputSerializer, AttemptSerializer, ExamListSerializer, ResultSerializer, ResultListSerializer,
+    AnswerInputSerializer, AttemptSerializer, AttemptReviewSerializer, ExamListSerializer, ResultSerializer, ResultListSerializer,
 )
 from .services import finalize_attempt, save_answer, start_attempt
+from apps.subscriptions.access import has_active_academy_access
 
 
 def service_error(exc):
@@ -92,3 +93,29 @@ class MyResultsView(ListAPIView):
             user=self.request.user,
             status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
         ).select_related("exam").order_by("-submitted_at")
+
+
+
+class AttemptReviewView(RetrieveAPIView):
+    """Post-exam answer review; never returns keys while an attempt is in progress."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = AttemptReviewSerializer
+    lookup_url_kwarg = "attempt_id"
+
+    def get_queryset(self):
+        return ExamAttempt.objects.filter(
+            user=self.request.user,
+            status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
+        ).prefetch_related("questions__options", "questions__answer__selected_option")
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["has_premium_access"] = has_active_academy_access(self.request.user)
+        return context
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        response["Vary"] = "Authorization"
+        return response

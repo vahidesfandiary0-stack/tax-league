@@ -4,8 +4,11 @@ from django.core.exceptions import ValidationError
 from config.admin_audit import record_admin_action
 from apps.exams.focus import get_exam_focus_state
 
-from .models import Question, QuestionOption
-from .services import publish_question, review_question, submit_for_review
+from .models import Question, QuestionOption, QuestionPremiumLesson
+from .services import (
+    publish_question, review_question, submit_for_review, verify_question_source,
+    publish_premium_lesson, review_premium_lesson, submit_premium_lesson_for_review,
+)
 
 
 def warn_admin_during_exam(request):
@@ -21,6 +24,20 @@ class QuestionOptionInline(admin.TabularInline):
     model = QuestionOption
     extra = 4
     max_num = 4
+
+    def _parent_is_editable(self, obj):
+        return obj is None or obj.status in (
+            Question.Status.DRAFT, Question.Status.REJECTED
+        )
+
+    def has_add_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_delete_permission(request, obj)
 
 
 @admin.action(description="ارسال سؤالات انتخاب‌شده برای بررسی (توسط نویسنده)")
@@ -83,14 +100,41 @@ def publish_selected(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} سؤال منتشر شد.")
 
 
+
+
+@admin.action(description="ثبت تطبیق منبع رسمی برای سؤالات تأییدشده")
+def verify_source_selected(modeladmin, request, queryset):
+    count = 0
+    verified = []
+    for question in queryset:
+        try:
+            verify_question_source(question.pk, request.user)
+            verified.append(question)
+            count += 1
+        except (ValidationError, Question.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, verified, "تطبیق منبع رسمی سؤال")
+    modeladmin.message_user(request, f"منبع رسمی {count} سؤال ثبت شد.")
+
+
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("id", "subject", "difficulty", "provenance", "status", "author", "reviewer", "version", "created_at")
     list_filter = ("subject", "difficulty", "provenance", "status")
     search_fields = ("prompt", "source_reference", "author__phone_number")
-    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "source_verified_by", "source_verified_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
-    actions = [submit_selected, approve_selected, reject_selected, publish_selected]
+    actions = [submit_selected, approve_selected, reject_selected, verify_source_selected, publish_selected]
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and obj.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            readonly.extend((
+                "subject", "difficulty", "prompt", "variant_config", "explanation",
+                "source_reference", "valid_from", "valid_until", "provenance",
+                "provenance_note", "author",
+            ))
+        return tuple(readonly)
 
     def changelist_view(self, request, extra_context=None):
         warn_admin_during_exam(request)
@@ -99,3 +143,103 @@ class QuestionAdmin(admin.ModelAdmin):
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         warn_admin_during_exam(request)
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+
+
+@admin.action(description="ارسال محتوای انتخاب‌شده برای بازبینی (توسط نویسنده)")
+def submit_premium_selected(modeladmin, request, queryset):
+    count = 0
+    changed = []
+    for lesson in queryset:
+        try:
+            submit_premium_lesson_for_review(lesson.pk, request.user)
+            changed.append(lesson)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "ارسال محتوای ویژه برای بازبینی")
+    modeladmin.message_user(request, f"{count} محتوا برای بازبینی ارسال شد.")
+
+
+@admin.action(description="تأیید محتوای انتخاب‌شده (بازبین مستقل)")
+def approve_premium_selected(modeladmin, request, queryset):
+    count = 0
+    changed = []
+    for lesson in queryset:
+        try:
+            review_premium_lesson(lesson.pk, request.user, approve=True)
+            changed.append(lesson)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "تأیید محتوای ویژه")
+    modeladmin.message_user(request, f"{count} محتوا تأیید شد.")
+
+
+@admin.action(description="رد محتوا و بازگرداندن به پیش‌نویس برای اصلاح")
+def reject_premium_selected(modeladmin, request, queryset):
+    count = 0
+    changed = []
+    for lesson in queryset:
+        try:
+            review_premium_lesson(lesson.pk, request.user, approve=False)
+            changed.append(lesson)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "بازگرداندن محتوای ویژه برای اصلاح")
+    modeladmin.message_user(request, f"{count} محتوا برای اصلاح به پیش‌نویس بازگشت.")
+
+
+@admin.action(description="انتشار محتوای تأییدشده")
+def publish_premium_selected(modeladmin, request, queryset):
+    count = 0
+    changed = []
+    for lesson in queryset:
+        try:
+            publish_premium_lesson(lesson.pk)
+            changed.append(lesson)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "انتشار محتوای ویژه")
+    modeladmin.message_user(request, f"{count} محتوا منتشر شد.")
+
+
+@admin.register(QuestionPremiumLesson)
+class QuestionPremiumLessonAdmin(admin.ModelAdmin):
+    list_display = ("question", "status", "author", "reviewer", "updated_at")
+    list_filter = ("status", "legal_effective_date")
+    search_fields = ("question__prompt", "traps_and_techniques", "legal_source_reference")
+    readonly_fields = ("status", "author", "reviewer", "reviewed_at", "published_at", "created_at", "updated_at")
+    actions = [submit_premium_selected, approve_premium_selected, reject_premium_selected, publish_premium_selected]
+    fieldsets = (
+        ("اتصال به سؤال و وضعیت", {"fields": ("question", "status", "author", "reviewer")}),
+        ("آموزش ویژه مشترکان", {"fields": (
+            "traps_and_techniques", "trap_detection_signals",
+            "distractor_analysis", "fast_solving_method",
+            "setter_insight", "common_mistakes", "supplementary_practice", "practice_answer",
+        )}),
+        ("استناد قانونی", {"fields": ("legal_source_reference", "legal_effective_date")}),
+        ("سوابق", {"fields": ("reviewed_at", "published_at", "created_at", "updated_at")}),
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and obj.status != QuestionPremiumLesson.Status.DRAFT:
+            readonly.extend((
+                "question", "traps_and_techniques", "trap_detection_signals",
+                "distractor_analysis", "fast_solving_method", "setter_insight",
+                "common_mistakes", "supplementary_practice", "practice_answer",
+                "legal_source_reference", "legal_effective_date",
+            ))
+        return tuple(readonly)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.author = request.user
+        elif obj.status != QuestionPremiumLesson.Status.DRAFT:
+            # Non-draft records are read-only in admin; avoid invoking the model's
+            # immutable-state guard for an unchanged view-only form submission.
+            return
+        super().save_model(request, obj, form, change)

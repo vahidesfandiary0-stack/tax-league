@@ -6,7 +6,7 @@ from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from apps.exams.models import ExamAttempt
+from apps.exams.models import Exam, ExamAttempt
 from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 
 
@@ -17,7 +17,7 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    if not attempt.exam.counts_for_league or attempt.exam.kind != Exam.Kind.NIGHTLY:
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
@@ -85,7 +85,7 @@ def close_season(season_id, actor, note=""):
     season.refresh_from_db()
     return season
 
-def leaderboard_for_season(season_id, limit=100):
+def leaderboard_for_season(season_id, limit=100, province=None):
     """Aggregate ledger entries; no client-supplied scores are accepted."""
     from django.db.models import Count, IntegerField, Value
     from django.db.models.functions import Coalesce
@@ -97,7 +97,10 @@ def leaderboard_for_season(season_id, limit=100):
         entry__season_id=OuterRef("season_id"),
         entry__user_id=OuterRef("user_id"),
     ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(season=season).values(
+    entries = LeagueScoreEntry.objects.filter(season=season)
+    if province is not None:
+        entries = entries.filter(user__province=province, user__province_verified=True)
+    rows = entries.values(
         "season_id", "user_id", "user__display_name"
     ).annotate(
         base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),

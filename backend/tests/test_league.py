@@ -25,7 +25,7 @@ def make_season(title="فصل آزمایشی", *, starts_at=None, ends_at=None):
 def make_official_attempt(user, *, submitted_at=None, score=17):
     now = submitted_at or timezone.now()
     exam = Exam.objects.create(
-        title="آزمون رسمی", kind=Exam.Kind.DAILY,
+        title="آزمون رسمی", kind=Exam.Kind.NIGHTLY,
         duration_minutes=30, max_attempts=1, counts_for_league=True,
     )
     return ExamAttempt.objects.create(

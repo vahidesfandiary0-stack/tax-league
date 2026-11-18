@@ -31,8 +31,18 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    PROVINCE_CHOICES = [(name, name) for name in [
+        "آذربایجان شرقی", "آذربایجان غربی", "اردبیل", "اصفهان", "البرز", "ایلام",
+        "بوشهر", "تهران", "چهارمحال و بختیاری", "خراسان جنوبی", "خراسان رضوی",
+        "خراسان شمالی", "خوزستان", "زنجان", "سمنان", "سیستان و بلوچستان",
+        "فارس", "قزوین", "قم", "کردستان", "کرمان", "کرمانشاه",
+        "کهگیلویه و بویراحمد", "گلستان", "گیلان", "لرستان", "مازندران",
+        "مرکزی", "هرمزگان", "همدان", "یزد",
+    ]]
     phone_number = models.CharField(max_length=20, unique=True, db_index=True)
     display_name = models.CharField(max_length=80, blank=True)
+    province = models.CharField(max_length=50, choices=PROVINCE_CHOICES, blank=True)
+    province_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)

@@ -18,6 +18,8 @@ class Question(models.Model):
         EASY = "easy", "آسان"
         MEDIUM = "medium", "متوسط"
         HARD = "hard", "سخت"
+        VERY_HARD = "very_hard", "بسیار سخت"
+        SPECIALIZED = "specialized", "تخصصی"
 
     class Provenance(models.TextChoices):
         OFFICIAL = "official", "متن رسمی آزمون"
@@ -39,6 +41,11 @@ class Question(models.Model):
     variant_config = models.JSONField(default=dict, blank=True)
     explanation = models.TextField(blank=True)
     source_reference = models.CharField(max_length=500, blank=True)
+    source_verified_at = models.DateTimeField(null=True, blank=True)
+    source_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="source_verified_questions",
+    )
     valid_from = models.DateField(null=True, blank=True)
     valid_until = models.DateField(null=True, blank=True)
     provenance = models.CharField(max_length=20, choices=Provenance.choices, default=Provenance.AUTHORED)
@@ -62,8 +69,22 @@ class Question(models.Model):
         indexes = [models.Index(fields=["status", "subject"], name="questions_status_subject_idx"), models.Index(fields=["provenance"], name="questions_provenance_idx")]
 
     def save(self, *args, **kwargs):
-        if self.pk and Question.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
+        old = Question.objects.filter(pk=self.pk).first() if self.pk else None
+        if old and old.status == self.Status.PUBLISHED:
             raise ValidationError("سؤال منتشرشده قابل ویرایش نیست؛ برای اصلاح باید نسخه جدید ساخته شود.")
+        if self.status == self.Status.PUBLISHED and not getattr(self, "_allow_publish", False):
+            raise ValidationError("انتشار سؤال فقط از مسیر کنترل‌شده و پس از تأیید منبع رسمی مجاز است.")
+        if old:
+            content_fields = (
+                "subject", "difficulty", "prompt", "explanation", "source_reference",
+                "valid_from", "valid_until", "provenance", "provenance_note",
+            )
+            changed = any(getattr(old, field) != getattr(self, field) for field in content_fields)
+            if old.status not in (self.Status.DRAFT, self.Status.REJECTED) and changed:
+                raise ValidationError("محتوای سؤالِ در انتظار بررسی یا تأییدشده قابل ویرایش نیست.")
+            if changed:
+                self.source_verified_at = None
+                self.source_verified_by = None
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -91,16 +112,105 @@ class QuestionOption(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if self.pk and Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("گزینه سؤال منتشرشده قابل ویرایش نیست.")
-        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("برای سؤال منتشرشده نمی‌توان گزینه جدید افزود.")
+        question = Question.objects.get(pk=self.question_id)
+        if question.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            raise ValidationError("گزینه‌های سؤال پس از ارسال برای بررسی قابل ویرایش نیستند.")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("گزینه سؤال منتشرشده قابل حذف نیست.")
+        question = Question.objects.get(pk=self.question_id)
+        if question.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            raise ValidationError("گزینه‌های سؤال پس از ارسال برای بررسی قابل حذف نیستند.")
         return super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.question_id} / گزینه {self.position}"
+
+
+
+class QuestionPremiumLesson(models.Model):
+    """Subscriber-only teaching material; never serialize through public question APIs."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "پیش‌نویس"
+        REVIEW = "review", "در انتظار بازبینی"
+        APPROVED = "approved", "تأییدشده"
+        PUBLISHED = "published", "منتشرشده"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.OneToOneField(
+        Question, on_delete=models.CASCADE, related_name="premium_lesson"
+    )
+    traps_and_techniques = models.TextField(blank=True)
+    trap_detection_signals = models.TextField(blank=True)
+    distractor_analysis = models.TextField(blank=True)
+    fast_solving_method = models.TextField(blank=True)
+    setter_insight = models.TextField(blank=True)
+    common_mistakes = models.TextField(blank=True)
+    supplementary_practice = models.TextField(blank=True)
+    practice_answer = models.TextField(blank=True)
+    legal_source_reference = models.CharField(max_length=500, blank=True)
+    legal_effective_date = models.DateField(null=True, blank=True)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.DRAFT
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="authored_premium_lessons",
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        null=True, blank=True, related_name="reviewed_premium_lessons",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["status"], name="premium_lesson_status_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.reviewer_id and self.reviewer_id == self.author_id:
+            raise ValidationError({"reviewer": "نویسنده نمی‌تواند بازبین محتوای خودش باشد."})
+        if self.status in (self.Status.APPROVED, self.Status.PUBLISHED):
+            if not self.reviewer_id:
+                raise ValidationError({"reviewer": "تأیید و انتشار به بازبین مستقل نیاز دارد."})
+            if self.reviewer_id == self.author_id:
+                raise ValidationError({"reviewer": "نویسنده نمی‌تواند محتوای خودش را تأیید کند."})
+        if self.status == self.Status.PUBLISHED:
+            self.validate_publishable()
+
+    def validate_publishable(self):
+        required = (
+            "traps_and_techniques", "trap_detection_signals",
+            "distractor_analysis", "fast_solving_method",
+            "setter_insight", "common_mistakes", "supplementary_practice",
+        )
+        missing = [field for field in required if not getattr(self, field).strip()]
+        if missing:
+            raise ValidationError({
+                field: "برای انتشار محتوای آموزشی تکمیل این بخش الزامی است."
+                for field in missing
+            })
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values("status").first()
+            if previous is None and self.status != self.Status.DRAFT:
+                raise ValidationError("محتوای جدید باید ابتدا به‌صورت پیش‌نویس ثبت شود.")
+            if previous:
+                if previous["status"] == self.Status.PUBLISHED:
+                    raise ValidationError("محتوای منتشرشده قابل ویرایش نیست؛ نسخه جدید ایجاد کنید.")
+                if previous["status"] != self.Status.DRAFT:
+                    raise ValidationError("محتوای ارسال‌شده یا تأییدشده قفل است؛ برای اصلاح باید بازبینی آن به پیش‌نویس بازگردد.")
+                if previous["status"] != self.status:
+                    raise ValidationError("تغییر وضعیت فقط از مسیر گردش‌کار بازبینی مجاز است.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"آموزش ویژه سؤال {self.question_id}"

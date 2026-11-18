@@ -51,6 +51,7 @@ def submit_payment(order_id, user, receipt, tracking_code="", note=""):
     order.reviewer = None
     order.review_note = ""
     order.reviewed_at = None
+    order._allow_status_transition = True
     order.save()
     return order
 
@@ -78,6 +79,7 @@ def approve_order(order_id, reviewer):
     order.reviewer = reviewer
     order.review_note = "پرداخت تأیید شد."
     order.reviewed_at = now
+    order._allow_status_transition = True
     order.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
     from apps.notifications.models import Notification
     from apps.notifications.services import create_notification
@@ -104,6 +106,7 @@ def reject_order(order_id, reviewer, reason):
     order.reviewer = reviewer
     order.review_note = reason.strip()[:500] or "رسید تأیید نشد."
     order.reviewed_at = timezone.now()
+    order._allow_status_transition = True
     order.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
     from apps.notifications.models import Notification
     from apps.notifications.services import create_notification

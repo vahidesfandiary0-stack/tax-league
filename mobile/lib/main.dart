@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -25,7 +26,7 @@ class TaxLeagueApp extends StatelessWidget {
 
 class LeagueApi {
   static const storage = FlutterSecureStorage();
-  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://YOUR_API_HOST');
+  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://raqtiva.ir');
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
@@ -82,6 +83,32 @@ class LeagueApi {
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
       headers: {'Authorization': 'Token ' + t}).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
+  Future<dynamic> requestFilePost(
+    String path,
+    PlatformFile file, {
+    String trackingCode = '',
+  }) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    if (file.bytes == null) throw Exception('خواندن فایل انتخاب‌شده ممکن نشد.');
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(baseUrl + '/api/v1/' + path),
+    );
+    request.headers['Authorization'] = 'Token ' + t;
+    if (trackingCode.trim().isNotEmpty) {
+      request.fields['tracking_code'] = trackingCode.trim();
+    }
+    request.files.add(http.MultipartFile.fromBytes(
+      'receipt',
+      file.bytes!,
+      filename: file.name,
+    ));
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamed);
     return decode(response);
   }
 }
@@ -237,7 +264,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           final provincial = await api.request('league/provincial-leaderboard/?limit=20');
           provincialRows = List<dynamic>.from(provincial['results'] ?? []);
           province = provincial['province']?.toString();
-          if (provincialRows.isEmpty) {
+          if (provincial['verified'] != true) {
+            provinceNotice = provincial['detail']?.toString() ?? 'استان حساب شما هنوز تأیید نشده است.';
+          } else if (provincialRows.isEmpty) {
             provinceNotice = 'هنوز امتیاز معتبری برای رتبه‌بندی این استان ثبت نشده است.';
           }
         } catch (e) {
@@ -318,6 +347,21 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     ]),
   ));
 
+
+  Future<void> _showAttemptReview(String attemptId) async {
+    setState(() { busy = true; error = null; });
+    try {
+      final review = await api.request('exams/attempts/' + attemptId + '/review/');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AttemptReviewPage(api: api, review: Map<String, dynamic>.from(review)),
+      ));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
 
   Future<void> _showAppealForm(String attemptId, String examTitle) async {
     final reason = TextEditingController();
@@ -434,8 +478,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         subtitle: Text('شناسه: ' + item['id'].toString() + '\nصحیح: ' + item['correct_count'].toString() +
           ' · غلط: ' + item['wrong_count'].toString() + ' · نزده: ' + item['blank_count'].toString()),
         isThreeLine: true,
-        onTap: () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
-        trailing: Text((item['score'] ?? 0).toString() + ' امتیاز'),
+        onTap: busy ? null : () => _showAttemptReview(item['id'].toString()),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text((item['score'] ?? 0).toString() + ' امتیاز'),
+          IconButton(
+            tooltip: 'ثبت اعتراض',
+            onPressed: busy ? null : () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
+            icon: const Icon(Icons.gavel),
+          ),
+        ]),
       ),
     ]))),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -761,3 +812,309 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
     );
   }
 }
+
+
+
+class AttemptReviewPage extends StatelessWidget {
+  const AttemptReviewPage({super.key, required this.api, required this.review});
+  final LeagueApi api;
+  final Map<String, dynamic> review;
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = List<dynamic>.from(review['questions'] ?? []);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('مرور پاسخ‌ها و آموزش')),
+        body: ListView(padding: const EdgeInsets.all(16), children: [
+          Card(child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('امتیاز: ${review['score']}  ·  صحیح: ${review['correct_count']}  ·  غلط: ${review['wrong_count']}'),
+          )),
+          for (final raw in questions) _reviewQuestion(context, Map<String, dynamic>.from(raw)),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => SubscriptionPlansPage(api: api),
+            )),
+            icon: const Icon(Icons.workspace_premium),
+            label: const Text('مشاهده و خرید اشتراک آکادمی'),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _reviewQuestion(BuildContext context, Map<String, dynamic> question) {
+    final options = List<dynamic>.from(question['options'] ?? []);
+    final selectedId = question['selected_option_id'];
+    final lesson = question['premium_lesson'];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('سؤال ${question['position']}', style: const TextStyle(color: Color(0xFFC6A96A), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(question['prompt'] ?? '', style: const TextStyle(fontSize: 17, height: 1.7)),
+          const SizedBox(height: 12),
+          for (final option in options)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                option['is_correct'] == true ? Icons.check_circle : (option['id'] == selectedId ? Icons.cancel : Icons.circle_outlined),
+                color: option['is_correct'] == true ? Colors.greenAccent : (option['id'] == selectedId ? Colors.orangeAccent : Colors.white38),
+              ),
+              title: Text(option['text'] ?? ''),
+              subtitle: option['id'] == selectedId ? const Text('پاسخ انتخابی شما') : null,
+            ),
+          const Divider(),
+          const Text('پاسخ تشریحی عمومی', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text((question['explanation'] ?? '').toString().isEmpty ? 'برای این سؤال پاسخ تشریحی ثبت نشده است.' : question['explanation'].toString()),
+          const SizedBox(height: 12),
+          if (lesson is Map) ...[
+            const Text('۳. آموزش شناخت تله‌ها و ترفندهای طراح', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('تله‌ها و تکنیک‌های به‌کاررفته', lesson['traps_and_techniques']),
+            _lessonSection('نشانه‌های تشخیص تله', lesson['trap_detection_signals']),
+            const Divider(),
+            const Text('۴. تشخیص سریع پاسخ صحیح', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('تحلیل و حذف گزینه‌های انحرافی', lesson['distractor_analysis']),
+            _lessonSection('روش سریع و معتبر حل سؤال', lesson['fast_solving_method']),
+            const Divider(),
+            const Text('۵. نکات حرفه‌ای طراح و خطاهای رایج', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('نکته حرفه‌ای طراح', lesson['setter_insight']),
+            _lessonSection('اشتباهاتی که باید از آن‌ها دوری کرد', lesson['common_mistakes']),
+            const Divider(),
+            const Text('۶. تمرین تکمیلی و تثبیت یادگیری', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('تمرین', lesson['supplementary_practice']),
+            _lessonSection('پاسخ تمرین', lesson['practice_answer']),
+            _lessonSection('منبع قانونی', lesson['legal_source_reference']),
+            _lessonSection('تاریخ اثرگذاری', lesson['legal_effective_date']),
+          ] else if (question['premium_locked'] == true) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF27344A),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFC6A96A)),
+              ),
+              child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.lock, color: Color(0xFFC6A96A)),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('آموزش شناخت تله‌ها و ترفندهای به‌کاررفته در این سؤال', style: TextStyle(fontWeight: FontWeight.bold))),
+                ]),
+                SizedBox(height: 6),
+                Text('روش حل سریع، تحلیل دام‌های گزینه‌ها و تمرین تکمیلی فقط با اشتراک آکادمی قابل مشاهده است.'),
+              ]),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  Widget _lessonSection(String title, dynamic value) {
+    final text = (value ?? '').toString().trim();
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(text, style: const TextStyle(height: 1.6)),
+      ]),
+    );
+  }
+}
+
+
+class SubscriptionPlansPage extends StatefulWidget {
+  const SubscriptionPlansPage({super.key, required this.api});
+  final LeagueApi api;
+
+  @override
+  State<SubscriptionPlansPage> createState() => _SubscriptionPlansPageState();
+}
+
+class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
+  List<dynamic> plans = [];
+  Map<String, dynamic>? subscription;
+  Map<String, dynamic>? paymentInstructions;
+  Map<String, dynamic>? createdOrder;
+  PlatformFile? receiptFile;
+  final trackingCodeController = TextEditingController();
+  bool loading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    trackingCodeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final data = await Future.wait([
+        widget.api.request('payments/plans/'),
+        widget.api.request('payments/subscription/me/'),
+        widget.api.request('payments/instructions/'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        plans = List<dynamic>.from(data[0] as List);
+        subscription = Map<String, dynamic>.from(data[1] as Map);
+        paymentInstructions = Map<String, dynamic>.from(data[2] as Map);
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+
+  Future<void> _pickReceipt() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      if (file.bytes == null) {
+        setState(() => error = 'خواندن فایل انتخاب‌شده ممکن نشد.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
+        return;
+      }
+      setState(() { receiptFile = file; error = null; });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _submitReceipt() async {
+    if (createdOrder == null || receiptFile == null || loading) return;
+    setState(() { loading = true; error = null; });
+    try {
+      final result = await widget.api.requestFilePost(
+        'payments/orders/${createdOrder!['id']}/submit/',
+        receiptFile!,
+        trackingCode: trackingCodeController.text,
+      );
+      if (!mounted) return;
+      setState(() {
+        createdOrder = Map<String, dynamic>.from(result);
+        receiptFile = null;
+        trackingCodeController.clear();
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _createOrder(String planId) async {
+    setState(() { loading = true; error = null; });
+    try {
+      final order = await widget.api.requestPost('payments/orders/create/', {
+        'product_type': 'subscription',
+        'plan_id': planId,
+      });
+      if (!mounted) return;
+      setState(() => createdOrder = Map<String, dynamic>.from(order));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('اشتراک آکادمی تله‌شناسی')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        if (loading) const LinearProgressIndicator(),
+        if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!))),
+        if (subscription?['active'] == true)
+          Card(child: ListTile(
+            leading: const Icon(Icons.verified, color: Colors.greenAccent),
+            title: Text('اشتراک فعال: ${subscription?['plan']}'),
+            subtitle: Text('اعتبار تا: ${subscription?['ends_at']}'),
+          ))
+        else
+          const Card(child: ListTile(
+            leading: Icon(Icons.lock_outline),
+            title: Text('برای دسترسی به آموزش‌های ویژه آکادمی اشتراک فعال لازم است.'),
+          )),
+        const SizedBox(height: 8),
+        const Text('طرح‌های اشتراک', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        if (plans.isEmpty && !loading) const Text('در حال حاضر طرح فعالی ثبت نشده است.'),
+        for (final plan in plans)
+          Card(child: ListTile(
+            title: Text(plan['title'] ?? 'طرح اشتراک'),
+            subtitle: Text('${plan['duration_days']} روز · ${plan['price_irr']} ریال'),
+            trailing: FilledButton(
+              onPressed: loading ? null : () => _createOrder(plan['id'].toString()),
+              child: const Text('ایجاد سفارش'),
+            ),
+          )),
+        if (createdOrder != null) Card(child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('سفارش ثبت شد؛ فعال‌سازی پس از بررسی و تأیید پرداخت انجام می‌شود.', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SelectableText('شناسه سفارش: ${createdOrder!['id']}'),
+            Text('مبلغ: ${createdOrder!['amount_irr']} ریال'),
+            Text('وضعیت سفارش: ${createdOrder!['status']}'),
+            if (paymentInstructions?['configured'] == true) ...[
+              const Divider(),
+              Text('شماره کارت: ${paymentInstructions!['card_number']}'),
+              Text('به نام: ${paymentInstructions!['account_holder']}'),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: loading ? null : _pickReceipt,
+                icon: const Icon(Icons.attach_file),
+                label: Text(receiptFile == null ? 'انتخاب رسید (تصویر یا PDF)' : receiptFile!.name),
+              ),
+              TextField(
+                controller: trackingCodeController,
+                decoration: const InputDecoration(labelText: 'کد پیگیری (اختیاری)'),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: loading || receiptFile == null ? null : _submitReceipt,
+                  child: const Text('ارسال رسید برای بررسی مدیر'),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text('فایل رسید به‌صورت خصوصی ثبت می‌شود و اشتراک فقط پس از تأیید مدیر فعال خواهد شد.'),
+            ] else
+              Text(paymentInstructions?['detail'] ?? 'اطلاعات پرداخت هنوز تنظیم نشده است.'),
+          ]),
+        )),
+      ]),
+    ),
+  );
+}
+

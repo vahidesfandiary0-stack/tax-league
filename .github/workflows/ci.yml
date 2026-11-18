@@ -1,8 +1,12 @@
 name: CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feature/academy-premium-content"]
   pull_request:
     branches: ["main"]
 
@@ -44,7 +48,18 @@ jobs:
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - name: Generate Android project files
-        run: flutter create --platforms=android --project-name tax_league .
+        run: flutter create --platforms=android --project-name tax_league --org ir.raqtiva .
+      - name: Set Android compile SDK required by file picker
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          gradle = Path("android/app/build.gradle.kts")
+          source = gradle.read_text(encoding="utf-8")
+          old = "compileSdk = flutter.compileSdkVersion"
+          if old not in source:
+              raise SystemExit("Could not find generated compileSdk declaration; refusing to guess.")
+          gradle.write_text(source.replace(old, "compileSdk = 36", 1), encoding="utf-8")
+          PY
       - name: Build debug APK
         run: flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid
       - name: Upload debug APK

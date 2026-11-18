@@ -21,17 +21,30 @@ def make_published_exam(user, *, question_count=1, ends_at=None):
     for index in range(question_count):
         question = Question.objects.create(
             subject=Question.Subject.DIRECT_TAX,
+            difficulty=Question.Difficulty.HARD,
             prompt=f"سؤال آزمایشی {index + 1}",
+            explanation="پاسخ تشریحی مستند آزمایشی.",
+            source_reference="قانون آزمایشی، ماده ۱",
             author=user,
         )
         QuestionOption.objects.create(
             question=question, position=1, text="پاسخ صحیح", is_correct=True
         )
-        QuestionOption.objects.create(
-            question=question, position=2, text="پاسخ نادرست", is_correct=False
+        for position in (2, 3, 4):
+            QuestionOption.objects.create(
+                question=question, position=position,
+                text=f"گزینه نادرست {position}", is_correct=False,
+            )
+        reviewer = get_user_model().objects.create_user(
+            phone_number=f"0912333999{index}"
         )
-        question.status = Question.Status.PUBLISHED
-        question.save(update_fields=["status"])
+        from apps.questions.services import (
+            publish_question, review_question, submit_for_review, verify_question_source,
+        )
+        submit_for_review(question.pk, user)
+        review_question(question.pk, reviewer, True)
+        verify_question_source(question.pk, reviewer)
+        publish_question(question.pk)
         questions.append(question)
 
     exam = Exam.objects.create(
@@ -116,7 +129,7 @@ def test_scoring_is_server_side_and_finalization_is_idempotent():
     )
     save_answer(
         attempt.pk, questions[1].pk,
-        questions[1].options.get(is_correct=False).pk, user,
+        questions[1].options.filter(is_correct=False).first().pk, user,
     )
 
     result = finalize_attempt(attempt.pk, user)

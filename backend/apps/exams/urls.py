@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (
-    AnswerView, ExamFocusStatusView, ExamListView, FinalizeView,
+    AnswerView, AttemptReviewView, ExamFocusStatusView, ExamListView, FinalizeView,
     ResultView, StartAttemptView, MyResultsView,
 )
 
@@ -13,4 +13,5 @@ urlpatterns = [
     path("attempts/<uuid:attempt_id>/answers/", AnswerView.as_view(), name="attempt-answer"),
     path("attempts/<uuid:attempt_id>/finalize/", FinalizeView.as_view(), name="attempt-finalize"),
     path("attempts/<uuid:attempt_id>/result/", ResultView.as_view(), name="attempt-result"),
+    path("attempts/<uuid:attempt_id>/review/", AttemptReviewView.as_view(), name="attempt-review"),
 ]

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from apps.exams.models import Exam
 from apps.payments.models import PaymentOrder, PaymentSettings
-from apps.payments.services import approve_order, create_subscription_order
+from apps.payments.services import approve_order, create_subscription_order, submit_payment
 from apps.subscriptions.models import SubscriptionPlan, UserSubscription
 
 
@@ -35,11 +35,10 @@ class PaymentWorkflowTests(TestCase):
 
     def test_approval_grants_subscription_once(self):
         order = create_subscription_order(self.user, self.plan.pk)
-        order.status = PaymentOrder.Status.UNDER_REVIEW
-        order.receipt = SimpleUploadedFile(
+        receipt = SimpleUploadedFile(
             "receipt.png", b"\x89PNG\r\n\x1a\ncontent", content_type="image/png"
         )
-        order.save()
+        order = submit_payment(order.pk, self.user, receipt, tracking_code="TEST-123")
         approved = approve_order(order.pk, self.admin)
         self.assertEqual(approved.status, PaymentOrder.Status.APPROVED)
         self.assertEqual(UserSubscription.objects.filter(source_order=order).count(), 1)

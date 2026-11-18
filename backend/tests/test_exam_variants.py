@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from apps.exams.models import Exam, ExamAttempt, ExamQuestion
 from apps.exams.services import start_attempt
 from apps.questions.models import Question, QuestionOption
+from apps.questions.services import publish_question, review_question, submit_for_review, verify_question_source
 
 
 @pytest.mark.django_db
@@ -21,7 +22,10 @@ def test_each_participant_gets_independent_question_option_order_and_numeric_val
     for index in range(5):
         question = Question.objects.create(
             subject=Question.Subject.DIRECT_TAX,
+            difficulty=Question.Difficulty.HARD,
             prompt=f"اگر مبلغ {{amount}} باشد، سؤال {index}؟",
+            explanation="پاسخ تشریحی مستند آزمون نسخه‌ها.",
+            source_reference="قانون آزمایشی، ماده ۱",
             variant_config={"variables": {"amount": {"min": 100, "max": 900, "step": 100}}},
             author=author,
         )
@@ -32,8 +36,11 @@ def test_each_participant_gets_independent_question_option_order_and_numeric_val
                 text=f"مبلغ {{amount}} - گزینه {position}",
                 is_correct=(position == 2),
             )
-        question.status = Question.Status.PUBLISHED
-        question.save(update_fields=["status"])
+        reviewer = user_model.objects.create_user(phone_number=f"0912000010{index + 4}")
+        submit_for_review(question.pk, author)
+        review_question(question.pk, reviewer, True)
+        verify_question_source(question.pk, reviewer)
+        publish_question(question.pk)
         ExamQuestion.objects.create(exam=exam, question=question, position=index + 1)
         source_questions.append(question)
     exam.status = Exam.Status.PUBLISHED

@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.urls import reverse
+from django.utils.html import format_html
 
 from config.admin_audit import record_admin_action
 
@@ -36,9 +37,16 @@ class PaymentOrderAdmin(admin.ModelAdmin):
     readonly_fields = (
         "user", "product_type", "plan", "exam", "amount_irr", "status",
         "tracking_code", "user_note", "reviewer", "review_note", "reviewed_at",
-        "created_at", "updated_at",
+        "created_at", "updated_at", "receipt_download",
     )
     actions = ("approve_selected", "reject_selected")
+
+    @admin.display(description="رسید پرداخت")
+    def receipt_download(self, obj):
+        if not obj or not obj.receipt:
+            return "رسیدی بارگذاری نشده است."
+        url = reverse("payment-admin-receipt", kwargs={"order_id": obj.pk})
+        return format_html('<a href="{}" target="_blank" rel="noopener">مشاهده / دانلود رسید</a>', url)
 
     def has_add_permission(self, request):
         return False
