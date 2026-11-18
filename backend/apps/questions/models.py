@@ -183,6 +183,8 @@ class QuestionPremiumLesson(models.Model):
             if previous:
                 if previous["status"] == self.Status.PUBLISHED:
                     raise ValidationError("محتوای منتشرشده قابل ویرایش نیست؛ نسخه جدید ایجاد کنید.")
+                if previous["status"] != self.Status.DRAFT:
+                    raise ValidationError("محتوای ارسال‌شده یا تأییدشده قفل است؛ برای اصلاح باید بازبینی آن به پیش‌نویس بازگردد.")
                 if previous["status"] != self.status:
                     raise ValidationError("تغییر وضعیت فقط از مسیر گردش‌کار بازبینی مجاز است.")
         super().save(*args, **kwargs)
