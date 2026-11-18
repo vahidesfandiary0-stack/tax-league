@@ -93,8 +93,11 @@ class PaymentOrder(models.Model):
             raise ValidationError("سفارش آزمون باید فقط یک آزمون داشته باشد.")
 
     def save(self, *args, **kwargs):
-        if self.pk and PaymentOrder.objects.filter(pk=self.pk).exists():
-            old = PaymentOrder.objects.get(pk=self.pk)
+        old = PaymentOrder.objects.filter(pk=self.pk).first() if self.pk else None
+        if old is None:
+            if self.status != self.Status.AWAITING_PAYMENT:
+                raise ValidationError("سفارش جدید باید با وضعیت در انتظار پرداخت ایجاد شود.")
+        else:
             immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr")
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
                 raise ValidationError("مشخصات و مبلغ سفارش پس از ایجاد قابل تغییر نیست.")
@@ -111,6 +114,8 @@ class PaymentOrder(models.Model):
                 }
                 if self.status not in allowed_transitions.get(old.status, set()):
                     raise ValidationError("تغییر وضعیت سفارش از این مسیر مجاز نیست.")
+                if not getattr(self, "_allow_status_transition", False):
+                    raise ValidationError("تغییر وضعیت سفارش فقط از مسیر امن پرداخت مجاز است.")
                 if self.status in (self.Status.APPROVED, self.Status.REJECTED):
                     if not self.reviewer_id or not self.reviewed_at:
                         raise ValidationError("تصمیم مدیر باید همراه با بازبین و زمان بررسی ثبت شود.")
