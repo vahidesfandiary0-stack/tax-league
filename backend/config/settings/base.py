@@ -14,7 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "rest_framework.authtoken", "django_filters",
     "apps.accounts", "apps.questions", "apps.exams", "apps.league",
-    "apps.payments", "apps.subscriptions", "apps.notifications", "apps.support", "apps.regulations",
+    "apps.payments", "apps.subscriptions", "apps.notifications", "apps.support", "apps.regulations", "apps.academy",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -84,4 +84,5 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "user": "1000/hour",
     "otp_request": "3/hour",
     "otp_verify": "10/hour",
+    "tutor_chat": "20/hour",
 }
