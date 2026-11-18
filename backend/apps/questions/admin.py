@@ -135,6 +135,21 @@ def approve_premium_selected(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} محتوا تأیید شد.")
 
 
+@admin.action(description="رد محتوا و بازگرداندن به پیش‌نویس برای اصلاح")
+def reject_premium_selected(modeladmin, request, queryset):
+    count = 0
+    changed = []
+    for lesson in queryset:
+        try:
+            review_premium_lesson(lesson.pk, request.user, approve=False)
+            changed.append(lesson)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "بازگرداندن محتوای ویژه برای اصلاح")
+    modeladmin.message_user(request, f"{count} محتوا برای اصلاح به پیش‌نویس بازگشت.")
+
+
 @admin.action(description="انتشار محتوای تأییدشده")
 def publish_premium_selected(modeladmin, request, queryset):
     count = 0
@@ -156,7 +171,7 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
     list_filter = ("status", "legal_effective_date")
     search_fields = ("question__prompt", "traps_and_techniques", "legal_source_reference")
     readonly_fields = ("status", "author", "reviewer", "reviewed_at", "published_at", "created_at", "updated_at")
-    actions = [submit_premium_selected, approve_premium_selected, publish_premium_selected]
+    actions = [submit_premium_selected, approve_premium_selected, reject_premium_selected, publish_premium_selected]
     fieldsets = (
         ("اتصال به سؤال و وضعیت", {"fields": ("question", "status", "author", "reviewer")}),
         ("آموزش ویژه مشترکان", {"fields": (
