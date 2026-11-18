@@ -450,6 +450,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       trailing: const Icon(Icons.chevron_left),
       onTap: () => setState(() => accountPage = 1),
     )),
+    Card(child: ListTile(
+      leading: const Icon(Icons.psychology_alt, color: Color(0xFFC6A96A)),
+      title: const Text('مربی هوشمند مالیاتی'),
+      subtitle: const Text('پرسش و پاسخ آموزشی مستند به منابع رسمی · ویژه مشترکان'),
+      trailing: const Icon(Icons.lock_outline),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => SmartTutorPage(api: api),
+      )),
+    )),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       Text('رتبه: ' + (stats?['rank']?.toString() ?? '—')),
@@ -1116,3 +1125,207 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
   );
 }
 
+
+
+class SmartTutorPage extends StatefulWidget {
+  const SmartTutorPage({super.key, required this.api});
+  final LeagueApi api;
+
+  @override
+  State<SmartTutorPage> createState() => _SmartTutorPageState();
+}
+
+class _SmartTutorPageState extends State<SmartTutorPage> {
+  final controller = TextEditingController();
+  final scrollController = ScrollController();
+  List<dynamic> messages = [];
+  String? conversationId;
+  bool loading = true;
+  bool sending = false;
+  bool locked = false;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConversations();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConversations() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final result = await widget.api.request('academy/tutor/conversations/');
+      if (!mounted) return;
+      final rows = List<dynamic>.from(result as List);
+      setState(() {
+        locked = false;
+        if (rows.isNotEmpty) {
+          final latest = Map<String, dynamic>.from(rows.first);
+          conversationId = latest['id']?.toString();
+          messages = List<dynamic>.from(latest['messages'] ?? []);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final message = e.toString();
+      setState(() {
+        locked = message.contains('اشتراک فعال');
+        if (!locked) error = message.replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _send() async {
+    final question = controller.text.trim();
+    if (question.isEmpty || sending || locked) return;
+    setState(() { sending = true; error = null; });
+    try {
+      final payload = <String, dynamic>{'message': question};
+      if (conversationId != null) payload['conversation_id'] = conversationId;
+      final result = await widget.api.requestPost('academy/tutor/chat/', payload);
+      if (!mounted) return;
+      setState(() {
+        conversationId = result['conversation_id']?.toString();
+        messages.add({'role': 'user', 'content': question, 'citations': []});
+        messages.add(Map<String, dynamic>.from(result['message']));
+        controller.clear();
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final message = e.toString();
+      setState(() {
+        locked = message.contains('اشتراک فعال');
+        error = message.replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('مربی هوشمند مالیاتی')),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : locked
+              ? Center(child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.lock, size: 48, color: Color(0xFFC6A96A)),
+                    const SizedBox(height: 12),
+                    const Text('تمام امکانات مربی هوشمند ویژه مشترکان آکادمی است.', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => SubscriptionPlansPage(api: widget.api),
+                      )),
+                      child: const Text('مشاهده طرح‌های اشتراک'),
+                    ),
+                  ]),
+                ))
+              : Column(children: [
+                  if (error != null)
+                    MaterialBanner(
+                      content: Text(error!),
+                      actions: [TextButton(onPressed: () => setState(() => error = null), child: const Text('بستن'))],
+                    ),
+                  Expanded(
+                    child: messages.isEmpty
+                        ? const Center(child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('سؤال مالیاتی خود را بنویسید. مربی فقط بر اساس منابع رسمیِ بررسی‌شده پاسخ می‌دهد و در صورت نبود منبع کافی، عدم قطعیت را اعلام می‌کند.', textAlign: TextAlign.center),
+                          ))
+                        : ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(12),
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final item = Map<String, dynamic>.from(messages[index]);
+                              final assistant = item['role'] == 'assistant';
+                              final citations = List<dynamic>.from(item['citations'] ?? []);
+                              return Align(
+                                alignment: assistant ? Alignment.centerRight : Alignment.centerLeft,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 340),
+                                  child: Card(
+                                    color: assistant ? const Color(0xFF1B2940) : const Color(0xFF26364E),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                        Text(assistant ? 'مربی هوشمند' : 'شما', style: const TextStyle(color: Color(0xFFC6A96A), fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 6),
+                                        Text(item['content']?.toString() ?? '', style: const TextStyle(height: 1.6)),
+                                        if (assistant && citations.isNotEmpty) ...[
+                                          const Divider(),
+                                          const Text('منابع بررسی‌شده', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          for (final source in citations)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                '${source['title']} · نسخه ${source['version']} · ${source['url']}',
+                                                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                              ),
+                                            ),
+                                        ],
+                                        if (assistant && item['confidence'] != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Text('سطح شواهد: ${item['confidence']}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                                          ),
+                                      ]),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(children: [
+                        Expanded(child: TextField(
+                          controller: controller,
+                          minLines: 1,
+                          maxLines: 4,
+                          maxLength: 4000,
+                          decoration: const InputDecoration(
+                            hintText: 'پرسش خود را بنویسید...',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _send(),
+                        )),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: sending ? null : _send,
+                          icon: sending
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.send),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ]),
+    ),
+  );
+}
