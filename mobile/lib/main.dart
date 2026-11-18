@@ -26,7 +26,7 @@ class TaxLeagueApp extends StatelessWidget {
 
 class LeagueApi {
   static const storage = FlutterSecureStorage();
-  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://YOUR_API_HOST');
+  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://raqtiva.ir');
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
