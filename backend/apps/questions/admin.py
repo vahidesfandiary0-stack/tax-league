@@ -113,7 +113,7 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
         ("آموزش ویژه مشترکان", {"fields": (
             "traps_and_techniques", "trap_detection_signals",
             "distractor_analysis", "fast_solving_method",
-            "common_mistakes", "supplementary_practice", "practice_answer",
+            "setter_insight", "common_mistakes", "supplementary_practice", "practice_answer",
         )}),
         ("استناد قانونی", {"fields": ("legal_source_reference", "legal_effective_date")}),
         ("سوابق", {"fields": ("reviewed_at", "published_at", "created_at", "updated_at")}),
