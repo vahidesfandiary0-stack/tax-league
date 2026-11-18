@@ -264,7 +264,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           final provincial = await api.request('league/provincial-leaderboard/?limit=20');
           provincialRows = List<dynamic>.from(provincial['results'] ?? []);
           province = provincial['province']?.toString();
-          if (provincialRows.isEmpty) {
+          if (provincial['verified'] != true) {
+            provinceNotice = provincial['detail']?.toString() ?? 'استان حساب شما هنوز تأیید نشده است.';
+          } else if (provincialRows.isEmpty) {
             provinceNotice = 'هنوز امتیاز معتبری برای رتبه‌بندی این استان ثبت نشده است.';
           }
         } catch (e) {
