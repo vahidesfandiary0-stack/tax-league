@@ -28,7 +28,7 @@ class TutorConversationListView(APIView):
 
 class TutorChatView(APIView):
     permission_classes = [IsAuthenticated]
-    throttle_classes = []
+    throttle_scope = "tutor_chat"
     max_question_length = 4000
 
     def post(self, request):
@@ -48,7 +48,7 @@ class TutorChatView(APIView):
                 conversation = TutorConversation.objects.get(
                     pk=conversation_id, user=request.user
                 )
-            except (TutorConversation.DoesNotExist, ValueError):
+            except (TutorConversation.DoesNotExist, ValueError, TypeError):
                 raise NotFound("گفتگو پیدا نشد.")
             history = list(
                 conversation.messages.order_by("-created_at").values("role", "content")[:10]
