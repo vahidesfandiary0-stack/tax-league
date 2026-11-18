@@ -36,7 +36,7 @@ def test_each_participant_gets_independent_question_option_order_and_numeric_val
                 text=f"مبلغ {{amount}} - گزینه {position}",
                 is_correct=(position == 2),
             )
-        reviewer = user_model.objects.create_user(phone_number="09120000104")
+        reviewer = user_model.objects.create_user(phone_number=f"0912000010{index + 4}")
         submit_for_review(question.pk, author)
         review_question(question.pk, reviewer, True)
         verify_question_source(question.pk, reviewer)
