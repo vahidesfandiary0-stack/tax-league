@@ -101,6 +101,19 @@ class PaymentOrder(models.Model):
             if old.status == self.Status.APPROVED:
                 if self.status != old.status or self.receipt != old.receipt:
                     raise ValidationError("سفارش تأییدشده قابل تغییر نیست.")
+            if old.status != self.status:
+                allowed_transitions = {
+                    self.Status.AWAITING_PAYMENT: {self.Status.UNDER_REVIEW},
+                    self.Status.REJECTED: {self.Status.UNDER_REVIEW},
+                    self.Status.UNDER_REVIEW: {self.Status.APPROVED, self.Status.REJECTED},
+                    self.Status.APPROVED: set(),
+                    self.Status.CANCELLED: set(),
+                }
+                if self.status not in allowed_transitions.get(old.status, set()):
+                    raise ValidationError("تغییر وضعیت سفارش از این مسیر مجاز نیست.")
+                if self.status in (self.Status.APPROVED, self.Status.REJECTED):
+                    if not self.reviewer_id or not self.reviewed_at:
+                        raise ValidationError("تصمیم مدیر باید همراه با بازبین و زمان بررسی ثبت شود.")
         self.clean()
         super().save(*args, **kwargs)
 
