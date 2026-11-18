@@ -124,6 +124,7 @@ class QuestionPremiumLesson(models.Model):
     trap_detection_signals = models.TextField(blank=True)
     distractor_analysis = models.TextField(blank=True)
     fast_solving_method = models.TextField(blank=True)
+    setter_insight = models.TextField(blank=True)
     common_mistakes = models.TextField(blank=True)
     supplementary_practice = models.TextField(blank=True)
     practice_answer = models.TextField(blank=True)
@@ -159,7 +160,7 @@ class QuestionPremiumLesson(models.Model):
             required = (
                 "traps_and_techniques", "trap_detection_signals",
                 "distractor_analysis", "fast_solving_method",
-                "common_mistakes", "supplementary_practice",
+                "setter_insight", "common_mistakes", "supplementary_practice",
             )
             missing = [field for field in required if not getattr(self, field).strip()]
             if missing:
