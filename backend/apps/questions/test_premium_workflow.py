@@ -86,3 +86,24 @@ def test_review_rejection_returns_lesson_to_draft_for_correction():
     assert rejected.status == QuestionPremiumLesson.Status.DRAFT
     assert rejected.reviewer_id == reviewer.pk
     assert rejected.reviewed_at is not None
+
+
+
+@pytest.mark.django_db
+def test_lesson_content_is_locked_while_waiting_for_review():
+    lesson, author, reviewer = make_lesson()
+    submit_premium_lesson_for_review(lesson.pk, author)
+    lesson.refresh_from_db()
+    lesson.traps_and_techniques = "تغییر بعد از ارسال"
+    with pytest.raises(ValidationError):
+        lesson.save()
+
+
+@pytest.mark.django_db
+def test_incomplete_premium_lesson_cannot_be_approved():
+    lesson, author, reviewer = make_lesson()
+    lesson.supplementary_practice = ""
+    lesson.save(update_fields=["supplementary_practice"])
+    submit_premium_lesson_for_review(lesson.pk, author)
+    with pytest.raises(ValidationError):
+        review_premium_lesson(lesson.pk, reviewer, approve=True)
