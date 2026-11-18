@@ -168,6 +168,17 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
         ("سوابق", {"fields": ("reviewed_at", "published_at", "created_at", "updated_at")}),
     )
 
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and obj.status != QuestionPremiumLesson.Status.DRAFT:
+            readonly.extend((
+                "question", "traps_and_techniques", "trap_detection_signals",
+                "distractor_analysis", "fast_solving_method", "setter_insight",
+                "common_mistakes", "supplementary_practice", "practice_answer",
+                "legal_source_reference", "legal_effective_date",
+            ))
+        return tuple(readonly)
+
     def save_model(self, request, obj, form, change):
         if not change:
             obj.author = request.user
