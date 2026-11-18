@@ -36,6 +36,7 @@ class AttemptReviewAccessTests(TestCase):
             trap_detection_signals="نشانه تشخیص",
             distractor_analysis="تحلیل گزینه‌های انحرافی",
             fast_solving_method="روش سریع",
+            setter_insight="نکته حرفه‌ای طراح",
             common_mistakes="خطای رایج",
             supplementary_practice="تمرین تکمیلی",
             practice_answer="پاسخ تمرین",
