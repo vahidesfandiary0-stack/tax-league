@@ -108,36 +108,45 @@ class QuestionAdmin(admin.ModelAdmin):
 @admin.action(description="ارسال محتوای انتخاب‌شده برای بازبینی (توسط نویسنده)")
 def submit_premium_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for lesson in queryset:
         try:
             submit_premium_lesson_for_review(lesson.pk, request.user)
+            changed.append(lesson)
             count += 1
         except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "ارسال محتوای ویژه برای بازبینی")
     modeladmin.message_user(request, f"{count} محتوا برای بازبینی ارسال شد.")
 
 
 @admin.action(description="تأیید محتوای انتخاب‌شده (بازبین مستقل)")
 def approve_premium_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for lesson in queryset:
         try:
             review_premium_lesson(lesson.pk, request.user, approve=True)
+            changed.append(lesson)
             count += 1
         except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "تأیید محتوای ویژه")
     modeladmin.message_user(request, f"{count} محتوا تأیید شد.")
 
 
 @admin.action(description="انتشار محتوای تأییدشده")
 def publish_premium_selected(modeladmin, request, queryset):
     count = 0
+    changed = []
     for lesson in queryset:
         try:
             publish_premium_lesson(lesson.pk)
+            changed.append(lesson)
             count += 1
         except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, changed, "انتشار محتوای ویژه")
     modeladmin.message_user(request, f"{count} محتوا منتشر شد.")
 
 
@@ -146,7 +155,7 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
     list_display = ("question", "status", "author", "reviewer", "updated_at")
     list_filter = ("status", "legal_effective_date")
     search_fields = ("question__prompt", "traps_and_techniques", "legal_source_reference")
-    readonly_fields = ("status", "reviewer", "reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("status", "author", "reviewer", "reviewed_at", "published_at", "created_at", "updated_at")
     actions = [submit_premium_selected, approve_premium_selected, publish_premium_selected]
     fieldsets = (
         ("اتصال به سؤال و وضعیت", {"fields": ("question", "status", "author", "reviewer")}),
