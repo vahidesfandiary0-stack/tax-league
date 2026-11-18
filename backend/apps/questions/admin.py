@@ -197,4 +197,8 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             obj.author = request.user
+        elif obj.status != QuestionPremiumLesson.Status.DRAFT:
+            # Non-draft records are read-only in admin; avoid invoking the model's
+            # immutable-state guard for an unchanged view-only form submission.
+            return
         super().save_model(request, obj, form, change)
