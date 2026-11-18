@@ -25,6 +25,20 @@ class QuestionOptionInline(admin.TabularInline):
     extra = 4
     max_num = 4
 
+    def _parent_is_editable(self, obj):
+        return obj is None or obj.status in (
+            Question.Status.DRAFT, Question.Status.REJECTED
+        )
+
+    def has_add_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return self._parent_is_editable(obj) and super().has_delete_permission(request, obj)
+
 
 @admin.action(description="ارسال سؤالات انتخاب‌شده برای بررسی (توسط نویسنده)")
 def submit_selected(modeladmin, request, queryset):
@@ -111,6 +125,16 @@ class QuestionAdmin(admin.ModelAdmin):
     readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "source_verified_by", "source_verified_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
     actions = [submit_selected, approve_selected, reject_selected, verify_source_selected, publish_selected]
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and obj.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            readonly.extend((
+                "subject", "difficulty", "prompt", "variant_config", "explanation",
+                "source_reference", "valid_from", "valid_until", "provenance",
+                "provenance_note", "author",
+            ))
+        return tuple(readonly)
 
     def changelist_view(self, request, extra_context=None):
         warn_admin_during_exam(request)
