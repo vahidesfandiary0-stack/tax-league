@@ -5,7 +5,10 @@ from config.admin_audit import record_admin_action
 from apps.exams.focus import get_exam_focus_state
 
 from .models import Question, QuestionOption, QuestionPremiumLesson
-from .services import (\n    publish_question, review_question, submit_for_review,\n    publish_premium_lesson, review_premium_lesson, submit_premium_lesson_for_review,\n)
+from .services import (
+    publish_question, review_question, submit_for_review,
+    publish_premium_lesson, review_premium_lesson, submit_premium_lesson_for_review,
+)
 
 
 def warn_admin_during_exam(request):
