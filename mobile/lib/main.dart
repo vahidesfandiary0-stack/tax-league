@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -82,6 +83,32 @@ class LeagueApi {
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
       headers: {'Authorization': 'Token ' + t}).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
+  Future<dynamic> requestFilePost(
+    String path,
+    PlatformFile file, {
+    String trackingCode = '',
+  }) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    if (file.bytes == null) throw Exception('خواندن فایل انتخاب‌شده ممکن نشد.');
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(baseUrl + '/api/v1/' + path),
+    );
+    request.headers['Authorization'] = 'Token ' + t;
+    if (trackingCode.trim().isNotEmpty) {
+      request.fields['tracking_code'] = trackingCode.trim();
+    }
+    request.files.add(http.MultipartFile.fromBytes(
+      'receipt',
+      file.bytes!,
+      filename: file.name,
+    ));
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamed);
     return decode(response);
   }
 }
@@ -916,6 +943,8 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
   Map<String, dynamic>? subscription;
   Map<String, dynamic>? paymentInstructions;
   Map<String, dynamic>? createdOrder;
+  PlatformFile? receiptFile;
+  final trackingCodeController = TextEditingController();
   bool loading = true;
   String? error;
 
@@ -923,6 +952,12 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    trackingCodeController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -938,6 +973,53 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
         plans = List<dynamic>.from(data[0] as List);
         subscription = Map<String, dynamic>.from(data[1] as Map);
         paymentInstructions = Map<String, dynamic>.from(data[2] as Map);
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+
+  Future<void> _pickReceipt() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      if (file.bytes == null) {
+        setState(() => error = 'خواندن فایل انتخاب‌شده ممکن نشد.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
+        return;
+      }
+      setState(() { receiptFile = file; error = null; });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _submitReceipt() async {
+    if (createdOrder == null || receiptFile == null || loading) return;
+    setState(() { loading = true; error = null; });
+    try {
+      final result = await widget.api.requestFilePost(
+        'payments/orders/${createdOrder!['id']}/submit/',
+        receiptFile!,
+        trackingCode: trackingCodeController.text,
+      );
+      if (!mounted) return;
+      setState(() {
+        createdOrder = Map<String, dynamic>.from(result);
+        receiptFile = null;
+        trackingCodeController.clear();
       });
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -1000,12 +1082,31 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
             const SizedBox(height: 8),
             SelectableText('شناسه سفارش: ${createdOrder!['id']}'),
             Text('مبلغ: ${createdOrder!['amount_irr']} ریال'),
+            Text('وضعیت سفارش: ${createdOrder!['status']}'),
             if (paymentInstructions?['configured'] == true) ...[
               const Divider(),
               Text('شماره کارت: ${paymentInstructions!['card_number']}'),
               Text('به نام: ${paymentInstructions!['account_holder']}'),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: loading ? null : _pickReceipt,
+                icon: const Icon(Icons.attach_file),
+                label: Text(receiptFile == null ? 'انتخاب رسید (تصویر یا PDF)' : receiptFile!.name),
+              ),
+              TextField(
+                controller: trackingCodeController,
+                decoration: const InputDecoration(labelText: 'کد پیگیری (اختیاری)'),
+              ),
               const SizedBox(height: 8),
-              const Text('پس از واریز، رسید پرداخت باید از مسیر ثبت رسید سفارش ارسال شود.'),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: loading || receiptFile == null ? null : _submitReceipt,
+                  child: const Text('ارسال رسید برای بررسی مدیر'),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text('فایل رسید به‌صورت خصوصی ثبت می‌شود و اشتراک فقط پس از تأیید مدیر فعال خواهد شد.'),
             ] else
               Text(paymentInstructions?['detail'] ?? 'اطلاعات پرداخت هنوز تنظیم نشده است.'),
           ]),
