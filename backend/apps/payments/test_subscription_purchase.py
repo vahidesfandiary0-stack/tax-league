@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
@@ -44,7 +45,7 @@ class SubscriptionPurchaseFlowTests(TestCase):
         subscription = UserSubscription.objects.get(source_order=order)
         self.assertEqual(subscription.ends_at - subscription.starts_at, timedelta(days=30))
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             approve_order(order.pk, self.admin)
         self.assertEqual(UserSubscription.objects.filter(source_order=order).count(), 1)
 
@@ -66,11 +67,11 @@ class SubscriptionPurchaseFlowTests(TestCase):
             b"\x89PNG\r\n\x1a\n" + (b"x" * (5 * 1024 * 1024)),
             content_type="image/png",
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             submit_payment(order.pk, self.user, oversized)
 
         invalid = SimpleUploadedFile(
             "receipt.png", b"not-a-real-png", content_type="image/png"
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             submit_payment(order.pk, self.user, invalid)
