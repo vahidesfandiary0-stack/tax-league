@@ -129,7 +129,7 @@ def test_scoring_is_server_side_and_finalization_is_idempotent():
     )
     save_answer(
         attempt.pk, questions[1].pk,
-        questions[1].options.get(is_correct=False).pk, user,
+        questions[1].options.filter(is_correct=False).first().pk, user,
     )
 
     result = finalize_attempt(attempt.pk, user)

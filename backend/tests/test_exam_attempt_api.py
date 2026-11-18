@@ -102,6 +102,7 @@ def test_nightly_exam_submission_updates_national_and_verified_provincial_leader
         difficulty=Question.Difficulty.HARD,
         prompt="در سناریوی آزمایشی، پاسخ صحیح کدام است؟",
         explanation="تشریح پاسخ آزمون شبانه.",
+        source_reference="قانون مالیات بر ارزش افزوده، ماده ۲؛ مرجع آزمایشی",
         author=user,
     )
     correct = QuestionOption.objects.create(
