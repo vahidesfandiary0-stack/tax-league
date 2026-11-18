@@ -91,3 +91,15 @@ class SubscriptionPurchaseFlowTests(TestCase):
         order.reviewed_at = timezone.now()
         with self.assertRaises(ValidationError):
             order.save()
+
+
+
+    def test_payment_order_cannot_be_created_as_already_approved(self):
+        with self.assertRaises(ValidationError):
+            PaymentOrder.objects.create(
+                user=self.user,
+                product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+                plan=self.plan,
+                amount_irr=self.plan.price_irr,
+                status=PaymentOrder.Status.APPROVED,
+            )
