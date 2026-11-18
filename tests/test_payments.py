@@ -36,7 +36,7 @@ class PaymentWorkflowTests(TestCase):
     def test_approval_grants_subscription_once(self):
         order = create_subscription_order(self.user, self.plan.pk)
         receipt = SimpleUploadedFile(
-            "receipt.png", b"\x89PNG\r\n\\x1a\\ncontent", content_type="image/png"
+            "receipt.png", b"\x89PNG\r\n\x1a\ncontent", content_type="image/png"
         )
         order = submit_payment(order.pk, self.user, receipt, tracking_code="TEST-123")
         approved = approve_order(order.pk, self.admin)
