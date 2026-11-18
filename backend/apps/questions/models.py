@@ -104,3 +104,69 @@ class QuestionOption(models.Model):
 
     def __str__(self):
         return f"{self.question_id} / گزینه {self.position}"
+
+
+
+class QuestionPremiumLesson(models.Model):
+    """Subscriber-only teaching material; never serialize through public question APIs."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "پیش‌نویس"
+        REVIEW = "review", "در انتظار بازبینی"
+        APPROVED = "approved", "تأییدشده"
+        PUBLISHED = "published", "منتشرشده"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.OneToOneField(
+        Question, on_delete=models.CASCADE, related_name="premium_lesson"
+    )
+    traps_and_techniques = models.TextField(blank=True)
+    trap_detection_signals = models.TextField(blank=True)
+    distractor_analysis = models.TextField(blank=True)
+    fast_solving_method = models.TextField(blank=True)
+    common_mistakes = models.TextField(blank=True)
+    supplementary_practice = models.TextField(blank=True)
+    practice_answer = models.TextField(blank=True)
+    legal_source_reference = models.CharField(max_length=500, blank=True)
+    legal_effective_date = models.DateField(null=True, blank=True)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.DRAFT
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="authored_premium_lessons",
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        null=True, blank=True, related_name="reviewed_premium_lessons",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["status"], name="premium_lesson_status_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.reviewer_id and self.reviewer_id == self.author_id:
+            raise ValidationError({"reviewer": "نویسنده نمی‌تواند بازبین محتوای خودش باشد."})
+        if self.status == self.Status.PUBLISHED:
+            required = (
+                "traps_and_techniques", "trap_detection_signals",
+                "distractor_analysis", "fast_solving_method",
+                "common_mistakes", "supplementary_practice",
+            )
+            missing = [field for field in required if not getattr(self, field).strip()]
+            if missing:
+                raise ValidationError({
+                    field: "برای انتشار محتوای آموزشی تکمیل این بخش الزامی است."
+                    for field in missing
+                })
+
+    def __str__(self):
+        return f"آموزش ویژه سؤال {self.question_id}"
