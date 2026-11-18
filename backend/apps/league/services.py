@@ -85,7 +85,7 @@ def close_season(season_id, actor, note=""):
     season.refresh_from_db()
     return season
 
-def leaderboard_for_season(season_id, limit=100):
+def leaderboard_for_season(season_id, limit=100, province=None):
     """Aggregate ledger entries; no client-supplied scores are accepted."""
     from django.db.models import Count, IntegerField, Value
     from django.db.models.functions import Coalesce
@@ -97,7 +97,10 @@ def leaderboard_for_season(season_id, limit=100):
         entry__season_id=OuterRef("season_id"),
         entry__user_id=OuterRef("user_id"),
     ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(season=season).values(
+    entries = LeagueScoreEntry.objects.filter(season=season)
+    if province is not None:
+        entries = entries.filter(user__province=province, user__province_verified=True)
+    rows = entries.values(
         "season_id", "user_id", "user__display_name"
     ).annotate(
         base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
