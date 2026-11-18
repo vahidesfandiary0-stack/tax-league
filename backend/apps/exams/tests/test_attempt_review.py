@@ -11,6 +11,11 @@ from apps.exams.models import (
 from apps.payments.models import PaymentOrder
 from apps.questions.models import Question, QuestionPremiumLesson
 from apps.subscriptions.models import SubscriptionPlan, UserSubscription
+from apps.questions.services import (
+    publish_premium_lesson,
+    review_premium_lesson,
+    submit_premium_lesson_for_review,
+)
 
 
 class AttemptReviewAccessTests(TestCase):
@@ -18,6 +23,7 @@ class AttemptReviewAccessTests(TestCase):
         self.client = APIClient()
         self.user = User.objects.create_user("09120000001")
         self.other_user = User.objects.create_user("09120000002")
+        self.reviewer = User.objects.create_user("09120000003")
         self.question = Question.objects.create(
             subject=Question.Subject.VAT,
             prompt="متن سؤال آزمایشی",
@@ -40,9 +46,12 @@ class AttemptReviewAccessTests(TestCase):
             common_mistakes="خطای رایج",
             supplementary_practice="تمرین تکمیلی",
             practice_answer="پاسخ تمرین",
-            status=QuestionPremiumLesson.Status.PUBLISHED,
             author=self.user,
         )
+        submit_premium_lesson_for_review(self.lesson.pk, self.user)
+        review_premium_lesson(self.lesson.pk, self.reviewer, approve=True)
+        publish_premium_lesson(self.lesson.pk)
+        self.lesson.refresh_from_db()
 
     def _make_attempt(self, owner, status):
         attempt = ExamAttempt.objects.create(
