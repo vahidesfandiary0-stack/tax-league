@@ -156,18 +156,36 @@ class QuestionPremiumLesson(models.Model):
         super().clean()
         if self.reviewer_id and self.reviewer_id == self.author_id:
             raise ValidationError({"reviewer": "نویسنده نمی‌تواند بازبین محتوای خودش باشد."})
+        if self.status in (self.Status.APPROVED, self.Status.PUBLISHED):
+            if not self.reviewer_id:
+                raise ValidationError({"reviewer": "تأیید و انتشار به بازبین مستقل نیاز دارد."})
+            if self.reviewer_id == self.author_id:
+                raise ValidationError({"reviewer": "نویسنده نمی‌تواند محتوای خودش را تأیید کند."})
         if self.status == self.Status.PUBLISHED:
-            required = (
-                "traps_and_techniques", "trap_detection_signals",
-                "distractor_analysis", "fast_solving_method",
-                "setter_insight", "common_mistakes", "supplementary_practice",
-            )
-            missing = [field for field in required if not getattr(self, field).strip()]
-            if missing:
-                raise ValidationError({
-                    field: "برای انتشار محتوای آموزشی تکمیل این بخش الزامی است."
-                    for field in missing
-                })
+            self.validate_publishable()
+
+    def validate_publishable(self):
+        required = (
+            "traps_and_techniques", "trap_detection_signals",
+            "distractor_analysis", "fast_solving_method",
+            "setter_insight", "common_mistakes", "supplementary_practice",
+        )
+        missing = [field for field in required if not getattr(self, field).strip()]
+        if missing:
+            raise ValidationError({
+                field: "برای انتشار محتوای آموزشی تکمیل این بخش الزامی است."
+                for field in missing
+            })
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values("status").first()
+            if previous:
+                if previous["status"] == self.Status.PUBLISHED:
+                    raise ValidationError("محتوای منتشرشده قابل ویرایش نیست؛ نسخه جدید ایجاد کنید.")
+                if previous["status"] != self.status:
+                    raise ValidationError("تغییر وضعیت فقط از مسیر گردش‌کار بازبینی مجاز است.")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"آموزش ویژه سؤال {self.question_id}"
