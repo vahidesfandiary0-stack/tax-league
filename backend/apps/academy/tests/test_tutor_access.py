@@ -113,3 +113,20 @@ def test_tutor_conversation_history_is_hidden_without_subscription():
     response = client.get("/api/v1/academy/tutor/conversations/")
 
     assert response.status_code == 403
+
+
+
+def test_tutor_refuses_to_guess_when_no_reviewed_official_source_exists():
+    from unittest.mock import patch
+
+    from apps.academy.services import generate_tutor_answer
+
+    with patch.dict("os.environ", {"AI_API_KEY": "test-key", "AI_MODEL": "test-model"}):
+        with patch("apps.academy.services.retrieve_official_sources", return_value=[]):
+            with patch("apps.academy.services.urlopen") as network:
+                answer, citations, confidence = generate_tutor_answer("موضوع بدون مستند", [])
+
+    assert "مستند کافی" in answer
+    assert citations == []
+    assert confidence == "low"
+    network.assert_not_called()
