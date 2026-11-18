@@ -17,7 +17,15 @@ def require_academy_subscription(user):
         raise PermissionDenied("برای استفاده از مربی هوشمند باید اشتراک فعال آکادمی داشته باشید.")
 
 
-class TutorConversationListView(APIView):
+class PrivateTutorResponseMixin:
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        response["Vary"] = "Authorization"
+        return response
+
+
+class TutorConversationListView(PrivateTutorResponseMixin, APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -26,7 +34,7 @@ class TutorConversationListView(APIView):
         return Response(TutorConversationSerializer(conversations, many=True).data)
 
 
-class TutorChatView(APIView):
+class TutorChatView(PrivateTutorResponseMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_scope = "tutor_chat"
     max_question_length = 4000
