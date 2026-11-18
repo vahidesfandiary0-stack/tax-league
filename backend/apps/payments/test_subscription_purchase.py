@@ -75,3 +75,19 @@ class SubscriptionPurchaseFlowTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             submit_payment(order.pk, self.user, invalid)
+
+
+
+    def test_payment_order_cannot_be_approved_by_direct_model_save(self):
+        order = create_subscription_order(self.user, self.plan.pk)
+        order.status = PaymentOrder.Status.APPROVED
+        with self.assertRaises(ValidationError):
+            order.save()
+
+    def test_payment_order_cannot_skip_receipt_review(self):
+        order = create_subscription_order(self.user, self.plan.pk)
+        order.status = PaymentOrder.Status.APPROVED
+        order.reviewer = self.admin
+        order.reviewed_at = timezone.now()
+        with self.assertRaises(ValidationError):
+            order.save()
