@@ -40,6 +40,16 @@ jobs:
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
 
+
+      - name: Verify production API health before release build
+        env:
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl --fail --silent --show-error --max-time 20 "${API_BASE_URL%/}/api/v1/health/")
+          printf '%s' "$RESPONSE" | python -c 'import json,sys; data=json.load(sys.stdin); assert data.get("status") == "ok", f"Unexpected API health response: {data}"'
+          echo "Production API health check passed."
+
       - name: Install Flutter dependencies
         working-directory: mobile
         run: flutter pub get
@@ -115,6 +125,12 @@ jobs:
           API_BASE_URL: ${{ inputs.api_base_url }}
         run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
 
+      - name: Build signed Android App Bundle
+        working-directory: mobile
+        env:
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        run: flutter build appbundle --release --dart-define=API_BASE_URL="$API_BASE_URL"
+
       - name: Verify APK signature
         working-directory: mobile
         run: |
@@ -147,6 +163,19 @@ jobs:
           echo "Diagnostic report generated: $REPORT"
           cat "$REPORT"
 
+
+      - name: Verify App Bundle signature and generate release checksums
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$AAB"
+          jarsigner -verify -strict -verbose "$AAB"
+          mkdir -p build/reports
+          sha256sum "$APK" "$AAB" > build/reports/release-sha256.txt
+          cat build/reports/release-sha256.txt
+
       - name: Upload Android diagnostic report
         uses: actions/upload-artifact@v4
         with:
@@ -160,5 +189,21 @@ jobs:
         with:
           name: tax-league-release-apk
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload signed Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-league-release-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-league-release-checksums
+          path: mobile/build/reports/release-sha256.txt
           if-no-files-found: error
           retention-days: 14
