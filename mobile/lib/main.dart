@@ -319,6 +319,21 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   ));
 
 
+  Future<void> _showAttemptReview(String attemptId) async {
+    setState(() { busy = true; error = null; });
+    try {
+      final review = await api.request('exams/attempts/' + attemptId + '/review/');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AttemptReviewPage(api: api, review: Map<String, dynamic>.from(review)),
+      ));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> _showAppealForm(String attemptId, String examTitle) async {
     final reason = TextEditingController();
     final details = TextEditingController();
@@ -434,8 +449,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         subtitle: Text('شناسه: ' + item['id'].toString() + '\nصحیح: ' + item['correct_count'].toString() +
           ' · غلط: ' + item['wrong_count'].toString() + ' · نزده: ' + item['blank_count'].toString()),
         isThreeLine: true,
-        onTap: () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
-        trailing: Text((item['score'] ?? 0).toString() + ' امتیاز'),
+        onTap: busy ? null : () => _showAttemptReview(item['id'].toString()),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text((item['score'] ?? 0).toString() + ' امتیاز'),
+          IconButton(
+            tooltip: 'ثبت اعتراض',
+            onPressed: busy ? null : () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
+            icon: const Icon(Icons.gavel_outlined),
+          ),
+        ]),
       ),
     ]))),
     Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -761,3 +783,228 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
     );
   }
 }
+
+
+
+class AttemptReviewPage extends StatelessWidget {
+  const AttemptReviewPage({super.key, required this.api, required this.review});
+  final LeagueApi api;
+  final Map<String, dynamic> review;
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = List<dynamic>.from(review['questions'] ?? []);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('مرور پاسخ‌ها و آموزش')),
+        body: ListView(padding: const EdgeInsets.all(16), children: [
+          Card(child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('امتیاز: ${review['score']}  ·  صحیح: ${review['correct_count']}  ·  غلط: ${review['wrong_count']}'),
+          )),
+          for (final raw in questions) _reviewQuestion(context, Map<String, dynamic>.from(raw)),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => SubscriptionPlansPage(api: api),
+            )),
+            icon: const Icon(Icons.workspace_premium),
+            label: const Text('مشاهده و خرید اشتراک آکادمی'),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _reviewQuestion(BuildContext context, Map<String, dynamic> question) {
+    final options = List<dynamic>.from(question['options'] ?? []);
+    final selectedId = question['selected_option_id'];
+    final lesson = question['premium_lesson'];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('سؤال ${question['position']}', style: const TextStyle(color: Color(0xFFC6A96A), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(question['prompt'] ?? '', style: const TextStyle(fontSize: 17, height: 1.7)),
+          const SizedBox(height: 12),
+          for (final option in options)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                option['is_correct'] == true ? Icons.check_circle : (option['id'] == selectedId ? Icons.cancel : Icons.circle_outlined),
+                color: option['is_correct'] == true ? Colors.greenAccent : (option['id'] == selectedId ? Colors.orangeAccent : Colors.white38),
+              ),
+              title: Text(option['text'] ?? ''),
+              subtitle: option['id'] == selectedId ? const Text('پاسخ انتخابی شما') : null,
+            ),
+          const Divider(),
+          const Text('پاسخ تشریحی عمومی', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text((question['explanation'] ?? '').toString().isEmpty ? 'برای این سؤال پاسخ تشریحی ثبت نشده است.' : question['explanation'].toString()),
+          const SizedBox(height: 12),
+          if (lesson is Map) ...[
+            const Text('آموزش ویژه مشترکان', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('۱. شناخت تله‌ها و ترفندهای طراح', lesson['traps_and_techniques']),
+            _lessonSection('نشانه‌های تشخیص تله', lesson['trap_detection_signals']),
+            _lessonSection('۲. تحلیل گزینه‌های انحرافی', lesson['distractor_analysis']),
+            _lessonSection('۳. روش تشخیص سریع پاسخ', lesson['fast_solving_method']),
+            _lessonSection('۴. خطاهای رایج', lesson['common_mistakes']),
+            _lessonSection('۵. تمرین تکمیلی', lesson['supplementary_practice']),
+            _lessonSection('پاسخ تمرین', lesson['practice_answer']),
+            _lessonSection('منبع قانونی', lesson['legal_source_reference']),
+            _lessonSection('تاریخ اثرگذاری', lesson['legal_effective_date']),
+          ] else if (question['premium_locked'] == true) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF27344A),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFC6A96A)),
+              ),
+              child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.lock, color: Color(0xFFC6A96A)),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('آموزش شناخت تله‌ها و ترفندهای به‌کاررفته در این سؤال', style: TextStyle(fontWeight: FontWeight.bold))),
+                ]),
+                SizedBox(height: 6),
+                Text('روش حل سریع، تحلیل دام‌های گزینه‌ها و تمرین تکمیلی فقط با اشتراک آکادمی قابل مشاهده است.'),
+              ]),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  Widget _lessonSection(String title, dynamic value) {
+    final text = (value ?? '').toString().trim();
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(text, style: const TextStyle(height: 1.6)),
+      ]),
+    );
+  }
+}
+
+
+class SubscriptionPlansPage extends StatefulWidget {
+  const SubscriptionPlansPage({super.key, required this.api});
+  final LeagueApi api;
+
+  @override
+  State<SubscriptionPlansPage> createState() => _SubscriptionPlansPageState();
+}
+
+class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
+  List<dynamic> plans = [];
+  Map<String, dynamic>? subscription;
+  Map<String, dynamic>? paymentInstructions;
+  Map<String, dynamic>? createdOrder;
+  bool loading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final data = await Future.wait([
+        widget.api.request('payments/plans/'),
+        widget.api.request('payments/subscription/me/'),
+        widget.api.request('payments/instructions/'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        plans = List<dynamic>.from(data[0] as List);
+        subscription = Map<String, dynamic>.from(data[1] as Map);
+        paymentInstructions = Map<String, dynamic>.from(data[2] as Map);
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _createOrder(String planId) async {
+    setState(() { loading = true; error = null; });
+    try {
+      final order = await widget.api.requestPost('payments/orders/create/', {
+        'product_type': 'subscription',
+        'plan_id': planId,
+      });
+      if (!mounted) return;
+      setState(() => createdOrder = Map<String, dynamic>.from(order));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('اشتراک آکادمی تله‌شناسی')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        if (loading) const LinearProgressIndicator(),
+        if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!))),
+        if (subscription?['active'] == true)
+          Card(child: ListTile(
+            leading: const Icon(Icons.verified, color: Colors.greenAccent),
+            title: Text('اشتراک فعال: ${subscription?['plan']}'),
+            subtitle: Text('اعتبار تا: ${subscription?['ends_at']}'),
+          ))
+        else
+          const Card(child: ListTile(
+            leading: Icon(Icons.lock_outline),
+            title: Text('برای دسترسی به آموزش‌های ویژه و مربی هوشمند اشتراک فعال لازم است.'),
+          )),
+        const SizedBox(height: 8),
+        const Text('طرح‌های اشتراک', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        if (plans.isEmpty && !loading) const Text('در حال حاضر طرح فعالی ثبت نشده است.'),
+        for (final plan in plans)
+          Card(child: ListTile(
+            title: Text(plan['title'] ?? 'طرح اشتراک'),
+            subtitle: Text('${plan['duration_days']} روز · ${plan['price_irr']} ریال'),
+            trailing: FilledButton(
+              onPressed: loading ? null : () => _createOrder(plan['id'].toString()),
+              child: const Text('ایجاد سفارش'),
+            ),
+          )),
+        if (createdOrder != null) Card(child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('سفارش ثبت شد؛ فعال‌سازی پس از بررسی و تأیید پرداخت انجام می‌شود.', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SelectableText('شناسه سفارش: ${createdOrder!['id']}'),
+            Text('مبلغ: ${createdOrder!['amount_irr']} ریال'),
+            if (paymentInstructions?['configured'] == true) ...[
+              const Divider(),
+              Text('شماره کارت: ${paymentInstructions!['card_number']}'),
+              Text('به نام: ${paymentInstructions!['account_holder']}'),
+              const SizedBox(height: 8),
+              const Text('پس از واریز، رسید پرداخت باید از مسیر ثبت رسید سفارش ارسال شود.'),
+            ] else
+              Text(paymentInstructions?['detail'] ?? 'اطلاعات پرداخت هنوز تنظیم نشده است.'),
+          ]),
+        )),
+      ]),
+    ),
+  );
+}
+
