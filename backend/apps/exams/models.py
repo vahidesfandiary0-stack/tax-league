@@ -7,6 +7,7 @@ from django.db import models
 
 class Exam(models.Model):
     class Kind(models.TextChoices):
+        NIGHTLY = "nightly", "آزمون شبانه"
         DAILY = "daily", "آزمون روزانه"
         WEEKLY = "weekly", "آزمون هفتگی"
         MOCK = "mock", "آزمون جامع"
