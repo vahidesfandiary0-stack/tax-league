@@ -69,6 +69,7 @@ class PremiumLessonSerializer(serializers.Serializer):
     trap_detection_signals = serializers.CharField()
     distractor_analysis = serializers.CharField()
     fast_solving_method = serializers.CharField()
+    setter_insight = serializers.CharField()
     common_mistakes = serializers.CharField()
     supplementary_practice = serializers.CharField()
     practice_answer = serializers.CharField()
