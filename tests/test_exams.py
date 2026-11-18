@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.exams.models import Exam, ExamQuestion
 from apps.exams.services import finalize_attempt, save_answer, start_attempt
 from apps.questions.models import Question, QuestionOption
+from apps.questions.services import publish_question, review_question, submit_for_review, verify_question_source
 
 
 class ExamEngineTests(TestCase):
@@ -15,7 +16,9 @@ class ExamEngineTests(TestCase):
         author = get_user_model().objects.create_user(phone_number="09122222222")
         reviewer = get_user_model().objects.create_user(phone_number="09123333333")
         question = Question.objects.create(
-            subject=Question.Subject.DIRECT_TAX, prompt="سؤال تستی؟",
+            subject=Question.Subject.DIRECT_TAX, difficulty=Question.Difficulty.HARD,
+            prompt="سؤال تستی؟", explanation="پاسخ تشریحی تستی.",
+            source_reference="قانون آزمایشی، ماده ۱",
             author=author, reviewer=reviewer, status=Question.Status.DRAFT,
         )
         self.options = []
@@ -23,8 +26,10 @@ class ExamEngineTests(TestCase):
             self.options.append(QuestionOption.objects.create(
                 question=question, position=pos, text=f"گزینه {pos}", is_correct=(pos == 1)
             ))
-        question.status = Question.Status.PUBLISHED
-        question.save()
+        submit_for_review(question.pk, author)
+        review_question(question.pk, reviewer, True)
+        verify_question_source(question.pk, reviewer)
+        publish_question(question.pk)
         self.exam = Exam.objects.create(
             title="آزمون آزمایشی", kind=Exam.Kind.DAILY,
             duration_minutes=20, status=Exam.Status.DRAFT,

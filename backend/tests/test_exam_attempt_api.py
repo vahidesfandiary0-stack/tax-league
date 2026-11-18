@@ -99,6 +99,7 @@ def test_nightly_exam_submission_updates_national_and_verified_provincial_leader
     )
     question = Question.objects.create(
         subject=Question.Subject.VAT,
+        difficulty=Question.Difficulty.HARD,
         prompt="در سناریوی آزمایشی، پاسخ صحیح کدام است؟",
         explanation="تشریح پاسخ آزمون شبانه.",
         author=user,

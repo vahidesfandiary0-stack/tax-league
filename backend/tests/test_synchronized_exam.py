@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.exams.models import Exam, ExamAttempt, ExamQuestion
 from apps.exams.services import finalize_attempt, start_attempt
 from apps.questions.models import Question, QuestionOption
+from apps.questions.services import publish_question, review_question, submit_for_review, verify_question_source
 
 
 @pytest.mark.django_db
@@ -16,15 +17,20 @@ def test_scheduled_exam_gives_every_participant_the_same_server_deadline(monkeyp
     first = user_model.objects.create_user(phone_number="09120000002")
     second = user_model.objects.create_user(phone_number="09120000003")
     question = Question.objects.create(
-        subject=Question.Subject.DIRECT_TAX, prompt="سؤال زمان‌بندی", author=owner,
+        subject=Question.Subject.DIRECT_TAX, difficulty=Question.Difficulty.HARD,
+        prompt="سؤال زمان‌بندی", explanation="پاسخ تشریحی زمان‌بندی.",
+        source_reference="قانون آزمایشی، ماده ۱", author=owner,
     )
     for position in range(1, 5):
         QuestionOption.objects.create(
             question=question, position=position, text=f"گزینه {position}",
             is_correct=(position == 1),
         )
-    question.status = Question.Status.PUBLISHED
-    question.save(update_fields=["status"])
+    reviewer = user_model.objects.create_user(phone_number="09120000004")
+    submit_for_review(question.pk, owner)
+    review_question(question.pk, reviewer, True)
+    verify_question_source(question.pk, reviewer)
+    publish_question(question.pk)
 
     scheduled_start = timezone.now() - timedelta(minutes=2)
     exam = Exam.objects.create(
@@ -59,15 +65,20 @@ def test_scheduled_exam_cannot_be_finalized_before_shared_deadline(monkeypatch):
     owner = user_model.objects.create_user(phone_number="09120000011")
     participant = user_model.objects.create_user(phone_number="09120000012")
     question = Question.objects.create(
-        subject=Question.Subject.DIRECT_TAX, prompt="سؤال پایان", author=owner,
+        subject=Question.Subject.DIRECT_TAX, difficulty=Question.Difficulty.HARD,
+        prompt="سؤال پایان", explanation="پاسخ تشریحی پایان.",
+        source_reference="قانون آزمایشی، ماده ۲", author=owner,
     )
     for position in range(1, 5):
         QuestionOption.objects.create(
             question=question, position=position, text=f"گزینه {position}",
             is_correct=(position == 1),
         )
-    question.status = Question.Status.PUBLISHED
-    question.save(update_fields=["status"])
+    reviewer = user_model.objects.create_user(phone_number="09120000014")
+    submit_for_review(question.pk, owner)
+    review_question(question.pk, reviewer, True)
+    verify_question_source(question.pk, reviewer)
+    publish_question(question.pk)
     scheduled_start = timezone.now() - timezone.timedelta(minutes=1)
     exam = Exam.objects.create(
         title="آزمون پایان مشترک", kind=Exam.Kind.WEEKLY, duration_minutes=20,
