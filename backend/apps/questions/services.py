@@ -64,8 +64,11 @@ def submit_premium_lesson_for_review(lesson_id, actor):
         raise ValidationError("فقط نویسنده می‌تواند محتوای خود را برای بازبینی ارسال کند.")
     if lesson.status != QuestionPremiumLesson.Status.DRAFT:
         raise ValidationError("فقط محتوای پیش‌نویس قابل ارسال برای بازبینی است.")
-    lesson.status = QuestionPremiumLesson.Status.REVIEW
-    lesson.save(update_fields=["status", "updated_at"])
+    now = timezone.now()
+    QuestionPremiumLesson.objects.filter(pk=lesson.pk).update(
+        status=QuestionPremiumLesson.Status.REVIEW, updated_at=now
+    )
+    lesson.refresh_from_db()
     return lesson
 
 
