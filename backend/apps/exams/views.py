@@ -113,3 +113,9 @@ class AttemptReviewView(RetrieveAPIView):
         context = super().get_serializer_context()
         context["has_premium_access"] = has_active_academy_access(self.request.user)
         return context
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        response["Vary"] = "Authorization"
+        return response
