@@ -72,7 +72,11 @@ def generate_tutor_answer(question, history):
         for source in sources
     )
     if not sources:
-        source_text = "هیچ متن رسمیِ بررسی‌شده و معتبر در پایگاه دانش برای این پرسش پیدا نشد."
+        return (
+            "در منابع رسمیِ بررسی‌شده و معتبرِ موجود در سامانه، مستند کافی برای پاسخ به این پرسش پیدا نکردم. برای جلوگیری از ارائه اطلاعات مالیاتی حدسی، لطفاً موضوع را با کارشناس بررسی کنید یا پس از تکمیل منابع دوباره بپرسید.",
+            [],
+            "low",
+        )
 
     messages = [{
         "role": "system",
@@ -94,6 +98,7 @@ def generate_tutor_answer(question, history):
         "model": model,
         "messages": messages,
         "temperature": 0.2,
+        "max_tokens": 1200,
     }).encode("utf-8")
     request = Request(
         f"{base_url}/chat/completions",
