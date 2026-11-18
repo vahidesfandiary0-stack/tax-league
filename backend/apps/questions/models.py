@@ -18,6 +18,8 @@ class Question(models.Model):
         EASY = "easy", "آسان"
         MEDIUM = "medium", "متوسط"
         HARD = "hard", "سخت"
+        VERY_HARD = "very_hard", "بسیار سخت"
+        SPECIALIZED = "specialized", "تخصصی"
 
     class Provenance(models.TextChoices):
         OFFICIAL = "official", "متن رسمی آزمون"
@@ -39,6 +41,11 @@ class Question(models.Model):
     variant_config = models.JSONField(default=dict, blank=True)
     explanation = models.TextField(blank=True)
     source_reference = models.CharField(max_length=500, blank=True)
+    source_verified_at = models.DateTimeField(null=True, blank=True)
+    source_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="source_verified_questions",
+    )
     valid_from = models.DateField(null=True, blank=True)
     valid_until = models.DateField(null=True, blank=True)
     provenance = models.CharField(max_length=20, choices=Provenance.choices, default=Provenance.AUTHORED)
@@ -62,8 +69,22 @@ class Question(models.Model):
         indexes = [models.Index(fields=["status", "subject"], name="questions_status_subject_idx"), models.Index(fields=["provenance"], name="questions_provenance_idx")]
 
     def save(self, *args, **kwargs):
-        if self.pk and Question.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
+        old = Question.objects.filter(pk=self.pk).first() if self.pk else None
+        if old and old.status == self.Status.PUBLISHED:
             raise ValidationError("سؤال منتشرشده قابل ویرایش نیست؛ برای اصلاح باید نسخه جدید ساخته شود.")
+        if self.status == self.Status.PUBLISHED and not getattr(self, "_allow_publish", False):
+            raise ValidationError("انتشار سؤال فقط از مسیر کنترل‌شده و پس از تأیید منبع رسمی مجاز است.")
+        if old:
+            content_fields = (
+                "subject", "difficulty", "prompt", "explanation", "source_reference",
+                "valid_from", "valid_until", "provenance", "provenance_note",
+            )
+            changed = any(getattr(old, field) != getattr(self, field) for field in content_fields)
+            if old.status not in (self.Status.DRAFT, self.Status.REJECTED) and changed:
+                raise ValidationError("محتوای سؤالِ در انتظار بررسی یا تأییدشده قابل ویرایش نیست.")
+            if changed:
+                self.source_verified_at = None
+                self.source_verified_by = None
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -91,15 +112,15 @@ class QuestionOption(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if self.pk and Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("گزینه سؤال منتشرشده قابل ویرایش نیست.")
-        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("برای سؤال منتشرشده نمی‌توان گزینه جدید افزود.")
+        question = Question.objects.get(pk=self.question_id)
+        if question.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            raise ValidationError("گزینه‌های سؤال پس از ارسال برای بررسی قابل ویرایش نیستند.")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if Question.objects.filter(pk=self.question_id, status=Question.Status.PUBLISHED).exists():
-            raise ValidationError("گزینه سؤال منتشرشده قابل حذف نیست.")
+        question = Question.objects.get(pk=self.question_id)
+        if question.status not in (Question.Status.DRAFT, Question.Status.REJECTED):
+            raise ValidationError("گزینه‌های سؤال پس از ارسال برای بررسی قابل حذف نیستند.")
         return super().delete(*args, **kwargs)
 
     def __str__(self):

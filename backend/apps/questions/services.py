@@ -32,8 +32,16 @@ def review_question(question_id, reviewer, approve, reason=""):
         raise ValidationError("فقط سؤالِ در انتظار بررسی قابل تصمیم‌گیری است.")
     if question.author_id == reviewer.pk:
         raise ValidationError("نویسنده نمی‌تواند سؤال خودش را بررسی کند.")
-    if approve and (question.options.count() != 4 or question.options.filter(is_correct=True).count() != 1):
-        raise ValidationError("ساختار سؤال کامل نیست؛ چهار گزینه و یک پاسخ صحیح لازم است.")
+    if approve:
+        if question.difficulty not in (
+            Question.Difficulty.HARD, Question.Difficulty.VERY_HARD,
+            Question.Difficulty.SPECIALIZED,
+        ):
+            raise ValidationError("فقط سؤال‌های سخت، بسیار سخت یا تخصصی قابل تأیید برای آزمون رسمی هستند.")
+        if not question.source_reference.strip() or not question.explanation.strip():
+            raise ValidationError("منبع قانونی و پاسخ تشریحی مستند برای تأیید سؤال الزامی است.")
+        if question.options.count() != 4 or question.options.filter(is_correct=True).count() != 1:
+            raise ValidationError("ساختار سؤال کامل نیست؛ چهار گزینه و یک پاسخ صحیح لازم است.")
     question.reviewer = reviewer
     question.review_decision = "approved" if approve else "rejected"
     question.review_reason = reason
@@ -48,11 +56,36 @@ def publish_question(question_id):
     question = Question.objects.select_for_update().get(pk=question_id)
     if question.status != Question.Status.APPROVED or not question.reviewer_id:
         raise ValidationError("فقط سؤال تأییدشده توسط بازبین دیگر قابل انتشار است.")
+    if not question.source_reference.strip() or not question.explanation.strip():
+        raise ValidationError("منبع قانونی و پاسخ تشریحی مستند برای انتشار الزامی است.")
+    if not question.source_verified_by_id or not question.source_verified_at:
+        raise ValidationError("تطبیق منبع رسمی باید جداگانه توسط بازبین ثبت شود.")
+    if question.difficulty not in (
+        Question.Difficulty.HARD, Question.Difficulty.VERY_HARD,
+        Question.Difficulty.SPECIALIZED,
+    ):
+        raise ValidationError("فقط سؤال‌های سخت، بسیار سخت یا تخصصی قابل انتشار هستند.")
     if question.options.count() != 4 or question.options.filter(is_correct=True).count() != 1:
         raise ValidationError("سؤال باید دقیقاً چهار گزینه و یک پاسخ صحیح داشته باشد.")
     question.status = Question.Status.PUBLISHED
     question.published_at = timezone.now()
+    question._allow_publish = True
     question.save(update_fields=["status", "published_at", "updated_at"])
+    return question
+
+
+@transaction.atomic
+def verify_question_source(question_id, verifier):
+    question = Question.objects.select_for_update().get(pk=question_id)
+    if question.status != Question.Status.APPROVED or not question.reviewer_id:
+        raise ValidationError("فقط سؤال تأییدشده توسط بازبین مستقل قابل تطبیق منبع است.")
+    if question.author_id == verifier.pk:
+        raise ValidationError("نویسنده نمی‌تواند منبع سؤال خودش را تطبیق دهد.")
+    if not question.source_reference.strip():
+        raise ValidationError("نشانی ماده یا مرجع رسمی قانونی الزامی است.")
+    question.source_verified_by = verifier
+    question.source_verified_at = timezone.now()
+    question.save(update_fields=["source_verified_by", "source_verified_at", "updated_at"])
     return question
 
 
