@@ -6,7 +6,7 @@ from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from apps.exams.models import ExamAttempt
+from apps.exams.models import Exam, ExamAttempt
 from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 
 
@@ -17,7 +17,7 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    if not attempt.exam.counts_for_league or attempt.exam.kind != Exam.Kind.NIGHTLY:
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
