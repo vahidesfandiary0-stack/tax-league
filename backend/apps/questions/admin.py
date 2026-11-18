@@ -5,7 +5,7 @@ from config.admin_audit import record_admin_action
 from apps.exams.focus import get_exam_focus_state
 
 from .models import Question, QuestionOption, QuestionPremiumLesson
-from .services import publish_question, review_question, submit_for_review
+from .services import (\n    publish_question, review_question, submit_for_review,\n    publish_premium_lesson, review_premium_lesson, submit_premium_lesson_for_review,\n)
 
 
 def warn_admin_during_exam(request):
@@ -102,12 +102,49 @@ class QuestionAdmin(admin.ModelAdmin):
 
 
 
+@admin.action(description="ارسال محتوای انتخاب‌شده برای بازبینی (توسط نویسنده)")
+def submit_premium_selected(modeladmin, request, queryset):
+    count = 0
+    for lesson in queryset:
+        try:
+            submit_premium_lesson_for_review(lesson.pk, request.user)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    modeladmin.message_user(request, f"{count} محتوا برای بازبینی ارسال شد.")
+
+
+@admin.action(description="تأیید محتوای انتخاب‌شده (بازبین مستقل)")
+def approve_premium_selected(modeladmin, request, queryset):
+    count = 0
+    for lesson in queryset:
+        try:
+            review_premium_lesson(lesson.pk, request.user, approve=True)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    modeladmin.message_user(request, f"{count} محتوا تأیید شد.")
+
+
+@admin.action(description="انتشار محتوای تأییدشده")
+def publish_premium_selected(modeladmin, request, queryset):
+    count = 0
+    for lesson in queryset:
+        try:
+            publish_premium_lesson(lesson.pk)
+            count += 1
+        except (ValidationError, QuestionPremiumLesson.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{lesson.pk}: {exc}", level=messages.ERROR)
+    modeladmin.message_user(request, f"{count} محتوا منتشر شد.")
+
+
 @admin.register(QuestionPremiumLesson)
 class QuestionPremiumLessonAdmin(admin.ModelAdmin):
     list_display = ("question", "status", "author", "reviewer", "updated_at")
     list_filter = ("status", "legal_effective_date")
     search_fields = ("question__prompt", "traps_and_techniques", "legal_source_reference")
-    readonly_fields = ("reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("status", "reviewer", "reviewed_at", "published_at", "created_at", "updated_at")
+    actions = [submit_premium_selected, approve_premium_selected, publish_premium_selected]
     fieldsets = (
         ("اتصال به سؤال و وضعیت", {"fields": ("question", "status", "author", "reviewer")}),
         ("آموزش ویژه مشترکان", {"fields": (
@@ -118,3 +155,8 @@ class QuestionPremiumLessonAdmin(admin.ModelAdmin):
         ("استناد قانونی", {"fields": ("legal_source_reference", "legal_effective_date")}),
         ("سوابق", {"fields": ("reviewed_at", "published_at", "created_at", "updated_at")}),
     )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
