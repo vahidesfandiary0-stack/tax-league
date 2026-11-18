@@ -856,6 +856,7 @@ class AttemptReviewPage extends StatelessWidget {
             _lessonSection('روش سریع و معتبر حل سؤال', lesson['fast_solving_method']),
             const Divider(),
             const Text('۵. نکات حرفه‌ای طراح و خطاهای رایج', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
+            _lessonSection('نکته حرفه‌ای طراح', lesson['setter_insight']),
             _lessonSection('اشتباهاتی که باید از آن‌ها دوری کرد', lesson['common_mistakes']),
             const Divider(),
             const Text('۶. تمرین تکمیلی و تثبیت یادگیری', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC6A96A))),
