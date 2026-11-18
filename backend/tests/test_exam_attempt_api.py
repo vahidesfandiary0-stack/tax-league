@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from apps.exams.models import AttemptOption, Exam, ExamQuestion
 from apps.questions.models import Question, QuestionOption
+from apps.questions.services import publish_question, review_question, submit_for_review, verify_question_source
 
 
 @pytest.mark.django_db
@@ -12,7 +13,10 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     user = get_user_model().objects.create_user(phone_number="09127770001")
     question = Question.objects.create(
         subject=Question.Subject.DIRECT_TAX,
+        difficulty=Question.Difficulty.HARD,
         prompt="نرخ نمونه چقدر است؟",
+        explanation="پاسخ تشریحی آزمون آزمایشی.",
+        source_reference="قانون آزمایشی، ماده ۱",
         author=user,
     )
     correct = QuestionOption.objects.create(
@@ -27,8 +31,11 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     QuestionOption.objects.create(
         question=question, position=4, text="گزینه د", is_correct=False,
     )
-    question.status = Question.Status.PUBLISHED
-    question.save(update_fields=["status"])
+    reviewer = get_user_model().objects.create_user(phone_number="09127770002")
+    submit_for_review(question.pk, user)
+    review_question(question.pk, reviewer, True)
+    verify_question_source(question.pk, reviewer)
+    publish_question(question.pk)
     exam = Exam.objects.create(
         title="آزمون API", kind=Exam.Kind.DAILY, duration_minutes=20,
         max_attempts=1,
@@ -103,8 +110,11 @@ def test_nightly_exam_submission_updates_national_and_verified_provincial_leader
         QuestionOption.objects.create(
             question=question, position=position, text=option_text, is_correct=False,
         )
-    question.status = Question.Status.PUBLISHED
-    question.save(update_fields=["status"])
+    reviewer = get_user_model().objects.create_user(phone_number="09127770002")
+    submit_for_review(question.pk, user)
+    review_question(question.pk, reviewer, True)
+    verify_question_source(question.pk, reviewer)
+    publish_question(question.pk)
     exam = Exam.objects.create(
         title="آزمون شبانه یکپارچه",
         kind=Exam.Kind.NIGHTLY,

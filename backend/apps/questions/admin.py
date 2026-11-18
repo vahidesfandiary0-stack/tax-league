@@ -6,7 +6,7 @@ from apps.exams.focus import get_exam_focus_state
 
 from .models import Question, QuestionOption, QuestionPremiumLesson
 from .services import (
-    publish_question, review_question, submit_for_review,
+    publish_question, review_question, submit_for_review, verify_question_source,
     publish_premium_lesson, review_premium_lesson, submit_premium_lesson_for_review,
 )
 
@@ -86,14 +86,31 @@ def publish_selected(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} سؤال منتشر شد.")
 
 
+
+
+@admin.action(description="ثبت تطبیق منبع رسمی برای سؤالات تأییدشده")
+def verify_source_selected(modeladmin, request, queryset):
+    count = 0
+    verified = []
+    for question in queryset:
+        try:
+            verify_question_source(question.pk, request.user)
+            verified.append(question)
+            count += 1
+        except (ValidationError, Question.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
+    record_admin_action(request.user, verified, "تطبیق منبع رسمی سؤال")
+    modeladmin.message_user(request, f"منبع رسمی {count} سؤال ثبت شد.")
+
+
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("id", "subject", "difficulty", "provenance", "status", "author", "reviewer", "version", "created_at")
     list_filter = ("subject", "difficulty", "provenance", "status")
     search_fields = ("prompt", "source_reference", "author__phone_number")
-    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "source_verified_by", "source_verified_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
-    actions = [submit_selected, approve_selected, reject_selected, publish_selected]
+    actions = [submit_selected, approve_selected, reject_selected, verify_source_selected, publish_selected]
 
     def changelist_view(self, request, extra_context=None):
         warn_admin_during_exam(request)
