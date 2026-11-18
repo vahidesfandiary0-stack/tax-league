@@ -107,3 +107,21 @@ def test_incomplete_premium_lesson_cannot_be_approved():
     submit_premium_lesson_for_review(lesson.pk, author)
     with pytest.raises(ValidationError):
         review_premium_lesson(lesson.pk, reviewer, approve=True)
+
+
+
+@pytest.mark.django_db
+def test_new_premium_lesson_cannot_be_created_as_already_published():
+    User = get_user_model()
+    author = User.objects.create_user(phone_number="09125550011")
+    question = Question.objects.create(
+        subject=Question.Subject.DIRECT_TAX,
+        prompt="سؤال انتشار مستقیم",
+        author=author,
+    )
+    with pytest.raises(ValidationError):
+        QuestionPremiumLesson.objects.create(
+            question=question,
+            author=author,
+            status=QuestionPremiumLesson.Status.PUBLISHED,
+        )
