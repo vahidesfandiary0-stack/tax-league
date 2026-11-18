@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from config.admin_audit import record_admin_action
 from apps.exams.focus import get_exam_focus_state
 
-from .models import Question, QuestionOption
+from .models import Question, QuestionOption, QuestionPremiumLesson
 from .services import publish_question, review_question, submit_for_review
 
 
@@ -99,3 +99,22 @@ class QuestionAdmin(admin.ModelAdmin):
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         warn_admin_during_exam(request)
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+
+
+@admin.register(QuestionPremiumLesson)
+class QuestionPremiumLessonAdmin(admin.ModelAdmin):
+    list_display = ("question", "status", "author", "reviewer", "updated_at")
+    list_filter = ("status", "legal_effective_date")
+    search_fields = ("question__prompt", "traps_and_techniques", "legal_source_reference")
+    readonly_fields = ("reviewed_at", "published_at", "created_at", "updated_at")
+    fieldsets = (
+        ("اتصال به سؤال و وضعیت", {"fields": ("question", "status", "author", "reviewer")}),
+        ("آموزش ویژه مشترکان", {"fields": (
+            "traps_and_techniques", "trap_detection_signals",
+            "distractor_analysis", "fast_solving_method",
+            "common_mistakes", "supplementary_practice", "practice_answer",
+        )}),
+        ("استناد قانونی", {"fields": ("legal_source_reference", "legal_effective_date")}),
+        ("سوابق", {"fields": ("reviewed_at", "published_at", "created_at", "updated_at")}),
+    )
