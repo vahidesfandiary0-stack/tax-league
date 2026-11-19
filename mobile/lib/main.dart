@@ -23,6 +23,52 @@ class TaxLeagueApp extends StatelessWidget {
         brightness: Brightness.dark,
         surface: const Color(0xFF17243A),
       ),
+      textTheme: const TextTheme(
+        headlineSmall: TextStyle(
+          fontSize: 22,
+          height: 1.4,
+          fontWeight: FontWeight.w900,
+          color: Color(0xFFF5F1E8),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          color: Color(0xFFF5F1E8),
+        ),
+        titleMedium: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFFF5F1E8),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 13,
+          height: 1.7,
+          color: Color(0xFFE0E7F0),
+        ),
+        bodySmall: TextStyle(
+          fontSize: 11,
+          height: 1.6,
+          color: Color(0xFF9EADC1),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0x223D5575),
+        thickness: 1,
+        space: 20,
+      ),
+      listTileTheme: const ListTileThemeData(
+        iconColor: Color(0xFFD2B477),
+        titleTextStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFFF5F1E8),
+        ),
+        subtitleTextStyle: TextStyle(
+          fontSize: 11,
+          height: 1.6,
+          color: Color(0xFF9EADC1),
+        ),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF101C30),
         foregroundColor: Color(0xFFF5F1E8),
@@ -787,64 +833,173 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
 
     Widget statBox(String label, String value, IconData icon) {
-      return Expanded(child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF101C30),
-          borderRadius: BorderRadius.circular(16),
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 7),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF203653), Color(0xFF111E32)],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0x44D2B477)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 12,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: const Color(0xFFE4C98F), size: 23),
+              const SizedBox(height: 9),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFFFE4A8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFB8C5D6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Column(children: [
-          Icon(icon, color: const Color(0xFFD2B477), size: 21),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(
-            fontSize: 20, fontWeight: FontWeight.w900,
-          )),
-          const SizedBox(height: 4),
-          Text(label, textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 11)),
-        ]),
-      ));
+      );
     }
 
     Widget boardRow(dynamic row, {bool provincial = false}) {
       final position = (row['rank'] ?? '—').toString();
       final name = (row['display_name'] ?? 'کاربر').toString();
       final points = (row['total_score'] ?? 0).toString();
+      final isFirst = position == '1';
+      final isPodium = position == '1' || position == '2' || position == '3';
+      final medalColor = position == '1'
+          ? const Color(0xFFE7C779)
+          : position == '2'
+              ? const Color(0xFFB9C7D8)
+              : const Color(0xFFC58B61);
+
       return Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF101C30),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(children: [
-          CircleAvatar(
-            radius: 17,
-            backgroundColor: position == '1'
-                ? const Color(0xFFD2B477)
-                : const Color(0xFF263A55),
-            foregroundColor: position == '1'
-                ? const Color(0xFF172033) : Colors.white,
-            child: Text(position, style: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.bold,
-            )),
+          gradient: LinearGradient(
+            begin: Alignment.centerRight,
+            end: Alignment.centerLeft,
+            colors: isFirst
+                ? const [Color(0xFF34445A), Color(0xFF1B2B42)]
+                : const [Color(0xFF192A40), Color(0xFF111E32)],
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              if (provincial)
-                Text('آزمون معتبر: ${(row['exams_count'] ?? 0)}',
-                  style: const TextStyle(
-                    color: Color(0xFF9EADC1), fontSize: 11,
-                  )),
-            ],
-          )),
-          Text('$points امتیاز', style: const TextStyle(
-            color: Color(0xFFE4C98F), fontWeight: FontWeight.w800,
-          )),
-        ]),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(
+            color: isPodium
+                ? medalColor.withAlpha(140)
+                : const Color(0x223D5575),
+          ),
+          boxShadow: isFirst
+              ? const [
+                  BoxShadow(
+                    color: Color(0x1FE7C779),
+                    blurRadius: 13,
+                    offset: Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 39,
+              height: 39,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isPodium
+                    ? medalColor.withAlpha(46)
+                    : const Color(0xFF263A55),
+                border: Border.all(
+                  color: isPodium
+                      ? medalColor
+                      : const Color(0x334F6684),
+                ),
+              ),
+              child: Text(
+                position,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: isPodium ? medalColor : Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: isFirst
+                          ? const Color(0xFFFFE4A8)
+                          : const Color(0xFFF5F1E8),
+                    ),
+                  ),
+                  if (provincial)
+                    Text(
+                      'آزمون معتبر: ${(row['exams_count'] ?? 0)}',
+                      style: const TextStyle(
+                        color: Color(0xFF9EADC1),
+                        fontSize: 10,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  points,
+                  style: TextStyle(
+                    color: isFirst
+                        ? const Color(0xFFFFE4A8)
+                        : const Color(0xFFE4C98F),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const Text(
+                  'امتیاز',
+                  style: TextStyle(
+                    color: Color(0xFF9EADC1),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       );
     }
 
@@ -889,30 +1044,127 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ),
           for (final exam in exams)
             Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF263D5B), Color(0xFF17263D)],
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  colors: [Color(0xFF263D5B), Color(0xFF142238)],
                 ),
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: const Color(0x55D2B477)),
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(color: const Color(0x66D2B477)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x22000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 5),
+                  ),
+                ],
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 5,
-                ),
-                title: Text((exam['title'] ?? 'آزمون').toString(),
-                  style: const TextStyle(fontWeight: FontWeight.w800)),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    '${exam['duration_minutes'] ?? '—'} دقیقه  ·  '
-                    '${exam['question_count'] ?? '—'} سؤال',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(19),
+                  onTap: busy ? null : () => _startExam(exam),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0x33D2B477),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: const Color(0x66D2B477),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.nightlight_round,
+                            color: Color(0xFFFFE4A8),
+                            size: 27,
+                          ),
+                        ),
+                        const SizedBox(width: 13),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (exam['title'] ?? 'آزمون').toString(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFFFE4A8),
+                                ),
+                              ),
+                              const SizedBox(height: 9),
+                              Wrap(
+                                spacing: 7,
+                                runSpacing: 7,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x223D9BE9),
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Text(
+                                      '${exam['duration_minutes'] ?? '—'} دقیقه',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFFBBDFFF),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x22D2B477),
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Text(
+                                      '${exam['question_count'] ?? '—'} سؤال',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFFFFE4A8),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 9),
+                              const Text(
+                                'برای ورود به میدان رقابت لمس کنید',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF9EADC1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: Color(0xFFE7C779),
+                          size: 36,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                trailing: const Icon(Icons.play_circle_fill,
-                  color: Color(0xFFD2B477), size: 34),
-                onTap: busy ? null : () => _startExam(exam),
               ),
             ),
         ]),
@@ -1207,7 +1459,16 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final question = questions.isEmpty ? null : Map<String, dynamic>.from(questions[currentIndex]);
+    final question = questions.isEmpty
+        ? null
+        : Map<String, dynamic>.from(questions[currentIndex]);
+
+    final progress = questions.isEmpty
+        ? 0.0
+        : (currentIndex + 1) / questions.length;
+
+    final urgent = remaining.inMinutes < 2;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: PopScope(
@@ -1216,70 +1477,329 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
           appBar: AppBar(
             automaticallyImplyLeading: false,
             title: Text(widget.examTitle),
-            actions: [Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              child: Text(clockText, style: TextStyle(
-                color: remaining.inMinutes < 2 ? Colors.orangeAccent : const Color(0xFFC6A96A),
-                fontWeight: FontWeight.bold,
-              )),
-            )],
-          ),
-          body: question == null
-            ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
-            : ListView(padding: const EdgeInsets.all(16), children: [
-              LinearProgressIndicator(value: (currentIndex + 1) / questions.length),
-              const SizedBox(height: 12),
-              Text('سؤال ${currentIndex + 1} از ${questions.length}', style: const TextStyle(color: Color(0xFFC6A96A))),
-              if (restoringPending) const LinearProgressIndicator(),
-              if (pendingAnswers.isNotEmpty) Card(
-                child: Padding(padding: const EdgeInsets.all(12), child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('${pendingAnswers.length} پاسخ هنوز به سرور ارسال نشده است.'),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: busy ? null : _syncPendingAnswers,
-                      icon: const Icon(Icons.sync),
-                      label: const Text('ارسال پاسخ‌های ذخیره‌شده'),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: urgent
+                        ? Colors.orange.withOpacity(0.15)
+                        : const Color(0xFFC6A96A).withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: urgent ? Colors.orangeAccent : const Color(0xFFC6A96A),
                     ),
-                  ],
-                )),
-              ),
-              if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!))),
-              Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(
-                question['prompt'] ?? '', style: const TextStyle(fontSize: 18, height: 1.8),
-              ))),
-              for (final option in List<dynamic>.from(question['options'] ?? []))
-                Card(
-                  child: RadioListTile<int>(
-                    value: option['id'] as int,
-                    groupValue: selected[question['id'] as int],
-                    onChanged: busy || finished || restoringPending ? null : (value) {
-                      if (value != null) _choose(question['id'] as int, value);
-                    },
-                    title: Text(option['text'] ?? ''),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 18,
+                        color: urgent ? Colors.orangeAccent : const Color(0xFFE4C98F),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        clockText,
+                        style: TextStyle(
+                          color: urgent ? Colors.orangeAccent : const Color(0xFFE4C98F),
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: OutlinedButton(
-                  onPressed: currentIndex == 0 ? null : () => setState(() => currentIndex--),
-                  child: const Text('سؤال قبلی'),
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: OutlinedButton(
-                  onPressed: currentIndex >= questions.length - 1 ? null : () => setState(() => currentIndex++),
-                  child: const Text('سؤال بعدی'),
-                )),
-              ]),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: busy || restoringPending || pendingAnswers.isNotEmpty ? null : () => _finalize(),
-                child: Text(busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون'),
               ),
-              const Text('پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
-                style: TextStyle(color: Colors.white60, height: 1.6)),
-            ]),
+            ],
+          ),
+          body: question == null
+              ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(17),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                          colors: [Color(0xFF202D49), Color(0xFF121C30)],
+                        ),
+                        borderRadius: BorderRadius.circular(19),
+                        border: Border.all(color: const Color(0xFFC6A96A).withOpacity(0.55)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.quiz_outlined, color: Color(0xFFE4C98F)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'سؤال ${currentIndex + 1} از ${questions.length}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Text(
+                                '${(progress * 100).round()}٪',
+                                style: const TextStyle(
+                                  color: Color(0xFFE4C98F),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 13),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 8,
+                              backgroundColor: Colors.white12,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFFE4C98F),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (restoringPending) ...[
+                      const SizedBox(height: 12),
+                      const LinearProgressIndicator(),
+                      const SizedBox(height: 7),
+                      const Text(
+                        'در حال بازیابی پاسخ‌های ذخیره‌شده...',
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                    ],
+
+                    if (pendingAnswers.isNotEmpty) ...[
+                      const SizedBox(height: 13),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF493923).withOpacity(0.38),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: const Color(0xFFC6A96A)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.cloud_upload_outlined,
+                                    color: Color(0xFFE4C98F)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${pendingAnswers.length} پاسخ هنوز به سرور ارسال نشده است.',
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: busy ? null : _syncPendingAnswers,
+                              icon: const Icon(Icons.sync),
+                              label: const Text('ارسال پاسخ‌های ذخیره‌شده'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    if (error != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.55)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.orangeAccent),
+                            const SizedBox(width: 9),
+                            Expanded(child: Text(error!, style: const TextStyle(height: 1.7))),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 18),
+                    const Row(
+                      children: [
+                        Icon(Icons.menu_book_outlined, color: Color(0xFFE4C98F)),
+                        SizedBox(width: 8),
+                        Text(
+                          'متن سؤال',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Container(
+                      padding: const EdgeInsets.all(19),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF172238),
+                        borderRadius: BorderRadius.circular(19),
+                        border: Border.all(color: Colors.white12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.14),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        question['prompt'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          height: 1.95,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 19),
+                    const Row(
+                      children: [
+                        Icon(Icons.fact_check_outlined, color: Color(0xFFE4C98F)),
+                        SizedBox(width: 8),
+                        Text(
+                          'گزینه موردنظر را انتخاب کنید',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    for (int i = 0;
+                        i < List<dynamic>.from(question['options'] ?? []).length;
+                        i++)
+                      Builder(builder: (context) {
+                        final option = List<dynamic>.from(question['options'] ?? [])[i];
+                        final isSelected =
+                            selected[question['id'] as int] == option['id'];
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF273A50)
+                                : const Color(0xFF172238),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFFE4C98F)
+                                  : Colors.white12,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: RadioListTile<int>(
+                            value: option['id'] as int,
+                            groupValue: selected[question['id'] as int],
+                            activeColor: const Color(0xFFE4C98F),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                            onChanged: busy || finished || restoringPending
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      _choose(question['id'] as int, value);
+                                    }
+                                  },
+                            title: Text(
+                              option['text'] ?? '',
+                              style: TextStyle(
+                                height: 1.7,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: currentIndex == 0
+                                ? null
+                                : () => setState(() => currentIndex--),
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: const Text('سؤال قبلی'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: currentIndex >= questions.length - 1
+                                ? null
+                                : () => setState(() => currentIndex++),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            label: const Text('سؤال بعدی'),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 15),
+                    FilledButton.icon(
+                      onPressed: busy ||
+                              restoringPending ||
+                              pendingAnswers.isNotEmpty
+                          ? null
+                          : () => _finalize(),
+                      icon: const Icon(Icons.task_alt_rounded),
+                      label: Text(
+                        busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون',
+                      ),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        backgroundColor: const Color(0xFFC6A96A),
+                        foregroundColor: const Color(0xFF172238),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.045),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.shield_outlined,
+                              size: 19, color: Color(0xFFE4C98F)),
+                          SizedBox(width: 9),
+                          Expanded(
+                            child: Text(
+                              'پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                height: 1.8,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -1517,76 +2037,277 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
   @override
   Widget build(BuildContext context) {
     final active = subscription['active'] == true;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('وضعیت اشتراک', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(active
-                ? 'اشتراک فعال: ${subscription['plan'] ?? 'ویژه'}'
-                : 'در حال حاضر اشتراک فعالی برای حساب شما ثبت نشده است.'),
-            if (active && subscription['ends_at'] != null)
-              Text('اعتبار تا: ${subscription['ends_at']}'),
-          ]),
-        )),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: active
+                  ? const [Color(0xFF174D43), Color(0xFF102D2A)]
+                  : const [Color(0xFF202D49), Color(0xFF111B30)],
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: active
+                  ? const Color(0xFF58B99A)
+                  : const Color(0xFFC6A96A),
+              width: 1.1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.09),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(
+                      active ? Icons.workspace_premium : Icons.lock_open_rounded,
+                      color: const Color(0xFFE4C98F),
+                      size: 27,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'عضویت لیگ نخبگان',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          active ? 'وضعیت حساب: اشتراک فعال' : 'امکانات ویژه را فعال کنید',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    active ? Icons.verified_rounded : Icons.stars_rounded,
+                    color: active ? const Color(0xFF72D6B4) : const Color(0xFFE4C98F),
+                    size: 27,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                active
+                    ? 'اشتراک فعال: ${subscription['plan'] ?? 'ویژه'}'
+                    : 'با انتخاب یکی از طرح‌ها، دسترسی امکانات اشتراکی حساب خود را فعال کنید.',
+                style: const TextStyle(fontSize: 14, height: 1.8),
+              ),
+              if (active && subscription['ends_at'] != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.event_available, size: 18, color: Color(0xFFE4C98F)),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text('اعتبار تا: ${subscription['ends_at']}'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 22),
+
+        Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: Color(0xFFE4C98F)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'طرح‌های اشتراک',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (!loading)
+              Text(
+                '${plans.length} طرح',
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
         if (message != null)
-          Card(child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(message!),
-          )),
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xFF493923).withOpacity(0.45),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFC6A96A).withOpacity(0.5)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: Color(0xFFE4C98F)),
+                const SizedBox(width: 9),
+                Expanded(child: Text(message!, style: const TextStyle(height: 1.7))),
+              ],
+            ),
+          ),
+
         if (loading)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(20),
-            child: CircularProgressIndicator(),
-          ))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          )
         else if (plans.isEmpty)
-          const Card(child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('در حال حاضر طرح فعالی برای خرید وجود ندارد.'),
-          ))
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF172238),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: const Text('در حال حاضر طرح فعالی برای خرید وجود ندارد.'),
+          )
         else
           for (final item in plans)
             Builder(builder: (context) {
               final plan = Map<String, dynamic>.from(item as Map);
-              return Card(child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(plan['title']?.toString() ?? 'طرح اشتراک',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text('${plan['duration_days'] ?? '—'} روز'),
-                  Text('${_price(plan['price_irr'])} ریال'),
-                  const SizedBox(height: 10),
-                  FilledButton(
-                    onPressed: busy || loading ? null : () => _buy(plan),
-                    child: const Text('خرید از کافه‌بازار'),
+              final period = plan['period']?.toString() ?? '';
+              final isAnnual = period == 'annual';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 13),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF172238),
+                  borderRadius: BorderRadius.circular(19),
+                  border: Border.all(
+                    color: isAnnual
+                        ? const Color(0xFFC6A96A)
+                        : Colors.white.withOpacity(0.12),
+                    width: isAnnual ? 1.5 : 1,
                   ),
-                ]),
-              ));
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.14),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(17),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              plan['title']?.toString() ?? 'طرح اشتراک',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (isAnnual)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFC6A96A).withOpacity(0.16),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'بلندمدت',
+                                style: TextStyle(
+                                  color: Color(0xFFE4C98F),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 13),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month, color: Color(0xFFC6A96A), size: 19),
+                          const SizedBox(width: 7),
+                          Text('${plan['duration_days'] ?? '—'} روز'),
+                          const Spacer(),
+                          Text(
+                            '${_price(plan['price_irr'])} ریال',
+                            style: const TextStyle(
+                              color: Color(0xFFE4C98F),
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      FilledButton.icon(
+                        onPressed: busy || loading ? null : () => _buy(plan),
+                        icon: const Icon(Icons.shopping_bag_outlined),
+                        label: const Text('خرید از کافه‌بازار'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }),
-        if (hasPendingPurchase)
+
+        if (hasPendingPurchase) ...[
+          const SizedBox(height: 5),
           OutlinedButton.icon(
             onPressed: busy || loading ? null : _retryPendingPurchase,
-            icon: const Icon(Icons.sync),
+            icon: const Icon(Icons.sync_rounded),
             label: const Text('تلاش مجدد برای تأیید خرید'),
           ),
+        ],
+
+        const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: busy ? null : _restore,
-          icon: const Icon(Icons.restore),
+          icon: const Icon(Icons.restore_rounded),
           label: const Text('بازیابی خریدهای قبلی'),
         ),
-        TextButton(
+        TextButton.icon(
           onPressed: busy ? null : _load,
-          child: const Text('به‌روزرسانی وضعیت اشتراک'),
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: const Text('به‌روزرسانی وضعیت اشتراک'),
         ),
         if (busy)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(),
-          )),
+          const Padding(
+            padding: EdgeInsets.all(14),
+            child: Center(child: CircularProgressIndicator()),
+          ),
       ],
     );
   }
