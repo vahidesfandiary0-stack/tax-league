@@ -459,32 +459,204 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     ),
   );
 
-  Widget _loginCard() => Card(child: Padding(
-    padding: const EdgeInsets.all(18),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('ورود یا ساخت حساب', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-      const Text('شماره همراه را وارد کنید. اگر حساب جدید دارید یا استان شما هنوز تأیید نشده، استان محل سکونت را هم انتخاب کنید.'),
-      DropdownButtonFormField<String>(
-        value: selectedProvince,
-        isExpanded: true,
-        decoration: const InputDecoration(labelText: 'استان محل سکونت (برای حساب جدید یا تأییدنشده الزامی)'),
-        items: provinces.map((province) => DropdownMenuItem<String>(
-          value: province, child: Text(province),
-        )).toList(),
-        onChanged: busy ? null : (value) => setState(() => selectedProvince = value),
-      ),
-      TextField(controller: phone, keyboardType: TextInputType.phone,
-        decoration: const InputDecoration(labelText: 'شماره تلفن همراه', hintText: '09xxxxxxxxx')),
-      if (otpRequested) TextField(controller: code, keyboardType: TextInputType.number, maxLength: 6,
-        decoration: const InputDecoration(labelText: 'کد شش‌رقمی پیامک‌شده')),
-      const SizedBox(height: 10),
-      SizedBox(width: double.infinity, child: FilledButton(
-        onPressed: busy ? null : (otpRequested ? verifyCode : requestCode),
-        child: Text(otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود'))),
-      if (otpRequested) Align(alignment: Alignment.centerLeft,
-        child: TextButton(onPressed: busy ? null : requestCode, child: const Text('ارسال دوباره کد'))),
-    ]),
-  ));
+  Widget _loginCard() {
+    Widget feature(IconData icon, String title, String subtitle) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B2B43),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x22D2B477)),
+          ),
+          child: Column(children: [
+            Icon(icon, color: const Color(0xFFE4C98F), size: 25),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11)),
+            const SizedBox(height: 4),
+            Text(subtitle, textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF9EADC1), fontSize: 9)),
+          ]),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [Color(0xFF263F60), Color(0xFF17263D)],
+            ),
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(color: const Color(0x55D2B477)),
+          ),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0x22D2B477),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: const Text('باشگاه رقابت و یادگیری مالیاتی',
+                style: TextStyle(color: Color(0xFFE4C98F),
+                  fontSize: 11, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: 15),
+            const Text('دانش مالیاتی‌ات را به رتبه تبدیل کن',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, height: 1.5,
+                fontWeight: FontWeight.w900, color: Color(0xFFF5F1E8))),
+            const SizedBox(height: 8),
+            const Text(
+              'در آزمون‌های تخصصی شرکت کن، پیشرفتت را بسنج و در رقابت ملی بدرخش.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, height: 1.8,
+                color: Color(0xFFBCC9D9)),
+            ),
+            const SizedBox(height: 18),
+            Row(children: [
+              feature(Icons.nightlight_round, 'آزمون شبانه', 'رقابت تخصصی'),
+              const SizedBox(width: 8),
+              feature(Icons.emoji_events_rounded, 'لیگ رتبه‌بندی', 'کشوری و استانی'),
+              const SizedBox(width: 8),
+              feature(Icons.school_rounded, 'آکادمی', 'یادگیری هدفمند'),
+            ]),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF17243A),
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(color: const Color(0x33D2B477)),
+            boxShadow: const [
+              BoxShadow(color: Color(0x22000000),
+                blurRadius: 18, offset: Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                Container(
+                  width: 43, height: 43,
+                  decoration: BoxDecoration(
+                    color: const Color(0x22D2B477),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.lock_person_rounded,
+                    color: Color(0xFFE4C98F), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(otpRequested ? 'تأیید شماره همراه' : 'ورود یا عضویت در لیگ',
+                      style: const TextStyle(fontSize: 17,
+                        fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 3),
+                    Text(otpRequested
+                        ? 'کد پیامک‌شده را وارد کنید'
+                        : 'برای شروع، شماره موبایلت را ثبت کن',
+                      style: const TextStyle(fontSize: 11,
+                        color: Color(0xFF9EADC1))),
+                  ],
+                )),
+              ]),
+              const SizedBox(height: 20),
+              if (!otpRequested) ...[
+                TextField(
+                  controller: phone,
+                  keyboardType: TextInputType.phone,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.center,
+                  autofillHints: const [AutofillHints.telephoneNumber],
+                  decoration: const InputDecoration(
+                    labelText: 'شماره تلفن همراه',
+                    hintText: '09xxxxxxxxx',
+                    prefixIcon: Icon(Icons.phone_android_rounded),
+                  ),
+                ),
+                const SizedBox(height: 13),
+                DropdownButtonFormField<String>(
+                  value: selectedProvince,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'استان محل سکونت',
+                    helperText: 'برای حساب جدید یا تأییدنشده لازم است',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  items: provinces.map((province) =>
+                    DropdownMenuItem<String>(
+                      value: province, child: Text(province),
+                    )).toList(),
+                  onChanged: busy ? null : (value) =>
+                    setState(() => selectedProvince = value),
+                ),
+              ] else ...[
+                TextField(
+                  controller: code,
+                  keyboardType: TextInputType.number,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.center,
+                  maxLength: 6,
+                  autofillHints: const [AutofillHints.oneTimeCode],
+                  decoration: const InputDecoration(
+                    labelText: 'کد شش‌رقمی پیامک‌شده',
+                    hintText: '------',
+                    prefixIcon: Icon(Icons.password_rounded),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: busy ? null : (otpRequested ? verifyCode : requestCode),
+                icon: Icon(otpRequested
+                    ? Icons.verified_rounded : Icons.sms_rounded),
+                label: Text(otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود'),
+              ),
+              if (otpRequested)
+                Center(child: TextButton.icon(
+                  onPressed: busy ? null : requestCode,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('ارسال دوباره کد'),
+                )),
+              const SizedBox(height: 8),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shield_outlined, size: 15,
+                    color: Color(0xFF9EADC1)),
+                  SizedBox(width: 6),
+                  Flexible(child: Text(
+                    'ورود با کد یک‌بارمصرف پیامکی انجام می‌شود',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10,
+                      color: Color(0xFF9EADC1)),
+                  )),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'با ورود به لیگ، مسیر رقابت و پیشرفت تخصصی خودت را آغاز می‌کنی.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, height: 1.8,
+            color: Color(0xFF8798AE)),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
 
 
   Future<void> _showAppealForm(String attemptId, String examTitle) async {
