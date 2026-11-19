@@ -44,6 +44,37 @@ jobs:
         working-directory: mobile
         run: flutter pub get
 
+      - name: Patch legacy Cafe Bazaar Gradle plugin
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import os
+
+          cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
+          matches = sorted(cache.glob("hosted/pub.dev/flutter_poolakey-*/android/build.gradle"))
+          if len(matches) != 1:
+              raise SystemExit(f"Expected exactly one flutter_poolakey Gradle file, found {len(matches)}")
+
+          path = matches[0]
+          content = path.read_text(encoding="utf-8")
+
+          if "jcenter()" not in content:
+              raise SystemExit("Expected jcenter() was not found")
+
+          old_plugins = 'plugins {\n    id "com.android.library"\n    id "kotlin-android"\n}'
+          new_plugins = 'apply plugin: "com.android.library"\napply plugin: "kotlin-android"'
+
+          if old_plugins not in content:
+              raise SystemExit("Unexpected Poolakey plugins block; refusing unsafe patch")
+
+          content = content.replace("jcenter()", "mavenCentral()")
+          content = content.replace(old_plugins, new_plugins, 1)
+          path.write_text(content, encoding="utf-8")
+          print(f"Patched {path}")
+          INNER
+
       - name: Check Dart formatting
         working-directory: mobile
         run: dart format lib test
