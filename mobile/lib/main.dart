@@ -16,6 +16,7 @@ class TaxLeagueApp extends StatelessWidget {
     title: 'لیگ نخبگان مالیاتی',
     theme: ThemeData(
       useMaterial3: true,
+      visualDensity: VisualDensity.adaptivePlatformDensity,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF0B1423),
       colorScheme: ColorScheme.fromSeed(
@@ -72,11 +73,56 @@ class TaxLeagueApp extends StatelessWidget {
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF101C30),
         foregroundColor: Color(0xFFF5F1E8),
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         elevation: 0,
         titleTextStyle: TextStyle(
           fontSize: 17, fontWeight: FontWeight.w800,
           color: Color(0xFFF5F1E8),
+        ),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        },
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF203653),
+        contentTextStyle: const TextStyle(
+          color: Color(0xFFF5F1E8),
+          fontSize: 13,
+          height: 1.6,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x44D2B477)),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFFE4C98F),
+        linearTrackColor: Color(0x334F6684),
+        circularTrackColor: Color(0x334F6684),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF101C30),
+        indicatorColor: const Color(0x33D2B477),
+        elevation: 0,
+        height: 68,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w900
+                : FontWeight.w600,
+            color: states.contains(WidgetState.selected)
+                ? const Color(0xFFFFE4A8)
+                : const Color(0xFF9EADC1),
+          ),
         ),
       ),
       cardTheme: CardThemeData(
@@ -91,8 +137,18 @@ class TaxLeagueApp extends StatelessWidget {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF101C30),
+        labelStyle: const TextStyle(
+          color: Color(0xFFB8C5D6),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        hintStyle: const TextStyle(
+          color: Color(0xFF71839B),
+          fontSize: 13,
+        ),
+        prefixIconColor: const Color(0xFFE4C98F),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 17,
+          horizontal: 18, vertical: 18,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -119,7 +175,7 @@ class TaxLeagueApp extends StatelessWidget {
         ),
       ),
     ),
-    home: const LeagueHomePage(),
+    home: const LeagueSplashScreen(),
   );
 }
 
@@ -228,6 +284,223 @@ class LeagueApi {
   }
 }
 
+
+class LeagueSplashScreen extends StatefulWidget {
+  const LeagueSplashScreen({super.key});
+
+  @override
+  State<LeagueSplashScreen> createState() => _LeagueSplashScreenState();
+}
+
+class _LeagueSplashScreenState extends State<LeagueSplashScreen> {
+  Timer? _splashTimer;
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _splashTimer = Timer(const Duration(milliseconds: 2400), () {
+      if (mounted) {
+        setState(() => _showSplash = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _splashTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 650),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.985,
+                end: 1,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: _showSplash
+            ? const _LeagueSplashArtwork(
+                key: ValueKey<String>('league-splash'),
+              )
+            : const LeagueHomePage(
+                key: ValueKey<String>('league-home'),
+              ),
+      ),
+    );
+  }
+}
+
+class _LeagueSplashArtwork extends StatelessWidget {
+  const _LeagueSplashArtwork({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [
+              Color(0xFF1C304B),
+              Color(0xFF0B1423),
+              Color(0xFF080F1B),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                top: -100,
+                right: -90,
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFD2B477).withValues(alpha: 0.055),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -120,
+                left: -90,
+                child: Container(
+                  width: 290,
+                  height: 290,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF54749A).withValues(alpha: 0.10),
+                  ),
+                ),
+              ),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.88, end: 1),
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeOutBack,
+                    builder: (context, scale, child) {
+                      return Opacity(
+                        opacity: scale.clamp(0.0, 1.0).toDouble(),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 190,
+                          height: 190,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF14243A),
+                            borderRadius: BorderRadius.circular(38),
+                            border: Border.all(
+                              color: const Color(0x66D2B477),
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x44000000),
+                                blurRadius: 35,
+                                offset: Offset(0, 15),
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/brand/logo_full.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        const Text(
+                          'لیگ نخبگان مالیاتی',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFF5F1E8),
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'رقابت کن، رتبه بگیر، نخبه شو!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFE4C98F),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'رقابت تخصصی  •  رتبه‌بندی ملی و استانی  •  آکادمی',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFB8C5D6),
+                            fontSize: 11,
+                            height: 1.8,
+                          ),
+                        ),
+                        const SizedBox(height: 54),
+                        const SizedBox(
+                          width: 120,
+                          child: LinearProgressIndicator(
+                            minHeight: 3,
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(10),
+                            ),
+                            backgroundColor: Color(0x334F6684),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFFE4C98F),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        const Text(
+                          'RAQTIVA',
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                            color: Color(0xFF8193AA),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class LeagueHomePage extends StatefulWidget {
   const LeagueHomePage({super.key});
   @override
@@ -247,6 +520,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   ];
   String? selectedProvince;
   bool busy = false, otpRequested = false;
+  int otpResendSeconds = 0;
+  Timer? otpResendTimer;
   int accountPage = 0;
   String? error;
   Map<String, dynamic>? stats;
@@ -267,6 +542,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   @override
   void dispose() {
     focusPoller?.cancel();
+    otpResendTimer?.cancel();
     phone.dispose();
     code.dispose();
     super.dispose();
@@ -297,16 +573,42 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> requestCode() async {
+    if (busy || otpResendSeconds > 0) return;
     setState(() { busy = true; error = null; });
     try {
       await api.publicPost('auth/request-otp/', {'phone_number': phone.text.trim()});
-      if (mounted) setState(() => otpRequested = true);
+      if (mounted) {
+        setState(() => otpRequested = true);
+        _startOtpResendCountdown();
+      }
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
-    } finally { if (mounted) setState(() => busy = false); }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  void _startOtpResendCountdown() {
+    otpResendTimer?.cancel();
+    if (!mounted) return;
+    setState(() => otpResendSeconds = 60);
+
+    otpResendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (otpResendSeconds <= 1) {
+        timer.cancel();
+        setState(() => otpResendSeconds = 0);
+      } else {
+        setState(() => otpResendSeconds--);
+      }
+    });
   }
 
   Future<void> verifyCode() async {
+    if (busy) return;
     setState(() { busy = true; error = null; });
     try {
       final payload = <String, dynamic>{
@@ -316,7 +618,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (selectedProvince != null) payload['province'] = selectedProvince;
       final data = await api.publicPost('auth/verify-otp/', payload);
       await api.saveToken(data['token'].toString());
-      if (mounted) { setState(() { otpRequested = false; code.clear(); }); }
+      otpResendTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          otpRequested = false;
+          otpResendSeconds = 0;
+          code.clear();
+        });
+      }
       await loadDashboard();
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -411,7 +720,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appBar: AppBar(
         leading: stats != null && accountPage > 0
             ? IconButton(
-                onPressed: () => setState(() => accountPage -= 1),
+                onPressed: () => setState(() {
+                  accountPage = accountPage == 4
+                      ? 1
+                      : accountPage == 3
+                          ? 2
+                          : accountPage == 2
+                              ? 1
+                              : 0;
+                }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
@@ -424,9 +741,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       body: RefreshIndicator(
         onRefresh: loadDashboard,
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+          if (stats == null || accountPage == 0)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
             margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -652,6 +970,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   keyboardType: TextInputType.number,
                   textDirection: TextDirection.ltr,
                   textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 9,
+                    color: Color(0xFFFFE4A8),
+                  ),
                   maxLength: 6,
                   autofillHints: const [AutofillHints.oneTimeCode],
                   decoration: const InputDecoration(
@@ -662,18 +986,70 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ),
               ],
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: busy ? null : (otpRequested ? verifyCode : requestCode),
-                icon: Icon(otpRequested
-                    ? Icons.verified_rounded : Icons.sms_rounded),
-                label: Text(otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود'),
+              SizedBox(
+                height: 54,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: busy
+                      ? null
+                      : (otpRequested ? verifyCode : requestCode),
+                  icon: Icon(otpRequested
+                      ? Icons.verified_rounded : Icons.sms_rounded),
+                  label: Text(
+                    otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود',
+                  ),
+                ),
               ),
               if (otpRequested)
-                Center(child: TextButton.icon(
-                  onPressed: busy ? null : requestCode,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('ارسال دوباره کد'),
-                )),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: otpResendSeconds > 0
+                      ? Container(
+                          key: const ValueKey<String>('otp-countdown'),
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF101C30),
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(
+                              color: const Color(0x334F6684),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.timer_outlined,
+                                size: 18,
+                                color: Color(0xFFE4C98F),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ارسال دوباره کد تا ۰۰:${otpResendSeconds.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  color: Color(0xFFBCC9D9),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : TextButton.icon(
+                          key: const ValueKey<String>('otp-resend'),
+                          onPressed: busy ? null : requestCode,
+                          icon: const Icon(
+                            Icons.refresh_rounded, size: 18,
+                          ),
+                          label: const Text('ارسال دوباره کد'),
+                        ),
+                ),
               const SizedBox(height: 8),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1030,6 +1406,78 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             statBox('آزمون رسمی', examCount, Icons.assignment_turned_in),
           ]),
         ]),
+      )),
+
+      Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => setState(() => accountPage = 4),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
+                colors: [Color(0xFF35445B), Color(0xFF17263D)],
+              ),
+              border: Border.all(color: const Color(0x66D2B477)),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 17, vertical: 17,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0x33D2B477),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: Color(0xFFFFE4A8),
+                      size: 27,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'اشتراک ویژه را مدیریت کن',
+                          style: TextStyle(
+                            color: Color(0xFFFFE4A8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          'مشاهده طرح‌ها، خرید و بازیابی اشتراک',
+                          style: TextStyle(
+                            color: Color(0xFFBCC9D9),
+                            fontSize: 11,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_left_rounded,
+                    color: Color(0xFFE4C98F),
+                    size: 27,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       )),
 
       Card(child: Padding(
