@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_poolakey/flutter_poolakey.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,12 +17,73 @@ class TaxLeagueApp extends StatelessWidget {
     theme: ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF101827),
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC6A96A), brightness: Brightness.dark),
-      cardTheme: CardThemeData(color: const Color(0xFF1B2940), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+      scaffoldBackgroundColor: const Color(0xFF0B1423),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFD2B477),
+        brightness: Brightness.dark,
+        surface: const Color(0xFF17243A),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF101C30),
+        foregroundColor: Color(0xFFF5F1E8),
+        centerTitle: true,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          fontSize: 17, fontWeight: FontWeight.w800,
+          color: Color(0xFFF5F1E8),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF17263D),
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: Color(0x22D2B477)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF101C30),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 17,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0x334F6684)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0x334F6684)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0xFFD2B477), width: 1.5),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFD2B477),
+          foregroundColor: const Color(0xFF172033),
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
     ),
     home: const LeagueHomePage(),
   );
+}
+
+class ApiException implements Exception {
+  ApiException(this.statusCode, this.message);
+  final int statusCode;
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 class LeagueApi {
@@ -29,6 +92,39 @@ class LeagueApi {
   Future<String?> get token => storage.read(key: 'api_token');
   Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
+
+  static const _pendingBazaarKey = 'pending_bazaar_purchase';
+
+  Future<void> savePendingBazaarPurchase(Map<String, dynamic> purchase) async {
+    await storage.write(
+      key: _pendingBazaarKey,
+      value: jsonEncode(purchase),
+    );
+  }
+
+  Future<Map<String, dynamic>?> readPendingBazaarPurchase() async {
+    final raw = await storage.read(key: _pendingBazaarKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final data = jsonDecode(raw);
+      if (data is! Map) return null;
+      final result = Map<String, dynamic>.from(data);
+      if (result['order_id'] == null ||
+          result['product_id'] is! String ||
+          (result['product_id'] as String).isEmpty ||
+          result['purchase_token'] is! String ||
+          (result['purchase_token'] as String).isEmpty) {
+        return null;
+      }
+      return result;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearPendingBazaarPurchase() async {
+    await storage.delete(key: _pendingBazaarKey);
+  }
   static String encodePendingAnswers(Map<int, int> answers) => jsonEncode(
     answers.map((questionId, optionId) => MapEntry(questionId.toString(), optionId)),
   );
@@ -57,7 +153,7 @@ class LeagueApi {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       var message = 'خطای ارتباط با سرور';
       if (data is Map && data['detail'] != null) message = data['detail'].toString();
-      throw Exception(message);
+      throw ApiException(response.statusCode, message);
     }
     return data;
   }
@@ -268,9 +364,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     child: Scaffold(
       appBar: AppBar(
         leading: stats != null && accountPage > 0
-            ? IconButton(onPressed: () => setState(() => accountPage -= 1), icon: const Icon(Icons.arrow_back))
+            ? IconButton(
+                onPressed: () => setState(() => accountPage -= 1),
+                icon: const Icon(Icons.arrow_back_rounded),
+              )
             : null,
-        title: Text(accountPage == 0 ? 'لیگ نخبگان مالیاتی' : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : 'معرفی بنیان‌گذار'),
+        title: Text(accountPage == 0 ? 'لیگ نخبگان مالیاتی' : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : 'اشتراک ویژه'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -279,15 +378,84 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       body: RefreshIndicator(
         onRefresh: loadDashboard,
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Image.asset("assets/brand/logo_full.png", height: 120, fit: BoxFit.contain))),
-          const Center(child: Text("رقابت کن، رتبه بگیر، نخبه شو!", style: TextStyle(color: Color(0xFFC6A96A), fontSize: 17))),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+            margin: const EdgeInsets.only(bottom: 18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF233957), Color(0xFF111E32)],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: const Color(0x44D2B477)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 22,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(children: [
+              Image.asset(
+                "assets/brand/logo_full.png",
+                height: 92,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "رقابت کن، رتبه بگیر، نخبه شو!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFE4C98F),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .2,
+                ),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                "مسیر حرفه‌ای شدن در دانش مالیاتی",
+                style: TextStyle(color: Color(0xFFB8C5D6), fontSize: 12),
+              ),
+            ]),
+          ),
           if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
           if (stats == null) _loginCard()
           else if (accountPage == 0) ..._content()
           else _accountContent(),
-          if (busy) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+          if (busy) const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          ),
         ]),
       ),
+      bottomNavigationBar: stats == null || focusMode
+          ? null
+          : NavigationBar(
+              backgroundColor: const Color(0xFF101C30),
+              indicatorColor: const Color(0x33D2B477),
+              selectedIndex: accountPage == 0 ? 0 : 1,
+              onDestinationSelected: (index) {
+                setState(() => accountPage = index == 0 ? 0 : 1);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: "خانه",
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline_rounded),
+                  selectedIcon: Icon(Icons.person_rounded),
+                  label: "حساب کاربری",
+                ),
+              ],
+            ),
     ),
   );
 
@@ -368,13 +536,25 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Widget _accountContent() {
     if (accountPage == 1) {
-      return Card(child: ListTile(
-        leading: const Icon(Icons.info_outline),
-        title: const Text('درباره لیگ'),
-        subtitle: const Text('اطلاعات و معرفی مجموعه'),
-        trailing: const Icon(Icons.chevron_left),
-        onTap: () => setState(() => accountPage = 2),
-      ));
+      return Column(children: [
+        Card(child: ListTile(
+          leading: const Icon(Icons.workspace_premium_outlined),
+          title: const Text('اشتراک ویژه'),
+          subtitle: const Text('مشاهده طرح‌ها، خرید و بازیابی اشتراک بازار'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () => setState(() => accountPage = 4),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('درباره لیگ'),
+          subtitle: const Text('اطلاعات و معرفی مجموعه'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () => setState(() => accountPage = 2),
+        )),
+      ]);
+    }
+    if (accountPage == 4) {
+      return BazaarSubscriptionPage(api: api);
     }
     if (accountPage == 2) {
       return Card(child: ListTile(
@@ -400,93 +580,265 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   List<Widget> _content() {
-    final cards = [
-    Card(child: ListTile(
-      leading: const Icon(Icons.account_circle_outlined),
-      title: const Text('حساب کاربری'),
-      subtitle: const Text('تنظیمات و اطلاعات حساب'),
-      trailing: const Icon(Icons.chevron_left),
-      onTap: () => setState(() => accountPage = 1),
-    )),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('وضعیت من در لیگ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      Text('رتبه: ' + (stats?['rank']?.toString() ?? '—')),
-      Text('امتیاز کل: ' + (stats?['total_score']?.toString() ?? '۰')),
-      Text('تعداد آزمون رسمی: ' + (stats?['exams_count']?.toString() ?? '۰')),
-    ]))),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('آزمون‌های منتشرشده', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (exams.isEmpty) const Text('فعلاً آزمون منتشرشده‌ای وجود ندارد.'),
-      for (final exam in exams) ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(exam['title'] ?? 'آزمون'),
-        subtitle: Text((exam['duration_minutes'] ?? '—').toString() + ' دقیقه · ' + (exam['question_count'] ?? '—').toString() + ' سؤال'),
-        onTap: busy ? null : () => _startExam(exam),
-        trailing: const Icon(Icons.play_circle_outline),
-      ),
-    ]))),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('تاریخچه نتایج من', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (results.isEmpty) const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
-      for (final item in results) ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(item['exam_title'] ?? 'آزمون'),
-        subtitle: Text('شناسه: ' + item['id'].toString() + '\nصحیح: ' + item['correct_count'].toString() +
-          ' · غلط: ' + item['wrong_count'].toString() + ' · نزده: ' + item['blank_count'].toString()),
-        isThreeLine: true,
-        onTap: () => _showAppealForm(item['id'].toString(), item['exam_title'] ?? 'آزمون'),
-        trailing: Text((item['score'] ?? 0).toString() + ' امتیاز'),
-      ),
-    ]))),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('جدول برترین‌ها', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (board.isEmpty) const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
-      for (final row in board) ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(child: Text(row['rank'].toString())),
-        title: Text(row['display_name'] ?? 'کاربر'),
-        trailing: Text(row['total_score'].toString() + ' امتیاز'),
-      ),
-    ]))),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(provincialName == null ? 'رتبه‌بندی استانی' : 'برترین‌های استان $provincialName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (provincialBoard.isEmpty) Text(provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
-      for (final row in provincialBoard) ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(child: Text(row['rank'].toString())),
-        title: Text(row['display_name'] ?? 'کاربر'),
-        subtitle: Text('آزمون معتبر: ${row['exams_count'] ?? 0}'),
-        trailing: Text('${row['total_score'] ?? 0} امتیاز'),
-      ),
-    ]))),
-    Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('اعتراض‌های من', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (appeals.isEmpty) const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
-      for (final item in appeals) ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(item['reason'] ?? 'اعتراض'),
-        subtitle: Text((item['decision_note'] ?? '').toString().isEmpty ? 'در انتظار بررسی' : item['decision_note']),
-        trailing: Text(_status(item['status'])),
-      ),
-    ]))),
-    ];
-    if (!focusMode) return cards;
-    return [
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Row(children: [
-              Icon(Icons.timer, color: Color(0xFFC6A96A)),
-              SizedBox(width: 8),
-              Text('حالت تمرکز آزمون فعال است', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ]),
-            const SizedBox(height: 8),
-            const Text('در زمان آزمون، امکانات غیرضروری موقتاً کنار گذاشته شده‌اند. شرکت در آزمون و ثبت پاسخ‌ها فعال است.'),
-            if (focusEndsAt != null) Text('پایان رسمی: ${DateTime.parse(focusEndsAt!).toLocal()}'),
-          ]),
+    final rank = stats?['rank']?.toString() ?? '—';
+    final score = stats?['total_score']?.toString() ?? '۰';
+    final examCount = stats?['exams_count']?.toString() ?? '۰';
+
+    Widget heading(IconData icon, String title, {String? subtitle}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0x22D2B477),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: const Color(0xFFD2B477)),
+          ),
+          const SizedBox(width: 11),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w800,
+              )),
+              if (subtitle != null)
+                Text(subtitle, style: const TextStyle(
+                  color: Color(0xFF9EADC1), fontSize: 11,
+                )),
+            ],
+          )),
+        ]),
+      );
+    }
+
+    Widget statBox(String label, String value, IconData icon) {
+      return Expanded(child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101C30),
+          borderRadius: BorderRadius.circular(16),
         ),
-      ),
+        child: Column(children: [
+          Icon(icon, color: const Color(0xFFD2B477), size: 21),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(
+            fontSize: 20, fontWeight: FontWeight.w900,
+          )),
+          const SizedBox(height: 4),
+          Text(label, textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 11)),
+        ]),
+      ));
+    }
+
+    Widget boardRow(dynamic row, {bool provincial = false}) {
+      final position = (row['rank'] ?? '—').toString();
+      final name = (row['display_name'] ?? 'کاربر').toString();
+      final points = (row['total_score'] ?? 0).toString();
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101C30),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(children: [
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: position == '1'
+                ? const Color(0xFFD2B477)
+                : const Color(0xFF263A55),
+            foregroundColor: position == '1'
+                ? const Color(0xFF172033) : Colors.white,
+            child: Text(position, style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.bold,
+            )),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+              if (provincial)
+                Text('آزمون معتبر: ${(row['exams_count'] ?? 0)}',
+                  style: const TextStyle(
+                    color: Color(0xFF9EADC1), fontSize: 11,
+                  )),
+            ],
+          )),
+          Text('$points امتیاز', style: const TextStyle(
+            color: Color(0xFFE4C98F), fontWeight: FontWeight.w800,
+          )),
+        ]),
+      );
+    }
+
+    final cards = [
+      Card(child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
+        leading: const CircleAvatar(
+          backgroundColor: Color(0x223D9BE9),
+          child: Icon(Icons.person_outline, color: Color(0xFF8FC8FF)),
+        ),
+        title: const Text('حساب کاربری',
+          style: TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: const Text('اطلاعات و تنظیمات حساب'),
+        trailing: const Icon(Icons.chevron_left),
+        onTap: () => setState(() => accountPage = 1),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.emoji_events_outlined, 'جایگاه من در لیگ',
+            subtitle: 'عملکرد شما در آزمون‌های رسمی'),
+          Row(children: [
+            statBox('رتبه', rank, Icons.military_tech),
+            const SizedBox(width: 9),
+            statBox('امتیاز کل', score, Icons.stars_rounded),
+            const SizedBox(width: 9),
+            statBox('آزمون رسمی', examCount, Icons.assignment_turned_in),
+          ]),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.nightlight_round, 'میدان رقابت',
+            subtitle: 'آزمون‌های منتشرشده و رسمی'),
+          if (exams.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('فعلاً آزمون منتشرشده‌ای وجود ندارد.'),
+            ),
+          for (final exam in exams)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF263D5B), Color(0xFF17263D)],
+                ),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: const Color(0x55D2B477)),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 5,
+                ),
+                title: Text((exam['title'] ?? 'آزمون').toString(),
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    '${exam['duration_minutes'] ?? '—'} دقیقه  ·  '
+                    '${exam['question_count'] ?? '—'} سؤال',
+                  ),
+                ),
+                trailing: const Icon(Icons.play_circle_fill,
+                  color: Color(0xFFD2B477), size: 34),
+                onTap: busy ? null : () => _startExam(exam),
+              ),
+            ),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.leaderboard_rounded, 'رتبه‌بندی ملی',
+            subtitle: 'برترین شرکت‌کنندگان لیگ'),
+          if (board.isEmpty)
+            const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
+          for (final row in board) boardRow(row),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.location_on_outlined,
+            provincialName == null
+                ? 'رتبه‌بندی استانی'
+                : 'برترین‌های استان $provincialName',
+            subtitle: 'رتبه‌بندی بر اساس نتایج معتبر استان'),
+          if (provincialBoard.isEmpty)
+            Text(provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
+          for (final row in provincialBoard)
+            boardRow(row, provincial: true),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.history_rounded, 'تاریخچه نتایج',
+            subtitle: 'مشاهده عملکرد و ثبت اعتراض'),
+          if (results.isEmpty)
+            const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
+          for (final item in results)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text((item['exam_title'] ?? 'آزمون').toString()),
+              subtitle: Text(
+                'شناسه: ${item['id']}'
+                '\nصحیح: ${item['correct_count']}'
+                ' · غلط: ${item['wrong_count']}'
+                ' · نزده: ${item['blank_count']}',
+              ),
+              isThreeLine: true,
+              onTap: () => _showAppealForm(
+                item['id'].toString(),
+                (item['exam_title'] ?? 'آزمون').toString(),
+              ),
+              trailing: Text('${item['score'] ?? 0} امتیاز',
+                style: const TextStyle(
+                  color: Color(0xFFE4C98F),
+                  fontWeight: FontWeight.bold,
+                )),
+            ),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.support_agent, 'اعتراض‌های من'),
+          if (appeals.isEmpty)
+            const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
+          for (final item in appeals)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text((item['reason'] ?? 'اعتراض').toString()),
+              subtitle: Text(
+                (item['decision_note'] ?? '').toString().isEmpty
+                    ? 'در انتظار بررسی'
+                    : item['decision_note'].toString(),
+              ),
+              trailing: Text(_status(item['status'])),
+            ),
+        ]),
+      )),
+    ];
+
+    if (!focusMode) return cards;
+
+    return [
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.timer_rounded, 'حالت تمرکز آزمون فعال است'),
+          const Text(
+            'در زمان آزمون، امکانات غیرضروری موقتاً کنار گذاشته شده‌اند. '
+            'شرکت در آزمون و ثبت پاسخ‌ها فعال است.',
+          ),
+          if (focusEndsAt != null)
+            Text('پایان رسمی: ${DateTime.parse(focusEndsAt!).toLocal()}'),
+        ]),
+      )),
       cards[1],
       cards[2],
     ];
@@ -758,6 +1110,312 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
             ]),
         ),
       ),
+    );
+  }
+}
+
+
+class BazaarSubscriptionPage extends StatefulWidget {
+  const BazaarSubscriptionPage({super.key, required this.api});
+  final LeagueApi api;
+
+  @override
+  State<BazaarSubscriptionPage> createState() => _BazaarSubscriptionPageState();
+}
+
+class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
+  static const Map<String, String> products = {
+    'monthly': 'raqtiva_monthly',
+    'quarterly': 'raqtiva_quarterly',
+    'annual': 'raqtiva_annual',
+  };
+
+  List<dynamic> plans = [];
+  Map<String, dynamic> subscription = {'active': false};
+  bool loading = true;
+  bool busy = false;
+  String? message;
+  bool connected = false;
+  bool hasPendingPurchase = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    if (connected) {
+      unawaited(FlutterPoolakey.disconnect());
+    }
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (mounted) setState(() { loading = true; message = null; });
+    try {
+      final values = await Future.wait([
+        widget.api.request('payments/plans/'),
+        widget.api.request('payments/subscription/me/'),
+      ]);
+      var pendingFound = false;
+      try {
+        pendingFound = await widget.api.readPendingBazaarPurchase() != null;
+      } catch (_) {}
+
+      final planData = values[0];
+      final loadedPlans = planData is List
+          ? List<dynamic>.from(planData)
+          : List<dynamic>.from((planData as Map)['results'] ?? []);
+      if (!mounted) return;
+      setState(() {
+        plans = loadedPlans;
+        subscription = Map<String, dynamic>.from(values[1] as Map);
+        hasPendingPurchase = pendingFound;
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _connect() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      throw Exception('خرید اشتراک بازار فقط در نسخه اندروید قابل انجام است.');
+    }
+    if (connected) return;
+
+    final result = Completer<void>();
+    try {
+      final connectionCall = FlutterPoolakey.connect(
+        null,
+        onSucceed: () {
+          connected = true;
+          if (!result.isCompleted) result.complete();
+        },
+        onFailed: () {
+          connected = false;
+          if (!result.isCompleted) {
+            result.completeError(Exception('اتصال به سرویس پرداخت بازار ناموفق بود.'));
+          }
+        },
+        onDisconnected: () {
+          connected = false;
+          if (!result.isCompleted) {
+            result.completeError(Exception('ارتباط با سرویس پرداخت بازار قطع شد.'));
+          }
+        },
+      );
+      await Future.wait<void>([connectionCall, result.future])
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {
+      connected = false;
+      rethrow;
+    }
+  }
+
+  Future<void> _verifyPendingPurchase(Map<String, dynamic> pending) async {
+    await widget.api.requestPost(
+      'payments/bazaar/orders/${pending['order_id']}/verify/',
+      {
+        'product_id': pending['product_id'],
+        'purchase_token': pending['purchase_token'],
+      },
+    );
+    await widget.api.clearPendingBazaarPurchase();
+    if (mounted) setState(() => hasPendingPurchase = false);
+  }
+
+  Future<void> _retryPendingPurchase() async {
+    if (busy) return;
+    setState(() { busy = true; message = null; });
+    try {
+      final pending = await widget.api.readPendingBazaarPurchase();
+      if (pending == null) {
+        throw Exception('خرید تأییدنشده‌ای برای تلاش مجدد پیدا نشد.');
+      }
+      await _verifyPendingPurchase(pending);
+      await _load();
+      if (mounted) {
+        setState(() => message = 'خرید با موفقیت تأیید و اشتراک فعال شد.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => message =
+          'تأیید خرید هنوز انجام نشده است؛ دوباره تلاش کنید. ${e.toString().replaceFirst('Exception: ', '')}');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _buy(Map<String, dynamic> plan) async {
+    if (busy) return;
+    final sku = products[plan['period']?.toString()];
+    if (sku == null) {
+      setState(() => message = 'شناسه محصول این طرح معتبر نیست.');
+      return;
+    }
+    setState(() { busy = true; message = null; });
+    try {
+      final order = await widget.api.requestPost(
+        'payments/bazaar/orders/',
+        {'product_id': sku},
+      );
+      await _connect();
+      final purchase = await FlutterPoolakey.subscribe(sku);
+      if (purchase.purchaseState != PurchaseState.PURCHASED) {
+        throw Exception('وضعیت خرید تأییدشده نیست؛ اشتراک فعال نشد.');
+      }
+      final pending = <String, dynamic>{
+        'order_id': order['id'].toString(),
+        'product_id': sku,
+        'purchase_token': purchase.purchaseToken,
+      };
+      await widget.api.savePendingBazaarPurchase(pending);
+      if (mounted) setState(() => hasPendingPurchase = true);
+
+      await _verifyPendingPurchase(pending);
+      await _load();
+      if (mounted) {
+        setState(() => message = 'خرید توسط سرور تأیید شد و اشتراک ثبت گردید.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => message =
+          'خرید هنوز در حساب فعال نشده است. اگر مبلغ کسر شده، از «بازیابی خرید» استفاده کنید. ${e.toString().replaceFirst('Exception: ', '')}');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    if (busy) return;
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      setState(() => message = 'بازیابی خرید بازار فقط در نسخه اندروید قابل انجام است.');
+      return;
+    }
+    setState(() { busy = true; message = null; });
+    try {
+      await _connect();
+      final purchases = await FlutterPoolakey.getAllSubscribedProducts();
+      var restored = false;
+      for (final purchase in purchases) {
+        if (purchase.purchaseState != PurchaseState.PURCHASED ||
+            !products.values.contains(purchase.productId)) {
+          continue;
+        }
+        try {
+          await widget.api.requestPost('payments/bazaar/restore/', {
+            'product_id': purchase.productId,
+            'purchase_token': purchase.purchaseToken,
+          });
+          restored = true;
+        } on ApiException catch (e) {
+          if (e.statusCode != 404) rethrow;
+          // A purchase not previously linked to this account is not transferable.
+        }
+      }
+      if (mounted) {
+        setState(() => message = restored
+            ? 'خرید قبلی برای همین حساب بازیابی شد.'
+            : 'خرید قابل بازیابی برای این حساب پیدا نشد.');
+        await _load();
+      }
+    } catch (e) {
+      if (mounted) setState(() => message =
+        'بازیابی انجام نشد: ${e.toString().replaceFirst('Exception: ', '')}');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  String _price(dynamic value) {
+    final number = int.tryParse(value.toString());
+    if (number == null) return '—';
+    return number.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = subscription['active'] == true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('وضعیت اشتراک', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(active
+                ? 'اشتراک فعال: ${subscription['plan'] ?? 'ویژه'}'
+                : 'در حال حاضر اشتراک فعالی برای حساب شما ثبت نشده است.'),
+            if (active && subscription['ends_at'] != null)
+              Text('اعتبار تا: ${subscription['ends_at']}'),
+          ]),
+        )),
+        if (message != null)
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message!),
+          )),
+        if (loading)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(20),
+            child: CircularProgressIndicator(),
+          ))
+        else if (plans.isEmpty)
+          const Card(child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('در حال حاضر طرح فعالی برای خرید وجود ندارد.'),
+          ))
+        else
+          for (final item in plans)
+            Builder(builder: (context) {
+              final plan = Map<String, dynamic>.from(item as Map);
+              return Card(child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Text(plan['title']?.toString() ?? 'طرح اشتراک',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text('${plan['duration_days'] ?? '—'} روز'),
+                  Text('${_price(plan['price_irr'])} ریال'),
+                  const SizedBox(height: 10),
+                  FilledButton(
+                    onPressed: busy || loading ? null : () => _buy(plan),
+                    child: const Text('خرید از کافه‌بازار'),
+                  ),
+                ]),
+              ));
+            }),
+        if (hasPendingPurchase)
+          OutlinedButton.icon(
+            onPressed: busy || loading ? null : _retryPendingPurchase,
+            icon: const Icon(Icons.sync),
+            label: const Text('تلاش مجدد برای تأیید خرید'),
+          ),
+        OutlinedButton.icon(
+          onPressed: busy ? null : _restore,
+          icon: const Icon(Icons.restore),
+          label: const Text('بازیابی خریدهای قبلی'),
+        ),
+        TextButton(
+          onPressed: busy ? null : _load,
+          child: const Text('به‌روزرسانی وضعیت اشتراک'),
+        ),
+        if (busy)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(12),
+            child: CircularProgressIndicator(),
+          )),
+      ],
     );
   }
 }
