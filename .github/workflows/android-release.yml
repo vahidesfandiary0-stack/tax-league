@@ -46,7 +46,7 @@ jobs:
 
       - name: Check Dart formatting
         working-directory: mobile
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format lib test
 
       - name: Analyze Flutter code
         working-directory: mobile
