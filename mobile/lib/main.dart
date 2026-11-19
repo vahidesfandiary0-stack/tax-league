@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'ui/raqtiva_design.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_poolakey/flutter_poolakey.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -15,166 +16,8 @@ class TaxLeagueApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'لیگ نخبگان مالیاتی',
-    theme: ThemeData(
-      useMaterial3: true,
+    theme: RaqtivaTheme.dark.copyWith(
       visualDensity: VisualDensity.adaptivePlatformDensity,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0B1423),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFD2B477),
-        brightness: Brightness.dark,
-        surface: const Color(0xFF17243A),
-      ),
-      textTheme: const TextTheme(
-        headlineSmall: TextStyle(
-          fontSize: 22,
-          height: 1.4,
-          fontWeight: FontWeight.w900,
-          color: Color(0xFFF5F1E8),
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-          color: Color(0xFFF5F1E8),
-        ),
-        titleMedium: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFFF5F1E8),
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 13,
-          height: 1.7,
-          color: Color(0xFFE0E7F0),
-        ),
-        bodySmall: TextStyle(
-          fontSize: 11,
-          height: 1.6,
-          color: Color(0xFF9EADC1),
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        color: Color(0x223D5575),
-        thickness: 1,
-        space: 20,
-      ),
-      listTileTheme: const ListTileThemeData(
-        iconColor: Color(0xFFD2B477),
-        titleTextStyle: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFFF5F1E8),
-        ),
-        subtitleTextStyle: TextStyle(
-          fontSize: 11,
-          height: 1.6,
-          color: Color(0xFF9EADC1),
-        ),
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF101C30),
-        foregroundColor: Color(0xFFF5F1E8),
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        elevation: 0,
-        titleTextStyle: TextStyle(
-          fontSize: 17, fontWeight: FontWeight.w800,
-          color: Color(0xFFF5F1E8),
-        ),
-      ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-        },
-      ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF203653),
-        contentTextStyle: const TextStyle(
-          color: Color(0xFFF5F1E8),
-          fontSize: 13,
-          height: 1.6,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x44D2B477)),
-        ),
-      ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: Color(0xFFE4C98F),
-        linearTrackColor: Color(0x334F6684),
-        circularTrackColor: Color(0x334F6684),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xFF101C30),
-        indicatorColor: const Color(0x33D2B477),
-        elevation: 0,
-        height: 68,
-        labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => TextStyle(
-            fontSize: 11,
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w900
-                : FontWeight.w600,
-            color: states.contains(WidgetState.selected)
-                ? const Color(0xFFFFE4A8)
-                : const Color(0xFF9EADC1),
-          ),
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF17263D),
-        elevation: 0,
-        margin: const EdgeInsets.only(bottom: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: const BorderSide(color: Color(0x22D2B477)),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF101C30),
-        labelStyle: const TextStyle(
-          color: Color(0xFFB8C5D6),
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-        hintStyle: const TextStyle(
-          color: Color(0xFF71839B),
-          fontSize: 13,
-        ),
-        prefixIconColor: const Color(0xFFE4C98F),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18, vertical: 18,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Color(0x334F6684)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Color(0x334F6684)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Color(0xFFD2B477), width: 1.5),
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFD2B477),
-          foregroundColor: const Color(0xFF172033),
-          minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
     ),
     home: const LeagueSplashScreen(),
   );
@@ -828,21 +671,30 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     Widget feature(IconData icon, String title, String subtitle) {
       return Expanded(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 5),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B2B43),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x22D2B477)),
+            color: RaqtivaColors.navyLight.withValues(alpha: .75),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: RaqtivaColors.gold.withValues(alpha: .22),
+            ),
           ),
-          child: Column(children: [
-            Icon(icon, color: const Color(0xFFE4C98F), size: 25),
-            const SizedBox(height: 8),
-            Text(title, textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11)),
-            const SizedBox(height: 4),
-            Text(subtitle, textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF9EADC1), fontSize: 9)),
-          ]),
+          child: Column(
+            children: [
+              Icon(icon, color: RaqtivaColors.gold, size: 25),
+              const SizedBox(height: 9),
+              Text(title, textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: RaqtivaColors.text,
+                  fontWeight: FontWeight.w900, fontSize: 11,
+                )),
+              const SizedBox(height: 5),
+              Text(subtitle, textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: RaqtivaColors.muted, fontSize: 9,
+                )),
+            ],
+          ),
         ),
       );
     }
@@ -850,237 +702,406 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF263F60), Color(0xFF17263D)],
-            ),
-            borderRadius: BorderRadius.circular(23),
-            border: Border.all(color: const Color(0x55D2B477)),
-          ),
-          child: Column(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0x22D2B477),
-                borderRadius: BorderRadius.circular(30),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: .94, end: 1),
+          duration: const Duration(milliseconds: 850),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(19, 25, 19, 21),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  Color(0xFF263F60),
+                  Color(0xFF17263D),
+                  Color(0xFF101827),
+                ],
               ),
-              child: const Text('باشگاه رقابت و یادگیری مالیاتی',
-                style: TextStyle(color: Color(0xFFE4C98F),
-                  fontSize: 11, fontWeight: FontWeight.w700)),
+              border: Border.all(
+                color: RaqtivaColors.gold.withValues(alpha: .42),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: RaqtivaColors.gold.withValues(alpha: .10),
+                  blurRadius: 32,
+                  spreadRadius: 1,
+                ),
+                const BoxShadow(
+                  color: Color(0x55000000),
+                  blurRadius: 22,
+                  offset: Offset(0, 12),
+                ),
+              ],
             ),
-            const SizedBox(height: 15),
-            const Text('دانش مالیاتی‌ات را به رتبه تبدیل کن',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, height: 1.5,
-                fontWeight: FontWeight.w900, color: Color(0xFFF5F1E8))),
-            const SizedBox(height: 8),
-            const Text(
-              'در آزمون‌های تخصصی شرکت کن، پیشرفتت را بسنج و در رقابت ملی بدرخش.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, height: 1.8,
-                color: Color(0xFFBCC9D9)),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .045),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: RaqtivaColors.gold.withValues(alpha: .25),
+                    ),
+                  ),
+                  child: Image.asset(
+                    'assets/brand/logo_full.png',
+                    height: 75,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.emoji_events_rounded,
+                      size: 60,
+                      color: RaqtivaColors.gold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 19),
+                const RaqtivaGoldBadge(
+                  'باشگاه رقابت و یادگیری مالیاتی',
+                  icon: Icons.auto_awesome_rounded,
+                ),
+                const SizedBox(height: 17),
+                const Text(
+                  'رقابت کن، رتبه بگیر، نخبه شو!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: RaqtivaColors.goldLight,
+                    fontSize: 21,
+                    height: 1.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                const Text(
+                  'دانش مالیاتی‌ات را به جایگاه برتر تبدیل کن؛ '
+                  'در آزمون‌های تخصصی شرکت کن و در لیگ ملی بدرخش.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFD0D9E5),
+                    fontSize: 12,
+                    height: 1.9,
+                  ),
+                ),
+                const SizedBox(height: 21),
+                Row(
+                  children: [
+                    feature(Icons.nightlight_round, 'آزمون شبانه', 'رقابت تخصصی'),
+                    const SizedBox(width: 9),
+                    feature(Icons.emoji_events_rounded, 'لیگ ملی', 'رتبه کشوری'),
+                    const SizedBox(width: 9),
+                    feature(Icons.school_rounded, 'آکادمی', 'یادگیری هدفمند'),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            Row(children: [
-              feature(Icons.nightlight_round, 'آزمون شبانه', 'رقابت تخصصی'),
-              const SizedBox(width: 8),
-              feature(Icons.emoji_events_rounded, 'لیگ رتبه‌بندی', 'کشوری و استانی'),
-              const SizedBox(width: 8),
-              feature(Icons.school_rounded, 'آکادمی', 'یادگیری هدفمند'),
-            ]),
-          ]),
+          ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
+        const SizedBox(height: 22),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.all(21),
           decoration: BoxDecoration(
-            color: const Color(0xFF17243A),
-            borderRadius: BorderRadius.circular(23),
-            border: Border.all(color: const Color(0x33D2B477)),
+            color: RaqtivaColors.surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: otpRequested
+                  ? RaqtivaColors.green.withValues(alpha: .55)
+                  : RaqtivaColors.gold.withValues(alpha: .30),
+            ),
             boxShadow: const [
-              BoxShadow(color: Color(0x22000000),
-                blurRadius: 18, offset: Offset(0, 8)),
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 22,
+                offset: Offset(0, 9),
+              ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(children: [
-                Container(
-                  width: 43, height: 43,
-                  decoration: BoxDecoration(
-                    color: const Color(0x22D2B477),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.lock_person_rounded,
-                    color: Color(0xFFE4C98F), size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(otpRequested ? 'تأیید شماره همراه' : 'ورود یا عضویت در لیگ',
-                      style: const TextStyle(fontSize: 17,
-                        fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 3),
-                    Text(otpRequested
-                        ? 'کد پیامک‌شده را وارد کنید'
-                        : 'برای شروع، شماره موبایلت را ثبت کن',
-                      style: const TextStyle(fontSize: 11,
-                        color: Color(0xFF9EADC1))),
-                  ],
-                )),
-              ]),
-              const SizedBox(height: 20),
-              if (!otpRequested) ...[
-                TextField(
-                  controller: phone,
-                  keyboardType: TextInputType.phone,
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.center,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  decoration: const InputDecoration(
-                    labelText: 'شماره تلفن همراه',
-                    hintText: '09xxxxxxxxx',
-                    prefixIcon: Icon(Icons.phone_android_rounded),
-                  ),
-                ),
-                const SizedBox(height: 13),
-                DropdownButtonFormField<String>(
-                  value: selectedProvince,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'استان محل سکونت',
-                    helperText: 'برای حساب جدید یا تأییدنشده لازم است',
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                  ),
-                  items: provinces.map((province) =>
-                    DropdownMenuItem<String>(
-                      value: province, child: Text(province),
-                    )).toList(),
-                  onChanged: busy ? null : (value) =>
-                    setState(() => selectedProvince = value),
-                ),
-              ] else ...[
-                TextField(
-                  controller: code,
-                  keyboardType: TextInputType.number,
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 9,
-                    color: Color(0xFFFFE4A8),
-                  ),
-                  maxLength: 6,
-                  autofillHints: const [AutofillHints.oneTimeCode],
-                  decoration: const InputDecoration(
-                    labelText: 'کد شش‌رقمی پیامک‌شده',
-                    hintText: '------',
-                    prefixIcon: Icon(Icons.password_rounded),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 54,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+              Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 49,
+                    height: 49,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: otpRequested
+                            ? [
+                                RaqtivaColors.green.withValues(alpha: .25),
+                                RaqtivaColors.green.withValues(alpha: .08),
+                              ]
+                            : [
+                                RaqtivaColors.gold.withValues(alpha: .25),
+                                RaqtivaColors.gold.withValues(alpha: .08),
+                              ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      otpRequested
+                          ? Icons.mark_email_read_rounded
+                          : Icons.lock_person_rounded,
+                      color: otpRequested
+                          ? RaqtivaColors.green
+                          : RaqtivaColors.gold,
+                      size: 25,
                     ),
                   ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          otpRequested ? 'تأیید هویت شما' : 'ورود به لیگ نخبگان',
+                          style: const TextStyle(
+                            color: RaqtivaColors.text,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          otpRequested
+                              ? 'کد یک‌بارمصرف را وارد کنید'
+                              : 'شروع رقابت فقط چند ثانیه زمان می‌برد',
+                          style: const TextStyle(
+                            color: RaqtivaColors.muted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: RaqtivaColors.gold,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: otpRequested
+                            ? RaqtivaColors.green
+                            : RaqtivaColors.border,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 19),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: otpRequested
+                    ? Column(
+                        key: const ValueKey('otp-entry'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'کد شش‌رقمی پیامک‌شده',
+                            style: TextStyle(
+                              color: RaqtivaColors.text,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 11),
+                          TextField(
+                            controller: code,
+                            keyboardType: TextInputType.number,
+                            textDirection: TextDirection.ltr,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 10,
+                              color: RaqtivaColors.goldLight,
+                            ),
+                            maxLength: 6,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            decoration: const InputDecoration(
+                              hintText: '------',
+                              prefixIcon: Icon(Icons.password_rounded),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        key: const ValueKey('phone-entry'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'شماره تلفن همراه',
+                            style: TextStyle(
+                              color: RaqtivaColors.text,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: phone,
+                            keyboardType: TextInputType.phone,
+                            textDirection: TextDirection.ltr,
+                            textAlign: TextAlign.center,
+                            autofillHints: const [
+                              AutofillHints.telephoneNumber,
+                            ],
+                            decoration: const InputDecoration(
+                              hintText: '09xxxxxxxxx',
+                              prefixIcon: Icon(Icons.phone_android_rounded),
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          DropdownButtonFormField<String>(
+                            value: selectedProvince,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'استان محل سکونت',
+                              helperText:
+                                  'برای حساب جدید یا تأییدنشده لازم است',
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ),
+                            items: provinces.map((province) =>
+                              DropdownMenuItem<String>(
+                                value: province,
+                                child: Text(province),
+                              )).toList(),
+                            onChanged: busy
+                                ? null
+                                : (value) => setState(
+                                    () => selectedProvince = value,
+                                  ),
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 17),
+              SizedBox(
+                height: 55,
+                child: FilledButton.icon(
                   onPressed: busy
                       ? null
                       : (otpRequested ? verifyCode : requestCode),
-                  icon: Icon(otpRequested
-                      ? Icons.verified_rounded : Icons.sms_rounded),
+                  icon: busy
+                      ? const SizedBox(
+                          width: 19,
+                          height: 19,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          otpRequested
+                              ? Icons.verified_rounded
+                              : Icons.sms_rounded,
+                        ),
                   label: Text(
-                    otpRequested ? 'تأیید کد و ورود' : 'دریافت کد ورود',
+                    otpRequested ? 'تأیید کد و ورود به لیگ' : 'دریافت کد ورود',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
-              if (otpRequested)
+              if (otpRequested) ...[
+                const SizedBox(height: 10),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: otpResendSeconds > 0
                       ? Container(
-                          key: const ValueKey<String>('otp-countdown'),
-                          margin: const EdgeInsets.only(top: 8),
+                          key: const ValueKey('otp-countdown'),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 11,
+                            horizontal: 14, vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF101C30),
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(
-                              color: const Color(0x334F6684),
-                            ),
+                            color: RaqtivaColors.navyLight,
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(
                                 Icons.timer_outlined,
+                                color: RaqtivaColors.gold,
                                 size: 18,
-                                color: Color(0xFFE4C98F),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'ارسال دوباره کد تا ۰۰:${otpResendSeconds.toString().padLeft(2, '0')}',
+                                'ارسال دوباره تا ۰۰:${otpResendSeconds.toString().padLeft(2, '0')}',
                                 style: const TextStyle(
-                                  color: Color(0xFFBCC9D9),
-                                  fontSize: 12,
+                                  color: RaqtivaColors.muted,
                                   fontWeight: FontWeight.w700,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         )
                       : TextButton.icon(
-                          key: const ValueKey<String>('otp-resend'),
+                          key: const ValueKey('otp-resend'),
                           onPressed: busy ? null : requestCode,
-                          icon: const Icon(
-                            Icons.refresh_rounded, size: 18,
-                          ),
+                          icon: const Icon(Icons.refresh_rounded),
                           label: const Text('ارسال دوباره کد'),
                         ),
                 ),
-              const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 15),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shield_outlined, size: 15,
-                    color: Color(0xFF9EADC1)),
-                  SizedBox(width: 6),
-                  Flexible(child: Text(
-                    'ورود با کد یک‌بارمصرف پیامکی انجام می‌شود',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10,
-                      color: Color(0xFF9EADC1)),
-                  )),
+                  Icon(
+                    Icons.shield_rounded,
+                    color: RaqtivaColors.green,
+                    size: 16,
+                  ),
+                  SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      'حفاظت از حساب با کد یک‌بارمصرف پیامکی',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: RaqtivaColors.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 17),
         const Text(
-          'با ورود به لیگ، مسیر رقابت و پیشرفت تخصصی خودت را آغاز می‌کنی.',
+          'به جمع متخصصانی بپیوند که دانش را به رقابت و پیشرفت تبدیل می‌کنند.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11, height: 1.8,
-            color: Color(0xFF8798AE)),
+          style: TextStyle(
+            color: RaqtivaColors.muted,
+            fontSize: 11,
+            height: 1.9,
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
       ],
     );
   }
-
 
   Future<void> _showAppealForm(String attemptId, String examTitle) async {
     final reason = TextEditingController();
