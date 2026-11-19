@@ -47,6 +47,53 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Ensure Android internet permission
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import re
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text(encoding="utf-8")
+          permission = "android.permission.INTERNET"
+          pattern = r'<uses-permission\b[^>]*android:name=["\']' + permission + r'["\']'
+          if not re.search(pattern, s):
+              s, n = re.subn(r'(?m)^\s*<application\b',
+                  '    <uses-permission android:name="' + permission + '" />\n\n    <application',
+                  s, count=1)
+              if n != 1:
+                  raise SystemExit("Manifest application tag not found")
+              p.write_text(s, encoding="utf-8")
+          print("INTERNET permission configured.")
+          INNER
+
+      - name: Configure JitPack for Cafe Bazaar SDK
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import re
+
+          path = Path("android/build.gradle.kts")
+          content = path.read_text(encoding="utf-8")
+          repository = 'maven { url = uri("https://jitpack.io") }'
+          if repository not in content:
+              pattern = r'(allprojects\s*\{\s*repositories\s*\{)'
+              updated, count = re.subn(
+                  pattern,
+                  lambda m: m.group(1) + "\n        " + repository,
+                  content,
+                  count=1,
+                  flags=re.S,
+              )
+              if count != 1:
+                  raise SystemExit("Could not safely locate allprojects.repositories")
+              path.write_text(updated, encoding="utf-8")
+          print("JitPack repository configured.")
+          INNER
+
       - name: Verify permanent Android application identity
         working-directory: mobile
         run: |
@@ -114,6 +161,13 @@ jobs:
         env:
           API_BASE_URL: ${{ inputs.api_base_url }}
         run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
+
+      - name: Verify release internet permission
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
+          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "android.permission.INTERNET"
 
       - name: Verify APK signature
         working-directory: mobile
