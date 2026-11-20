@@ -18,6 +18,8 @@ class Question(models.Model):
         EASY = "easy", "آسان"
         MEDIUM = "medium", "متوسط"
         HARD = "hard", "سخت"
+        VERY_HARD = "very_hard", "خیلی سخت"
+        SPECIALIZED = "specialized", "تخصصی"
 
     class Provenance(models.TextChoices):
         OFFICIAL = "official", "متن رسمی آزمون"
