@@ -17,7 +17,7 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    if not attempt.exam.counts_for_league or attempt.exam.kind != attempt.exam.Kind.NIGHT:
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
