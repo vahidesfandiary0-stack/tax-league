@@ -44,6 +44,18 @@ jobs:
         working-directory: mobile
         run: flutter pub get
 
+      - name: Verify Flutter lock file
+        working-directory: mobile
+        run: test -s pubspec.lock
+
+      - name: Upload resolved Flutter lock file
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqtiva-flutter-lock
+          path: mobile/pubspec.lock
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Patch legacy Cafe Bazaar Gradle plugin
         working-directory: mobile
         run: |
@@ -211,6 +223,7 @@ jobs:
           set -euo pipefail
           AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
           "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "android.permission.INTERNET"
+          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
 
       - name: Verify APK signature
         working-directory: mobile
