@@ -10,6 +10,7 @@ class Exam(models.Model):
         DAILY = "daily", "آزمون روزانه"
         WEEKLY = "weekly", "آزمون هفتگی"
         MOCK = "mock", "آزمون جامع"
+        NIGHT = "night", "آزمون شبانه"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"
@@ -36,6 +37,10 @@ class Exam(models.Model):
     def clean(self):
         if self.duration_minutes < 1 or self.max_attempts < 1:
             raise ValidationError("مدت آزمون و تعداد دفعات مجاز باید حداقل یک باشد.")
+        if self.counts_for_league and self.kind != self.Kind.NIGHT:
+            raise ValidationError({"counts_for_league": "فقط آزمون شبانه مجاز است در رتبه‌بندی لیگ اثر بگذارد."})
+        if self.kind == self.Kind.NIGHT and self.requires_purchase:
+            raise ValidationError({"requires_purchase": "آزمون شبانه باید رایگان باشد."})
         if self.requires_purchase and self.price_irr < 1:
             raise ValidationError({"price_irr": "برای آزمون پولی، مبلغ باید بیشتر از صفر باشد."})
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
