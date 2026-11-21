@@ -480,7 +480,7 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
         ),
         const Positioned.fill(
           child: IgnorePointer(
-            child: CustomPaint(painter: _RaqtivaDamaskPainter()),
+            child: CustomPaint(painter: _RaqtivaStadiumPainter()),
           ),
         ),
         child,
@@ -489,94 +489,96 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
   }
 }
 
-class _RaqtivaDamaskPainter extends CustomPainter {
-  const _RaqtivaDamaskPainter();
+class _RaqtivaStadiumPainter extends CustomPainter {
+  const _RaqtivaStadiumPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final gold = Paint()
-      ..color = const Color(0xFFD8B978).withValues(alpha: .075)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final softGold = Paint()
-      ..color = const Color(0xFFEBD6A0).withValues(alpha: .035)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = .8;
+    final glow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, -.72),
+        radius: .92,
+        colors: [
+          const Color(0xFF2D70B8).withValues(alpha: .22),
+          const Color(0xFF164477).withValues(alpha: .08),
+          Colors.transparent,
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, glow);
 
-    // Repeating quatrefoil medallions create a quiet damask texture.
-    const stepX = 76.0;
-    const stepY = 92.0;
-    for (var row = -1; row < (size.height / stepY).ceil() + 1; row++) {
-      for (var col = -1; col < (size.width / stepX).ceil() + 1; col++) {
-        final center = Offset(
-          col * stepX + (row.isOdd ? stepX / 2 : 0),
-          row * stepY,
+    final beamPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          const Color(0xFF8BC8FF).withValues(alpha: .13),
+          const Color(0xFF4B9BE8).withValues(alpha: .035),
+          Colors.transparent,
+        ],
+        stops: const [0, .34, 1],
+      ).createShader(Offset.zero & size);
+    final leftBeam = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * .36, 0)
+      ..lineTo(size.width * .12, size.height * .58)
+      ..lineTo(0, size.height * .72)
+      ..close();
+    canvas.drawPath(leftBeam, beamPaint);
+    final rightBeam = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width * .64, 0)
+      ..lineTo(size.width * .88, size.height * .58)
+      ..lineTo(size.width, size.height * .72)
+      ..close();
+    canvas.save();
+    canvas.scale(-1, 1, pivot: Offset(size.width / 2, 0));
+    canvas.drawPath(leftBeam, beamPaint);
+    canvas.restore();
+
+    final stadiumLine = Paint()
+      ..color = const Color(0xFF6FADE8).withValues(alpha: .12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.15;
+    for (var i = 0; i < 5; i++) {
+      final y = size.height * (.60 + i * .055);
+      final path = Path()
+        ..moveTo(-size.width * .12, y)
+        ..quadraticBezierTo(
+          size.width * .5,
+          y - size.height * .20,
+          size.width * 1.12,
+          y,
         );
-        final motif = Path()
-          ..moveTo(center.dx, center.dy - 24)
-          ..cubicTo(center.dx + 8, center.dy - 12, center.dx + 20, center.dy - 9, center.dx + 24, center.dy)
-          ..cubicTo(center.dx + 12, center.dy + 8, center.dx + 9, center.dy + 20, center.dx, center.dy + 24)
-          ..cubicTo(center.dx - 8, center.dy + 12, center.dx - 20, center.dy + 9, center.dx - 24, center.dy)
-          ..cubicTo(center.dx - 12, center.dy - 8, center.dx - 9, center.dy - 20, center.dx, center.dy - 24)
-          ..close();
-        canvas.drawPath(motif, gold);
-        canvas.drawCircle(center, 5, softGold);
-        canvas.drawCircle(center, 29, softGold);
-
-        final leaf = Path()
-          ..moveTo(center.dx, center.dy - 13)
-          ..quadraticBezierTo(center.dx + 7, center.dy - 7, center.dx, center.dy)
-          ..quadraticBezierTo(center.dx - 7, center.dy - 7, center.dx, center.dy - 13);
-        canvas.drawPath(leaf, softGold);
-        canvas.save();
-        canvas.translate(center.dx, center.dy);
-        canvas.rotate(3.141592653589793);
-        canvas.translate(-center.dx, -center.dy);
-        canvas.drawPath(leaf, softGold);
-        canvas.restore();
-      }
+      canvas.drawPath(path, stadiumLine);
     }
 
-    // Fine ornamental borders frame the screen without competing with content.
-    final borderPaint = Paint()
-      ..color = const Color(0xFFD8B978).withValues(alpha: .10)
+    final goldEdge = Paint()
+      ..color = const Color(0xFFEBD6A0).withValues(alpha: .075)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    canvas.drawRect(
+    final frame = RRect.fromRectAndRadius(
       Rect.fromLTWH(9, 9, size.width - 18, size.height - 18),
-      borderPaint,
+      const Radius.circular(22),
     );
-    canvas.drawRect(
-      Rect.fromLTWH(14, 14, size.width - 28, size.height - 28),
-      softGold,
-    );
+    canvas.drawRRect(frame, goldEdge);
 
-    // Discreet brand signature / watermark for public-facing screens.
-    final signature = TextPainter(
-      text: const TextSpan(
-        text: 'RAQTIVA  •  TAX ELITE LEAGUE',
-        style: TextStyle(
-          color: Color(0x26EBD6A0),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2.0,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    signature.paint(
-      canvas,
-      Offset(
-        (size.width - signature.width) / 2,
-        size.height - signature.height - 24,
-      ),
-    );
+    final lamp = Paint()..color = const Color(0xFFFFE5A0).withValues(alpha: .55);
+    for (final x in [size.width * .09, size.width * .91]) {
+      canvas.drawCircle(Offset(x, size.height * .10), 2.2, lamp);
+      final ray = Paint()
+        ..color = const Color(0xFF9CCFFF).withValues(alpha: .07)
+        ..strokeWidth = 1;
+      for (var j = -2; j <= 2; j++) {
+        canvas.drawLine(
+          Offset(x, size.height * .10),
+          Offset(x + j * 22, size.height * .38),
+          ray,
+        );
+      }
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _RaqtivaDamaskPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
 }
-
 
 /// Five-destination navigation shell. Labels may wrap to two lines on narrow
 /// phones instead of being clipped or silently shortened.
