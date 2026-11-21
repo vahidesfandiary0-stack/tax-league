@@ -1830,7 +1830,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountStrip(),
         GridView.count(
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: 1.34,
+          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: 1.15,
           children: [
             tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
