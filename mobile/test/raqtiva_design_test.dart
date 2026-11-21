@@ -70,39 +70,42 @@ void main() {
       expect(find.text('۱۲'), findsOneWidget);
     });
 
-    testWidgets('six-destination navigation fits narrow phones and routes taps',
+    testWidgets(
+        'six-destination navigation fits supported phone widths and routes taps',
         (tester) async {
-      tester.view.physicalSize = const Size(320, 720);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       var selected = -1;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: RaqtivaTheme.dark,
-          home: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Scaffold(
-              bottomNavigationBar: RaqtivaBottomNavigationBar(
-                selectedIndex: 0,
-                onDestinationSelected: (index) => selected = index,
+      for (final width in [320.0, 360.0, 393.0, 430.0]) {
+        tester.view.physicalSize = Size(width, 720);
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: RaqtivaTheme.dark,
+            home: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Scaffold(
+                bottomNavigationBar: RaqtivaBottomNavigationBar(
+                  selectedIndex: 0,
+                  onDestinationSelected: (index) => selected = index,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('خانه'), findsOneWidget);
-      expect(find.text('آزمون‌ها'), findsOneWidget);
-      expect(find.text('رتبه‌بندی'), findsOneWidget);
-      expect(find.text('آکادمی'), findsOneWidget);
-      expect(find.text('باشگاه طراحان'), findsOneWidget);
-      expect(find.text('اشتراک'), findsOneWidget);
+        expect(find.text('خانه'), findsOneWidget);
+        expect(find.text('آزمون‌ها'), findsOneWidget);
+        expect(find.text('رتبه‌بندی'), findsOneWidget);
+        expect(find.text('آکادمی'), findsOneWidget);
+        expect(find.text('باشگاه طراحان'), findsOneWidget);
+        expect(find.text('اشتراک'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'width: $width');
 
-      await tester.tap(find.text('باشگاه طراحان'));
-      expect(selected, 4);
-      expect(tester.takeException(), isNull);
+        await tester.tap(find.text('باشگاه طراحان'));
+        expect(selected, 4, reason: 'width: $width');
+        expect(tester.takeException(), isNull, reason: 'width: $width');
+      }
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
     });
 
     testWidgets('gold badge renders the supplied label', (tester) async {
