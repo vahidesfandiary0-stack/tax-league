@@ -367,6 +367,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   int otpResendSeconds = 0;
   Timer? otpResendTimer;
   int accountPage = 0;
+  int? selectedHomeSection;
   String? error;
   Map<String, dynamic>? stats;
   List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [];
@@ -562,21 +563,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     textDirection: TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
-        leading: stats != null && accountPage > 0
+        leading: stats != null && (accountPage > 0 || selectedHomeSection != null)
             ? IconButton(
                 onPressed: () => setState(() {
-                  accountPage = accountPage == 4
-                      ? 1
-                      : accountPage == 3
-                          ? 2
-                          : accountPage == 2
-                              ? 1
-                              : 0;
+                  if (accountPage > 0) {
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 3 ? 2 : accountPage == 2 ? 1 : 0;
+                  } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? 'لیگ نخبگان مالیاتی' : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : 'اشتراک ویژه'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'اعتراض‌های من'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : 'آکادمی'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -644,28 +641,25 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ]),
         ),
       ),
-      bottomNavigationBar: stats == null || focusMode
-          ? null
-          : NavigationBar(
-              backgroundColor: const Color(0xFF101C30),
-              indicatorColor: const Color(0x33D2B477),
-              selectedIndex: accountPage == 0 ? 0 : 1,
-              onDestinationSelected: (index) {
-                setState(() => accountPage = index == 0 ? 0 : 1);
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: "خانه",
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: "حساب کاربری",
-                ),
-              ],
-            ),
+      bottomNavigationBar: stats == null || focusMode ? null : NavigationBar(
+        height: 76, backgroundColor: const Color(0xFF020A20), indicatorColor: const Color(0x33FFD15A),
+        selectedIndex: accountPage == 4 ? 4 : accountPage == 5 ? 3 : selectedHomeSection == 1 ? 1 : selectedHomeSection == 3 ? 2 : 0,
+        onDestinationSelected: (index) { setState(() {
+          selectedHomeSection = null;
+          if (index == 0) { accountPage = 0; }
+          else if (index == 1) { accountPage = 0; selectedHomeSection = 1; }
+          else if (index == 2) { accountPage = 0; selectedHomeSection = 3; }
+          else if (index == 3) { accountPage = 5; }
+          else { accountPage = 4; }
+        }); },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: "خانه"),
+          NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: "آزمون‌ها"),
+          NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart_rounded), label: "رتبه‌بندی"),
+          NavigationDestination(icon: Icon(Icons.school_outlined), selectedIcon: Icon(Icons.school_rounded), label: "آکادمی"),
+          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart_rounded), label: "اشتراک"),
+        ],
+      ),
     ),
   );
 
@@ -1173,6 +1167,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
     if (accountPage == 4) {
       return BazaarSubscriptionPage(api: api);
+    }
+    if (accountPage == 5) {
+      return const Card(child: Padding(padding: EdgeInsets.all(20), child: Column(
+        children: [Icon(Icons.school_rounded, size: 52, color: RaqtivaColors.gold), SizedBox(height: 14),
+          Text('آکادمی لیگ نخبگان مالیاتی', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), SizedBox(height: 8),
+          Text('بخش آکادمی در حال آماده‌سازی است. پس از فعال‌شدن محتوای آموزشی، از همین بخش در دسترس خواهد بود.', textAlign: TextAlign.center)],
+      )));
     }
     if (accountPage == 2) {
       return Card(child: ListTile(
@@ -1720,8 +1721,52 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       )),
     ];
 
-    if (!focusMode) return cards;
-
+    if (!focusMode) {
+      const sectionCards = <int>[1, 3, 6, 4, 5, 7];
+      Widget accountStrip() => InkWell(
+        borderRadius: BorderRadius.circular(28),
+        onTap: () => setState(() { accountPage = 1; selectedHomeSection = null; }),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [Color(0xFF082B68), Color(0xFF020D29)]),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFFFD15A), width: 1.5),
+            boxShadow: const [BoxShadow(color: Color(0x88F5B82E), blurRadius: 13, spreadRadius: -5), BoxShadow(color: Color(0x99000000), blurRadius: 16, offset: Offset(0, 7))],
+          ),
+          child: Row(children: [
+            Container(width: 66, height: 66, decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [Color(0xFFFFE58D), Color(0xFFD99A19)]), border: Border.all(color: const Color(0xFFFFF0B7), width: 2)), child: const Icon(Icons.person_rounded, size: 43, color: Color(0xFF071A3E))),
+            const SizedBox(width: 15),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('حساب کاربری', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Colors.white)),
+              SizedBox(height: 4), Text('تنظیمات و اطلاعات حساب', style: TextStyle(fontSize: 13, color: Color(0xFFD7E4FA))),
+            ])),
+            const Icon(Icons.chevron_left_rounded, size: 35, color: Color(0xFFFFD15A)),
+          ]),
+        ),
+      );
+      Widget tile(int section, IconData icon, String title, String subtitle) => _RaqtivaHomeTile(
+        icon: icon, title: title, subtitle: subtitle,
+        onTap: () => setState(() => selectedHomeSection = section),
+      );
+      if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
+      return [
+        accountStrip(),
+        GridView.count(
+          crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: .94,
+          children: [
+            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+            tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
+            tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
+            tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
+            tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
+            tile(5, Icons.shield_rounded, 'اعتراض‌های من', appeals.isEmpty ? 'هنوز اعتراضی ثبت نکرده‌اید.' : '${appeals.length} اعتراض ثبت‌شده'),
+          ],
+        ),
+      ];
+    }
     return [
       Card(child: Padding(
         padding: const EdgeInsets.all(17),
@@ -2783,4 +2828,47 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
       ],
     );
   }
+}
+
+
+class _RaqtivaHomeTile extends StatelessWidget {
+  const _RaqtivaHomeTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  final IconData icon; final String title; final String subtitle; final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap, borderRadius: BorderRadius.circular(27),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0750B5), Color(0xFF062B70), Color(0xFF031735)]),
+          borderRadius: BorderRadius.circular(27), border: Border.all(color: const Color(0xFFFFD15A), width: 1.5),
+          boxShadow: const [BoxShadow(color: Color(0x88F5B82E), blurRadius: 15, spreadRadius: -6), BoxShadow(color: Color(0xAA000000), blurRadius: 13, offset: Offset(0, 6))],
+        ),
+        child: Stack(children: [
+          Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _RaqtivaTileLinesPainter()))),
+          Padding(padding: const EdgeInsets.fromLTRB(10, 13, 10, 12), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 55, color: const Color(0xFFFFD76A), shadows: const [Shadow(color: Color(0xCCFFB82E), blurRadius: 13)]),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFFFE18A), fontSize: 15, fontWeight: FontWeight.w900, height: 1.35)),
+            const SizedBox(height: 5),
+            Expanded(child: Align(alignment: Alignment.center, child: Text(subtitle, textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10.5, height: 1.5)))),
+            Align(alignment: Alignment.bottomLeft, child: Container(width: 37, height: 37, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF020A20).withOpacity(.82), border: Border.all(color: const Color(0xFFFFD15A), width: 1.5)), child: const Icon(Icons.chevron_left_rounded, size: 28, color: Color(0xFFFFD15A)))),
+          ])),
+        ]),
+      ),
+    ),
+  );
+}
+class _RaqtivaTileLinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0x553DA8FF)..style = PaintingStyle.stroke..strokeWidth = 1;
+    for (var i = 0; i < 5; i++) {
+      final rect = Rect.fromCenter(center: Offset(size.width * .5, size.height * .35), width: size.width * (1.0 + i * .28), height: size.height * (.45 + i * .18));
+      canvas.drawArc(rect, .15, 2.85, false, paint);
+    }
+  }
+  @override
+  bool shouldRepaint(covariant _RaqtivaTileLinesPainter oldDelegate) => false;
 }
