@@ -197,14 +197,15 @@ class _LeagueSplashArtwork extends StatelessWidget {
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
+          gradient: RadialGradient(
+            center: Alignment(0, -0.42),
+            radius: 1.28,
             colors: [
-              Color(0xFF1C304B),
-              Color(0xFF0B1423),
-              Color(0xFF080F1B),
+              Color(0xFF0B347C),
+              Color(0xFF061A45),
+              Color(0xFF020A20),
             ],
+            stops: [0, .48, 1],
           ),
         ),
         child: SafeArea(
@@ -258,14 +259,28 @@ class _LeagueSplashArtwork extends StatelessWidget {
                           height: 190,
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF14243A),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                              colors: [
+                                Color(0xFF0D3A83),
+                                Color(0xFF061A45),
+                                Color(0xFF020A20),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(38),
                             border: Border.all(
-                              color: const Color(0x66D2B477),
+                              color: const Color(0xFFFFD15A),
+                              width: 1.6,
                             ),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x44000000),
+                                color: Color(0x66F5B82E),
+                                blurRadius: 28,
+                                spreadRadius: -5,
+                              ),
+                              BoxShadow(
+                                color: Color(0x88000000),
                                 blurRadius: 35,
                                 offset: Offset(0, 15),
                               ),
