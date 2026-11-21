@@ -1202,61 +1202,81 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Widget _accountContent() {
     if (accountPage == 1) {
+      Widget accountTile(int index, IconData icon, String title, String subtitle) =>
+          _RaqtivaHomeTile(
+            icon: icon,
+            title: title,
+            subtitle: subtitle,
+            onTap: () => setState(() => accountPage = index),
+          );
+
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('اطلاعات حساب'),
-              subtitle: const Text('مشاهده و مدیریت اطلاعات کاربری'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF173A60), Color(0xFF08172D)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xB8E4D0A0), width: 1.15),
+              boxShadow: const [
+                RaqtivaEffects.cardGlow,
+                RaqtivaEffects.cardDepth,
+              ],
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.account_circle_rounded,
+                    color: Color(0xFFFFD76A), size: 42),
+                SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('مرکز حساب کاربری',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          )),
+                      SizedBox(height: 4),
+                      Text('مدیریت حساب، خدمات و اطلاعات لیگ',
+                          style: TextStyle(
+                            color: Color(0xFFD7E4FA),
+                            fontSize: 11,
+                          )),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.history_rounded),
-              title: const Text('تاریخچه نتایج'),
-              subtitle: const Text('نتایج نهایی آزمون‌های شما'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 7),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.support_agent_rounded),
-              title: const Text('پیگیری و پشتیبانی'),
-              subtitle: const Text('اعتراض‌ها، راهنما و مسیرهای پشتیبانی'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 6),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('اشتراک ویژه'),
-              subtitle: const Text('مشاهده طرح‌ها، خرید و بازیابی اشتراک بازار'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 4),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.edit_note_rounded),
-              title: const Text('خدمات و باشگاه طراحان سؤال'),
-              subtitle: const Text('طراحی، ارسال و پیگیری داوری'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 9),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('درباره لیگ'),
-              subtitle: const Text('اطلاعات و معرفی مجموعه'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 2),
-            ),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 13,
+            childAspectRatio: .98,
+            children: [
+              accountTile(8, Icons.person_rounded, 'اطلاعات حساب',
+                  'مشاهده و مدیریت اطلاعات کاربری'),
+              accountTile(7, Icons.history_rounded, 'تاریخچه نتایج',
+                  'نتایج نهایی آزمون‌های شما'),
+              accountTile(6, Icons.support_agent_rounded, 'پیگیری و پشتیبانی',
+                  'اعتراض‌ها و درخواست‌های پشتیبانی'),
+              accountTile(4, Icons.workspace_premium_rounded, 'اشتراک ویژه',
+                  'طرح‌ها، خرید و بازیابی اشتراک'),
+              accountTile(9, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
+                  'طراحی و پیگیری داوری سؤال'),
+              accountTile(2, Icons.info_rounded, 'درباره لیگ',
+                  'معرفی مجموعه و بنیان‌گذار'),
+            ],
           ),
         ],
       );
