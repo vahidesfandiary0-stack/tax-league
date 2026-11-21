@@ -1415,7 +1415,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
-                    'شناسه: ${item['id']}\n'
+                    'شناسه: ${item['id']}
+'
                     'صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
@@ -2024,7 +2025,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               contentPadding: EdgeInsets.zero,
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
-                'شناسه: ${item['id']}\n'
+                'شناسه: ${item['id']}
+'
                 'صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
@@ -2115,7 +2117,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
           children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank
+امتیاز: $score
+آزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
@@ -2200,7 +2204,8 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   }
   Map<String,dynamic> payload()=>{
     'subject':subject,'difficulty':difficulty,'prompt':prompt.text.trim(),
-    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),\n    'valid_from':validFrom.text.trim().isEmpty?null:validFrom.text.trim(),'valid_until':validUntil.text.trim().isEmpty?null:validUntil.text.trim(),
+    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),
+    'valid_from':validFrom.text.trim().isEmpty?null:validFrom.text.trim(),'valid_until':validUntil.text.trim().isEmpty?null:validUntil.text.trim(),
     'options':List.generate(4,(i)=>{'position':i+1,'text':options[i].text.trim(),'is_correct':i==correct}),
   };
   Future<void> save() async {
@@ -2262,7 +2267,9 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
         for(var i=0;i<4;i++)Row(children:[
           Expanded(child:field('گزینه ${i+1}',options[i])),
           Radio<int>(value:i,groupValue:correct,onChanged:(v)=>setState(()=>correct=v??0)),const Text('صحیح')]),
-        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),\n        TextFormField(controller:validFrom,decoration:const InputDecoration(labelText:'اعتبار از تاریخ (YYYY-MM-DD)')),\n        TextFormField(controller:validUntil,decoration:const InputDecoration(labelText:'اعتبار تا تاریخ (YYYY-MM-DD)')),
+        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),
+        TextFormField(controller:validFrom,decoration:const InputDecoration(labelText:'اعتبار از تاریخ (YYYY-MM-DD)')),
+        TextFormField(controller:validUntil,decoration:const InputDecoration(labelText:'اعتبار تا تاریخ (YYYY-MM-DD)')),
         const Text('یادداشت تله‌شناسی و نکات اختصاصی در فرم عمومی ثبت نمی‌شود.',style:TextStyle(fontSize:11,color:RaqtivaColors.muted)),
         FilledButton.icon(onPressed:saving?null:save,icon:const Icon(Icons.save),label:Text(saving?'در حال ذخیره…':'ذخیره پیش‌نویس')),
         if(editingId!=null)OutlinedButton.icon(onPressed:saving?null:submit,icon:const Icon(Icons.send),label:const Text('ارسال برای داوری')),
