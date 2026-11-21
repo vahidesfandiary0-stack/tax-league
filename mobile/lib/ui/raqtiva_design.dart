@@ -522,14 +522,9 @@ class _RaqtivaStadiumPainter extends CustomPainter {
       ..lineTo(0, size.height * .72)
       ..close();
     canvas.drawPath(leftBeam, beamPaint);
-    final rightBeam = Path()
-      ..moveTo(size.width, 0)
-      ..lineTo(size.width * .64, 0)
-      ..lineTo(size.width * .88, size.height * .58)
-      ..lineTo(size.width, size.height * .72)
-      ..close();
     canvas.save();
-    canvas.scale(-1, 1, pivot: Offset(size.width / 2, 0));
+    canvas.translate(size.width, 0);
+    canvas.scale(-1, 1);
     canvas.drawPath(leftBeam, beamPaint);
     canvas.restore();
 
