@@ -567,13 +567,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 3 ? 2 : accountPage == 2 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'اعتراض‌های من'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : 'آکادمی'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'اعتراض‌های من'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -1223,54 +1223,260 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Widget _accountContent() {
     if (accountPage == 1) {
-      return Column(children: [
-        Card(child: ListTile(
-          leading: const Icon(Icons.workspace_premium_outlined),
-          title: const Text('اشتراک ویژه'),
-          subtitle: const Text('مشاهده طرح‌ها، خرید و بازیابی اشتراک بازار'),
-          trailing: const Icon(Icons.chevron_left),
-          onTap: () => setState(() => accountPage = 4),
-        )),
-        Card(child: ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: const Text('درباره لیگ'),
-          subtitle: const Text('اطلاعات و معرفی مجموعه'),
-          trailing: const Icon(Icons.chevron_left),
-          onTap: () => setState(() => accountPage = 2),
-        )),
-      ]);
+      return Column(
+        children: [
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('اطلاعات حساب'),
+              subtitle: const Text('مشاهده و مدیریت اطلاعات کاربری'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 8),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history_rounded),
+              title: const Text('تاریخچه نتایج'),
+              subtitle: const Text('نتایج نهایی آزمون‌های شما'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 7),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.support_agent_rounded),
+              title: const Text('پیگیری و پشتیبانی'),
+              subtitle: const Text('اعتراض‌ها، راهنما و مسیرهای پشتیبانی'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 6),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.workspace_premium_outlined),
+              title: const Text('اشتراک ویژه'),
+              subtitle: const Text('مشاهده طرح‌ها، خرید و بازیابی اشتراک بازار'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 4),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('درباره لیگ'),
+              subtitle: const Text('اطلاعات و معرفی مجموعه'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 2),
+            ),
+          ),
+        ],
+      );
     }
     if (accountPage == 4) {
       return BazaarSubscriptionPage(api: api);
     }
     if (accountPage == 5) {
-      return const Card(child: Padding(padding: EdgeInsets.all(20), child: Column(
-        children: [Icon(Icons.school_rounded, size: 52, color: RaqtivaColors.gold), SizedBox(height: 14),
-          Text('آکادمی لیگ نخبگان مالیاتی', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), SizedBox(height: 8),
-          Text('بخش آکادمی در حال آماده‌سازی است. پس از فعال‌شدن محتوای آموزشی، از همین بخش در دسترس خواهد بود.', textAlign: TextAlign.center)],
-      )));
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(Icons.school_rounded, size: 52, color: RaqtivaColors.gold),
+              SizedBox(height: 14),
+              Text(
+                'آکادمی لیگ نخبگان مالیاتی',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'بخش آکادمی در حال آماده‌سازی است. پس از فعال‌شدن محتوای آموزشی، از همین بخش در دسترس خواهد بود.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (accountPage == 6) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.gavel_rounded, color: RaqtivaColors.gold),
+                      SizedBox(width: 9),
+                      Text(
+                        'اعتراض‌های من',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (appeals.isEmpty)
+                    const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
+                  for (final item in appeals)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((item['reason'] ?? 'اعتراض').toString()),
+                      subtitle: Text(
+                        (item['decision_note'] ?? '').toString().isEmpty
+                            ? 'در انتظار بررسی'
+                            : item['decision_note'].toString(),
+                      ),
+                      trailing: Text(_status(item['status'])),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.help_outline_rounded, color: RaqtivaColors.gold),
+                      SizedBox(width: 9),
+                      Text(
+                        'راهنما و پشتیبانی',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 9),
+                  Text(
+                    'مرکز راهنما و ثبت درخواست پشتیبانی در نقشه توسعه قرار دارد و پس از آماده‌شدن مسیر واقعی پاسخ‌گویی فعال می‌شود.',
+                    style: TextStyle(height: 1.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    if (accountPage == 7) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'تاریخچه نتایج آزمون',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+              ),
+              const SizedBox(height: 12),
+              if (results.isEmpty)
+                const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
+              for (final item in results)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text((item['exam_title'] ?? 'آزمون').toString()),
+                  subtitle: Text(
+                    'شناسه: ${item['id']}'
+                    '\\nصحیح: ${item['correct_count']}'
+                    ' · غلط: ${item['wrong_count']}'
+                    ' · نزده: ${item['blank_count']}',
+                  ),
+                  isThreeLine: true,
+                  onTap: () => _showAppealForm(
+                    item['id'].toString(),
+                    (item['exam_title'] ?? 'آزمون').toString(),
+                  ),
+                  trailing: Text(
+                    '${item['score'] ?? 0} امتیاز',
+                    style: const TextStyle(
+                      color: RaqtivaColors.goldLight,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (accountPage == 8) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'اطلاعات حساب کاربری',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.location_on_outlined, color: RaqtivaColors.gold),
+                title: const Text('استان محل سکونت'),
+                subtitle: Text(
+                  provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.',
+                ),
+              ),
+              const Divider(),
+              const ListTile(
+                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
+                title: Text('حریم خصوصی و تنظیمات'),
+                subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
     if (accountPage == 2) {
-      return Card(child: ListTile(
-        leading: const Icon(Icons.person_outline),
-        title: const Text('معرفی بنیان‌گذار'),
-        subtitle: const Text('آشنایی با بنیان‌گذار لیگ نخبگان مالیاتی'),
-        trailing: const Icon(Icons.chevron_left),
-        onTap: () => setState(() => accountPage = 3),
-      ));
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.person_outline),
+          title: const Text('معرفی بنیان‌گذار'),
+          subtitle: const Text('آشنایی با بنیان‌گذار لیگ نخبگان مالیاتی'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () => setState(() => accountPage = 3),
+        ),
+      );
     }
-    return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(
-          'assets/brand/founder_vahid_esfandiary.jpg', width: 150, height: 170, fit: BoxFit.cover,
-        )),
-        const SizedBox(height: 16),
-        const Text('وحید اسفندیاری', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        const Text('مالک و بنیان‌گذار لیگ نخبگان مالیاتی', textAlign: TextAlign.center),
-      ],
-    )));
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                'assets/brand/founder_vahid_esfandiary.jpg',
+                width: 150,
+                height: 170,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'وحید اسفندیاری',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Widget> _content() {
