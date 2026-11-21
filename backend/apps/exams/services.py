@@ -185,6 +185,10 @@ def publish_exam(exam_id):
     exam = Exam.objects.select_for_update().get(pk=exam_id)
     if exam.status != Exam.Status.DRAFT:
         raise ValidationError("فقط آزمون پیش‌نویس قابل انتشار است.")
+    if exam.counts_for_league and exam.kind != Exam.Kind.NIGHT:
+        raise ValidationError("فقط آزمون شبانه می‌تواند در رتبه‌بندی لیگ اثر بگذارد.")
+    if exam.kind == Exam.Kind.NIGHT and exam.requires_purchase:
+        raise ValidationError("آزمون شبانه باید رایگان باشد.")
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
     if not items:
         raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
