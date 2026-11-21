@@ -1277,25 +1277,66 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       return BazaarSubscriptionPage(api: api);
     }
     if (accountPage == 5) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(Icons.school_rounded, size: 52, color: RaqtivaColors.gold),
-              SizedBox(height: 14),
-              Text(
-                'آکادمی لیگ نخبگان مالیاتی',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'بخش آکادمی در حال آماده‌سازی است. پس از فعال‌شدن محتوای آموزشی، از همین بخش در دسترس خواهد بود.',
-                textAlign: TextAlign.center,
-              ),
-            ],
+      Widget academyItem(IconData icon, String title, String description) {
+        return Card(
+          child: ListTile(
+            leading: Icon(icon, color: RaqtivaColors.gold, size: 27),
+            title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+            subtitle: Text(description),
+            trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
           ),
-        ),
+        );
+      }
+
+      return Column(
+        children: [
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  Icon(Icons.school_rounded, size: 48, color: RaqtivaColors.gold),
+                  SizedBox(height: 12),
+                  Text(
+                    'آکادمی لیگ نخبگان مالیاتی',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'مسیرهای آموزشی در این بخش متمرکز می‌شوند؛ فعال‌سازی هر مسیر پس از تکمیل محتوای معتبر و آزمون فنی انجام خواهد شد.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          academyItem(
+            Icons.library_books_rounded,
+            'بانک سؤالات تخصصی',
+            'دسته‌بندی موضوعی، سطح دشواری، منبع رسمی و تاریخ اعتبار حکم',
+          ),
+          academyItem(
+            Icons.visibility_rounded,
+            'آکادمی تله‌شناسی',
+            'تحلیل گزینه‌های انحرافی و روش حل حرفه‌ای سؤال',
+          ),
+          academyItem(
+            Icons.psychology_alt_rounded,
+            'مربی هوشمند مستند',
+            'پاسخ مبتنی بر منابع رسمی، میزان اطمینان و ارجاع موارد مبهم',
+          ),
+          academyItem(
+            Icons.analytics_rounded,
+            'آزمون تشخیصی و تطبیقی',
+            'شناخت نقاط قوت و ضعف و تعیین مسیر یادگیری',
+          ),
+          academyItem(
+            Icons.event_note_rounded,
+            'برنامه یادگیری و فلش‌کارت',
+            'مرور زمان‌بندی‌شده و پیگیری پیشرفت آموزشی',
+          ),
+        ],
       );
     }
     if (accountPage == 6) {
