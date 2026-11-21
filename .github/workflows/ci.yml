@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: ["main", "mobile/ui-redesign-20261119"]
   pull_request:
