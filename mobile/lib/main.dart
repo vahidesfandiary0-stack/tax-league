@@ -604,7 +604,19 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
             margin: const EdgeInsets.only(bottom: 18),
-            decoration: BoxDecoration(\n              gradient: const LinearGradient(\n                begin: Alignment.topRight,\n                end: Alignment.bottomLeft,\n                colors: [Color(0xFF1A385A), Color(0xFF102541), Color(0xFF071326)],\n              ),\n              borderRadius: BorderRadius.circular(26),\n              border: Border.all(color: const Color(0x77E4D0A0), width: 1),\n              boxShadow: const [\n                BoxShadow(color: Color(0x224D8BC4), blurRadius: 28, offset: Offset(0, 5)),\n                BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 13)),\n              ],\n            ),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF1A385A), Color(0xFF102541), Color(0xFF071326)],
+              ),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: const Color(0x77E4D0A0), width: 1),
+              boxShadow: const [
+                BoxShadow(color: Color(0x224D8BC4), blurRadius: 28, offset: Offset(0, 5)),
+                BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 13)),
+              ],
+            ),
             child: Column(children: [
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: .88, end: 1),
@@ -1444,7 +1456,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
                     'شناسه: ${item['id']}'
-                    '\\nصحیح: ${item['correct_count']}'
+                    '\
+صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
                   ),
@@ -1863,17 +1876,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
                   colors: [
-                    Color(0xFF34445A),
-                    Color(0xFF19283D),
-                    Color(0xFF090F1D),
+                    Color(0xFF294968),
+                    Color(0xFF172F4C),
+                    Color(0xFF09172A),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(21),
                 border: Border.all(color: const Color(0x88E4D0A0), width: 1.0),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x33D9B76F),
-                    blurRadius: 16,
+                    color: Color(0x22E4D0A0),
+                    blurRadius: 18,
                     spreadRadius: .2,
                     offset: Offset(0, 2),
                   ),
@@ -2053,7 +2066,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
                 'شناسه: ${item['id']}'
-                '\nصحیح: ${item['correct_count']}'
+                '
+صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
               ),
@@ -2143,7 +2157,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
           children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank
+امتیاز: $score
+آزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
