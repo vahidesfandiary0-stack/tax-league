@@ -99,13 +99,28 @@ jobs:
           application = tree.getroot().find("application")
           if application is None:
               raise SystemExit("Android manifest has no application element.")
-          application.set("{http://schemas.android.com/apk/res/android}label", "لیگ نخبگان مالیاتی")
+          android_ns = "{http://schemas.android.com/apk/res/android}"
+          application.set(android_ns + "label", "لیگ نخبگان مالیاتی")
+          embedding = next(
+              (item for item in application.findall("meta-data")
+               if item.get(android_ns + "name") == "flutterEmbedding"),
+              None,
+          )
+          if embedding is None:
+              embedding = ET.SubElement(application, "meta-data")
+              embedding.set(android_ns + "name", "flutterEmbedding")
+          embedding.set(android_ns + "value", "2")
           tree.write(path, encoding="utf-8", xml_declaration=True)
           verified = ET.parse(path).getroot().find("application")
-          label = verified.get("{http://schemas.android.com/apk/res/android}label") if verified is not None else None
-          if label != "لیگ نخبگان مالیاتی":
-              raise SystemExit("Persian launcher label verification failed.")
-          print("Android launcher name set to لیگ نخبگان مالیاتی")
+          label = verified.get(android_ns + "label") if verified is not None else None
+          metadata = next(
+              (item for item in verified.findall("meta-data")
+               if item.get(android_ns + "name") == "flutterEmbedding"),
+              None,
+          ) if verified is not None else None
+          if label != "لیگ نخبگان مالیاتی" or metadata is None or metadata.get(android_ns + "value") != "2":
+              raise SystemExit("Android launcher label / v2 embedding verification failed.")
+          print("Android launcher name and v2 embedding metadata verified")
           INNER
       - name: Configure JitPack for Cafe Bazaar SDK
         working-directory: mobile
