@@ -3186,6 +3186,7 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
 }
 
 
+// Responsive stadium-style tile: icon and copy stay inside the card on compact phones.
 class _RaqtivaHomeTile extends StatelessWidget {
   const _RaqtivaHomeTile({
     required this.icon,
