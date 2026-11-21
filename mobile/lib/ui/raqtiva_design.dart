@@ -451,8 +451,9 @@ class RaqtivaGoldBadge extends StatelessWidget {
   }
 }
 
-/// Decorative stadium atmosphere used behind the live app UI.
-/// This is intentionally painted as decoration: all controls remain real widgets.
+/// Official RAQTIVA damask backdrop: a restrained, Persian-inspired
+/// ornamental texture with a dark charcoal/navy field and antique-gold linework.
+/// It is decorative only; all app controls remain ordinary interactive widgets.
 class RaqtivaStadiumBackdrop extends StatelessWidget {
   const RaqtivaStadiumBackdrop({super.key, required this.child});
 
@@ -466,19 +467,21 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(0, -0.45),
-              radius: 1.25,
+              center: Alignment(0, -0.38),
+              radius: 1.28,
               colors: [
-                Color(0xFF1A385A),
-                Color(0xFF0D203A),
-                RaqtivaColors.navy,
+                Color(0xFF29212A),
+                Color(0xFF17151C),
+                Color(0xFF090D17),
               ],
               stops: [0, .48, 1],
             ),
           ),
         ),
         const Positioned.fill(
-          child: IgnorePointer(child: CustomPaint(painter: _RaqtivaStadiumPainter())),
+          child: IgnorePointer(
+            child: CustomPaint(painter: _RaqtivaDamaskPainter()),
+          ),
         ),
         child,
       ],
@@ -486,84 +489,92 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
   }
 }
 
-class _RaqtivaStadiumPainter extends CustomPainter {
-  const _RaqtivaStadiumPainter();
+class _RaqtivaDamaskPainter extends CustomPainter {
+  const _RaqtivaDamaskPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Broad blue stadium beams frame the page without covering live controls.
-    for (final side in [0.0, 1.0]) {
-      final origin = Offset(size.width * side, size.height * .13);
-      final beam = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: const [
-            Color(0x333D91FF),
-            Color(0x103D91FF),
-            Color(0x003D91FF),
-          ],
-        ).createShader(Rect.fromLTWH(
-          side == 0 ? 0 : size.width * .48,
-          origin.dy,
-          size.width * .52,
-          size.height * .55,
-        ));
-      final path = Path()
-        ..moveTo(origin.dx, origin.dy)
-        ..lineTo(size.width * .5, size.height * .48)
-        ..lineTo(side == 0 ? size.width * .42 : size.width * .58, size.height * .36)
-        ..close();
-      canvas.drawPath(path, beam);
-    }
-
-    final center = Offset(size.width / 2, size.height * .20);
     final gold = Paint()
-      ..color = RaqtivaColors.gold.withValues(alpha: .22)
+      ..color = const Color(0xFFD8B978).withValues(alpha: .075)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final blue = Paint()
-      ..color = RaqtivaColors.blue.withValues(alpha: .16)
+      ..strokeWidth = 1;
+    final softGold = Paint()
+      ..color = const Color(0xFFEBD6A0).withValues(alpha: .035)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = .8;
 
-    for (var i = 0; i < 7; i++) {
-      final rect = Rect.fromCenter(
-        center: Offset(center.dx, center.dy - 20 + i * 18.0),
-        width: size.width * (1.15 + i * .18),
-        height: size.height * (.24 + i * .055),
-      );
-      canvas.drawArc(rect, .12, 2.90, false, i.isEven ? gold : blue);
-    }
-
-    final glow = Paint()
-      ..shader = RadialGradient(
-        colors: [const Color(0x55FFD66B), const Color(0x00FFD66B)],
-      ).createShader(Rect.fromCircle(
-        center: Offset(size.width * .5, size.height * .28),
-        radius: size.width * .72,
-      ));
-    canvas.drawCircle(
-      Offset(size.width * .5, size.height * .28),
-      size.width * .72,
-      glow,
-    );
-
-    final light = Paint()..color = const Color(0xCCBBD9FF);
-    for (final side in [0.06, 0.94]) {
-      final origin = Offset(size.width * side, size.height * .15);
-      for (var i = 0; i < 9; i++) {
-        canvas.drawCircle(
-          origin.translate((side < .5 ? 1 : -1) * i * 7.0, i * 3.0),
-          i.isEven ? 1.7 : 1.1,
-          light,
+    // Repeating quatrefoil medallions create a quiet damask texture.
+    const stepX = 76.0;
+    const stepY = 92.0;
+    for (var row = -1; row < (size.height / stepY).ceil() + 1; row++) {
+      for (var col = -1; col < (size.width / stepX).ceil() + 1; col++) {
+        final center = Offset(
+          col * stepX + (row.isOdd ? stepX / 2 : 0),
+          row * stepY,
         );
+        final motif = Path()
+          ..moveTo(center.dx, center.dy - 24)
+          ..cubicTo(center.dx + 8, center.dy - 12, center.dx + 20, center.dy - 9, center.dx + 24, center.dy)
+          ..cubicTo(center.dx + 12, center.dy + 8, center.dx + 9, center.dy + 20, center.dx, center.dy + 24)
+          ..cubicTo(center.dx - 8, center.dy + 12, center.dx - 20, center.dy + 9, center.dx - 24, center.dy)
+          ..cubicTo(center.dx - 12, center.dy - 8, center.dx - 9, center.dy - 20, center.dx, center.dy - 24)
+          ..close();
+        canvas.drawPath(motif, gold);
+        canvas.drawCircle(center, 5, softGold);
+        canvas.drawCircle(center, 29, softGold);
+
+        final leaf = Path()
+          ..moveTo(center.dx, center.dy - 13)
+          ..quadraticBezierTo(center.dx + 7, center.dy - 7, center.dx, center.dy)
+          ..quadraticBezierTo(center.dx - 7, center.dy - 7, center.dx, center.dy - 13);
+        canvas.drawPath(leaf, softGold);
+        canvas.save();
+        canvas.translate(center.dx, center.dy);
+        canvas.rotate(3.141592653589793);
+        canvas.translate(-center.dx, -center.dy);
+        canvas.drawPath(leaf, softGold);
+        canvas.restore();
       }
     }
+
+    // Fine ornamental borders frame the screen without competing with content.
+    final borderPaint = Paint()
+      ..color = const Color(0xFFD8B978).withValues(alpha: .10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawRect(
+      Rect.fromLTWH(9, 9, size.width - 18, size.height - 18),
+      borderPaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(14, 14, size.width - 28, size.height - 28),
+      softGold,
+    );
+
+    // Discreet brand signature / watermark for public-facing screens.
+    final signature = TextPainter(
+      text: const TextSpan(
+        text: 'RAQTIVA  •  TAX ELITE LEAGUE',
+        style: TextStyle(
+          color: Color(0x26EBD6A0),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 2.0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    signature.paint(
+      canvas,
+      Offset(
+        (size.width - signature.width) / 2,
+        size.height - signature.height - 24,
+      ),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _RaqtivaDamaskPainter oldDelegate) => false;
 }
 
 
