@@ -105,7 +105,7 @@ jobs:
           print(f"JitPack configured in {path}")
           INNER
       - name: Build debug APK
-        run: flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid
+        run: flutter build apk --debug --dart-define=API_BASE_URL=https://raqtiva.ir
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
