@@ -7,7 +7,7 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 
 ## Non-negotiable design constraints
 
-- Keep the approved visual identity: deep navy/royal blue stadium atmosphere, luminous gold frames, Persian RTL typography, official logo and five-item bottom navigation.
+- Keep the approved visual identity: deep navy/royal blue stadium atmosphere, luminous gold frames, Persian RTL typography, official logo and six-item bottom navigation.
 - Academy and Question Designers Club are two independent first-level destinations with separate navigation entry points. The bottom navigation therefore has six fixed destinations; do not merge these two areas. Other future capabilities must be placed inside the appropriate destination rather than adding more bottom tabs.
 - Preserve existing working flows while adding navigation.
 - A planned feature must be visibly marked as unavailable / in preparation until its real API, permissions, data, and acceptance tests exist. Never simulate scores, XP, duels, lessons, payments, support tickets, or AI answers.
