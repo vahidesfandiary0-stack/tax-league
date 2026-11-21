@@ -545,9 +545,49 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> logout() async {
+    if (_confirmExit) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: RaqtivaColors.navy900,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: RaqtivaColors.gold),
+          ),
+          title: const Text('خروج از حساب کاربری'),
+          content: const Text('آیا از حساب کاربری خود خارج می‌شوید؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('خروج'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
+    setState(() {
+      stats = null;
+      board = [];
+      provincialBoard = [];
+      provincialName = null;
+      provincialMessage = null;
+      appeals = [];
+      exams = [];
+      results = [];
+      focusMode = false;
+      focusEndsAt = null;
+      otpRequested = false;
+      accountPage = 0;
+      selectedHomeSection = null;
+      code.clear();
+    });
   }
 
   Future<void> loadDashboard() async {
