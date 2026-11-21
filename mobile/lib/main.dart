@@ -2105,7 +2105,8 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
               ),
             ],
           ),
-          body: question == null
+          body: RaqtivaStadiumBackdrop(
+            child: question == null
               ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
@@ -2392,6 +2393,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                     ),
                   ],
                 ),
+          ),
         ),
       ),
     );
