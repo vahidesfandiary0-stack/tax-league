@@ -1221,11 +1221,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
     if (accountPage == 5) {
       Widget academyItem(IconData icon, String title, String description) {
-        return Card(
-          child: ListTile(
-            leading: Icon(icon, color: RaqtivaColors.gold, size: 27),
-            title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-            subtitle: Text(description),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: RaqtivaFeatureCard(
+            title: title,
+            description: description,
+            icon: icon,
             trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
           ),
         );
@@ -1284,11 +1285,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
     if (accountPage == 9) {
       Widget clubItem(IconData icon, String title, String description) {
-        return Card(
-          child: ListTile(
-            leading: Icon(icon, color: RaqtivaColors.gold, size: 27),
-            title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-            subtitle: Text(description),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: RaqtivaFeatureCard(
+            title: title,
+            description: description,
+            icon: icon,
             trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
           ),
         );
