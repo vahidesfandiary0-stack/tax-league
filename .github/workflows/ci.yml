@@ -54,19 +54,12 @@ jobs:
               raise SystemExit(f"Expected exactly one flutter_poolakey Gradle file, found {len(matches)}")
 
           path = matches[0]
-          content = path.read_text(encoding="utf-8")
-          content = content.replace("jcenter()", "mavenCentral()")
-
-          # The published 2.2.0+1.0.0 package uses a multiline plugins block
-          # after buildscript; tolerate whitespace but require the exact two plugin IDs.
+          content = path.read_text(encoding="utf-8").replace("jcenter()", "mavenCentral()")
           pattern = re.compile(
-              r'(?m)^plugins\\s*\\{\\s*'
-              r'id\\s+["\\']com\\.android\\.library["\\']\\s*'
-              r'id\\s+["\\']kotlin-android["\\']\\s*'
-              r'\\}',
+              r"""(?m)^plugins\s*\{\s*id\s+["']com\.android\.library["']\s*id\s+["']kotlin-android["']\s*\}"""
           )
           content, count = pattern.subn(
-              'apply plugin: "com.android.library"\\napply plugin: "kotlin-android"',
+              'apply plugin: "com.android.library"\napply plugin: "kotlin-android"',
               content,
               count=1,
           )
@@ -74,9 +67,6 @@ jobs:
               if ('apply plugin: "com.android.library"' not in content or
                       'apply plugin: "kotlin-android"' not in content):
                   raise SystemExit("Unrecognized Poolakey Gradle plugin structure; refusing unsafe patch.")
-          elif count != 1:
-              raise SystemExit(f"Expected one Poolakey plugins block, patched {count}")
-
           if "jcenter()" in content or "plugins {" in content:
               raise SystemExit("Poolakey Gradle patch verification failed.")
           path.write_text(content, encoding="utf-8")
