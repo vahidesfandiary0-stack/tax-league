@@ -92,6 +92,7 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
 
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
           path = Path("android/app/src/main/AndroidManifest.xml")
           if not path.is_file():
               raise SystemExit("Generated AndroidManifest.xml was not found.")
@@ -118,9 +119,13 @@ jobs:
                if item.get(android_ns + "name") == "flutterEmbedding"),
               None,
           ) if verified is not None else None
-          if label != "لیگ نخبگان مالیاتی" or metadata is None or metadata.get(android_ns + "value") != "2":
-              raise SystemExit("Android launcher label / v2 embedding verification failed.")
-          print("Android launcher name and v2 embedding metadata verified")
+          raw_manifest = path.read_text(encoding="utf-8")
+          if (label != "لیگ نخبگان مالیاتی" or metadata is None
+                  or metadata.get(android_ns + "value") != "2"
+                  or "android:name=" not in raw_manifest
+                  or "android:value=" not in raw_manifest):
+              raise SystemExit("Android launcher label / v2 embedding XML verification failed.")
+          print("Android launcher name and v2 embedding metadata verified in Android-prefixed XML")
           INNER
       - name: Configure JitPack for Cafe Bazaar SDK
         working-directory: mobile
