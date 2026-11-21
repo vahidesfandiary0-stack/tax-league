@@ -2095,7 +2095,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountStrip(),
         GridView.count(
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: 1.15,
+          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: 1.36,
           children: [
             tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
@@ -3263,10 +3263,11 @@ class _RaqtivaHomeTile extends StatelessWidget {
                     children: [
                       Icon(
                         icon,
-                        size: 48,
+                        size: 70,
                         color: const Color(0xFFFFD76A),
                         shadows: const [
-                          Shadow(color: Color(0xCCFFB82E), blurRadius: 13),
+                          Shadow(color: Color(0xFFFFC34A), blurRadius: 18),
+                          Shadow(color: Color(0xAAFFB82E), blurRadius: 30),
                         ],
                       ),
                       const SizedBox(height: 5),
@@ -3277,7 +3278,7 @@ class _RaqtivaHomeTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFFFE18A),
-                          fontSize: 13.5,
+                          fontSize: 15,
                           fontWeight: FontWeight.w900,
                           height: 1.25,
                         ),
@@ -3293,8 +3294,8 @@ class _RaqtivaHomeTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 9.5,
-                              height: 1.35,
+                              fontSize: 10.5,
+                              height: 1.4,
                             ),
                           ),
                         ),
@@ -3302,8 +3303,8 @@ class _RaqtivaHomeTile extends StatelessWidget {
                       Align(
                         alignment: Alignment.bottomLeft,
                         child: Container(
-                          width: 31,
-                          height: 31,
+                          width: 39,
+                          height: 39,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: const Color(0xFF020A20).withOpacity(.86),
@@ -3314,7 +3315,7 @@ class _RaqtivaHomeTile extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.chevron_left_rounded,
-                            size: 24,
+                            size: 29,
                             color: Color(0xFFFFD15A),
                           ),
                         ),
