@@ -567,13 +567,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 || accountPage == 9 ? 0 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -640,10 +640,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             height: 72,
             child: Row(children: [
               _navigationItem(0, Icons.home_outlined, Icons.home_rounded, 'خانه'),
-              _navigationItem(1, Icons.emoji_events_outlined, Icons.emoji_events_rounded, 'آزمون‌ها'),
+              _navigationItem(1, Icons.assignment_outlined, Icons.assignment_rounded, 'آزمون‌ها'),
               _navigationItem(2, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'رتبه‌بندی'),
               _navigationItem(3, Icons.school_outlined, Icons.school_rounded, 'آکادمی'),
-              _navigationItem(4, Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
+              _navigationItem(4, Icons.edit_note_outlined, Icons.edit_note_rounded, 'باشگاه طراحان'),
+              _navigationItem(5, Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
             ]),
           ),
         ),
@@ -652,14 +653,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   );
 
   int get _selectedNavigationIndex => accountPage == 4
-      ? 4
+      ? 5
       : accountPage == 5
           ? 3
-          : selectedHomeSection == 1
-              ? 1
-              : selectedHomeSection == 3
-                  ? 2
-                  : 0;
+          : accountPage == 9
+              ? 4
+              : selectedHomeSection == 1
+                  ? 1
+                  : selectedHomeSection == 3
+                      ? 2
+                      : 0;
 
   void _selectNavigation(int index) {
     setState(() {
@@ -674,6 +677,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         selectedHomeSection = 3;
       } else if (index == 3) {
         accountPage = 5;
+      } else if (index == 4) {
+        accountPage = 9;
       } else {
         accountPage = 4;
       }
@@ -715,7 +720,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             children: [
               Icon(
                 selected ? selectedIcon : icon,
-                size: 29,
+                size: 25,
                 color: selected ? const Color(0xFFFFD76A) : const Color(0xFFE5F0FF),
                 shadows: selected
                     ? const [Shadow(color: Color(0xCCFFB82E), blurRadius: 12)]
@@ -725,9 +730,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               Text(
                 label,
                 maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? const Color(0xFFFFE18A) : Colors.white,
-                  fontSize: 11,
+                  fontSize: 9.5,
                   fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                 ),
               ),
@@ -1335,6 +1341,64 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             Icons.event_note_rounded,
             'برنامه یادگیری و فلش‌کارت',
             'مرور زمان‌بندی‌شده و پیگیری پیشرفت آموزشی',
+          ),
+        ],
+      );
+    }
+    if (accountPage == 9) {
+      Widget clubItem(IconData icon, String title, String description) {
+        return Card(
+          child: ListTile(
+            leading: Icon(icon, color: RaqtivaColors.gold, size: 27),
+            title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+            subtitle: Text(description),
+            trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
+          ),
+        );
+      }
+
+      return Column(
+        children: [
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 48, color: RaqtivaColors.gold),
+                  SizedBox(height: 12),
+                  Text(
+                    'باشگاه طراحان سؤال',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'فضای مستقل طراحی و پیشنهاد سؤال‌های مالیاتی؛ هر پیشنهاد تا زمان داوری تخصصی و تأیید نهایی، پیش‌نویس باقی می‌ماند و وارد آزمون یا بانک عمومی نمی‌شود.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          clubItem(
+            Icons.post_add_rounded,
+            'طراحی و ارسال سؤال',
+            'فرم ساخت سؤال چهارگزینه‌ای همراه با منبع رسمی و توضیح مستند',
+          ),
+          clubItem(
+            Icons.rule_folder_rounded,
+            'پیگیری داوری و اصلاح',
+            'مشاهده نظر داور، اصلاح نسخه و ارسال مجدد پیشنهاد',
+          ),
+          clubItem(
+            Icons.history_rounded,
+            'سوابق مشارکت و نسخه‌ها',
+            'تاریخچه پیشنهادها، تغییرات و نتیجه بررسی',
+          ),
+          clubItem(
+            Icons.leaderboard_rounded,
+            'رتبه‌بندی مستقل طراحان',
+            'جدول ملی و استانی جدا از رتبه‌بندی اصلی لیگ',
           ),
         ],
       );
