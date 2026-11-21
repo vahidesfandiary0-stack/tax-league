@@ -1862,15 +1862,25 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 gradient: const LinearGradient(
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
-                  colors: [Color(0xFF263D5B), Color(0xFF142238)],
+                  colors: [
+                    Color(0xFF34445A),
+                    Color(0xFF19283D),
+                    Color(0xFF090F1D),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(19),
-                border: Border.all(color: const Color(0x66D2B477)),
+                borderRadius: BorderRadius.circular(21),
+                border: Border.all(color: const Color(0x99E8C982), width: 1.15),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x22000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 5),
+                    color: Color(0x33D9B76F),
+                    blurRadius: 16,
+                    spreadRadius: .2,
+                    offset: Offset(0, 2),
+                  ),
+                  BoxShadow(
+                    color: Color(0xCC00030D),
+                    blurRadius: 18,
+                    offset: Offset(0, 10),
                   ),
                 ],
               ),
@@ -1887,11 +1897,32 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0x33D2B477),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFFFE9AD),
+                                Color(0xFFE0BD70),
+                                Color(0xFF9D7135),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: const Color(0x66D2B477),
+                              color: const Color(0xFFFFE8B0),
+                              width: 1.1,
                             ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x55E6C27B),
+                                blurRadius: 15,
+                                offset: Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: Color(0x99000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.nightlight_round,
