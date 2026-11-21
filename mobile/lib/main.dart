@@ -1256,27 +1256,32 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               ],
             ),
           ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 13,
-            childAspectRatio: .98,
-            children: [
-              accountTile(8, Icons.person_rounded, 'اطلاعات حساب',
-                  'مشاهده و مدیریت اطلاعات کاربری'),
-              accountTile(7, Icons.history_rounded, 'تاریخچه نتایج',
-                  'نتایج نهایی آزمون‌های شما'),
-              accountTile(6, Icons.support_agent_rounded, 'پیگیری و پشتیبانی',
-                  'اعتراض‌ها و درخواست‌های پشتیبانی'),
-              accountTile(4, Icons.workspace_premium_rounded, 'اشتراک ویژه',
-                  'طرح‌ها، خرید و بازیابی اشتراک'),
-              accountTile(9, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
-                  'طراحی و پیگیری داوری سؤال'),
-              accountTile(2, Icons.info_rounded, 'درباره لیگ',
-                  'معرفی مجموعه و بنیان‌گذار'),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              return GridView.count(
+                crossAxisCount: compact ? 1 : 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 13,
+                childAspectRatio: compact ? 2.45 : .98,
+                children: [
+                  accountTile(8, Icons.person_rounded, 'اطلاعات حساب',
+                      'مشاهده و مدیریت اطلاعات کاربری'),
+                  accountTile(7, Icons.history_rounded, 'تاریخچه نتایج',
+                      'نتایج نهایی آزمون‌های شما'),
+                  accountTile(6, Icons.support_agent_rounded, 'پیگیری و پشتیبانی',
+                      'اعتراض‌ها و درخواست‌های پشتیبانی'),
+                  accountTile(4, Icons.workspace_premium_rounded, 'اشتراک ویژه',
+                      'طرح‌ها، خرید و بازیابی اشتراک'),
+                  accountTile(9, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
+                      'طراحی و پیگیری داوری سؤال'),
+                  accountTile(2, Icons.info_rounded, 'درباره لیگ',
+                      'معرفی مجموعه و بنیان‌گذار'),
+                ],
+              );
+            },
           ),
         ],
       );
@@ -2133,18 +2138,33 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
         accountStrip(),
-        GridView.count(
-          crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
-          children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank
-امتیاز: $score
-آزمون رسمی: $examCount'),
-            tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
-            tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
-            tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
-            tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-                ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 360;
+            return GridView.count(
+              crossAxisCount: compact ? 1 : 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 15,
+              crossAxisSpacing: 13,
+              childAspectRatio: compact ? 2.45 : .98,
+              children: [
+                tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ',
+                    'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+                tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده',
+                    exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
+                tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من',
+                    results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
+                tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها',
+                    board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
+                tile(4, Icons.location_on_rounded,
+                    provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName',
+                    provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
+                tile(5, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
+                    'ثبت، ویرایش و پیگیری داوری سؤال'),
+              ],
+            );
+          },
         ),
       ];
     }
@@ -2264,10 +2284,17 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
       FilledButton.icon(onPressed:()=>setState(reset),icon:const Icon(Icons.add),label:const Text('ثبت سؤال جدید')),
       if(loading)const Center(child:CircularProgressIndicator()),
       if(!loading&&questions.isEmpty)const Text('هنوز سؤالی ثبت نکرده‌اید.'),
-      for(final q in questions)Card(child:ListTile(
-        title:Text((q['prompt']??'سؤال').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
-        subtitle:Text('${labels[q['subject']]??q['subject']} · ${statusText(q['status']?.toString())}'),
-        trailing:const Icon(Icons.chevron_left),onTap:()=>open(Map<String,dynamic>.from(q)))),
+      for(final q in questions)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: RaqtivaFeatureCard(
+            title: (q['prompt'] ?? 'سؤال').toString(),
+            description: '${labels[q['subject']] ?? q['subject']} · ${statusText(q['status']?.toString())}',
+            icon: Icons.fact_check_rounded,
+            trailing: const Icon(Icons.chevron_left_rounded, color: RaqtivaColors.gold),
+            onTap: () => open(Map<String, dynamic>.from(q)),
+          ),
+        ),
     ]);
   }
   Widget editor(){
