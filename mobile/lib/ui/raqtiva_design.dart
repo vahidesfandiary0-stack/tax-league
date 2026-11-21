@@ -72,6 +72,30 @@ abstract final class RaqtivaTheme {
             side: const BorderSide(color: Color(0x88E4D0A0), width: 1.0),
           ),
         ),
+        listTileTheme: ListTileThemeData(
+          iconColor: RaqtivaColors.goldLight,
+          textColor: RaqtivaColors.text,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          minVerticalPadding: 10,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          titleTextStyle: const TextStyle(
+            color: RaqtivaColors.text,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+          subtitleTextStyle: const TextStyle(
+            color: RaqtivaColors.muted,
+            fontSize: 11,
+            height: 1.5,
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0x447EA5D1),
+          thickness: .7,
+          space: 18,
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: RaqtivaColors.surfaceSoft,
