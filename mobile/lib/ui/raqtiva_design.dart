@@ -364,3 +364,93 @@ class RaqtivaGoldBadge extends StatelessWidget {
     );
   }
 }
+
+/// Decorative stadium atmosphere used behind the live app UI.
+/// This is intentionally painted as decoration: all controls remain real widgets.
+class RaqtivaStadiumBackdrop extends StatelessWidget {
+  const RaqtivaStadiumBackdrop({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.45),
+              radius: 1.25,
+              colors: [
+                Color(0xFF092D70),
+                Color(0xFF061A45),
+                Color(0xFF020A20),
+              ],
+              stops: [0, .48, 1],
+            ),
+          ),
+        ),
+        const Positioned.fill(
+          child: IgnorePointer(child: CustomPaint(painter: _RaqtivaStadiumPainter())),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+class _RaqtivaStadiumPainter extends CustomPainter {
+  const _RaqtivaStadiumPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * .20);
+    final gold = Paint()
+      ..color = const Color(0x66F6C64B)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final blue = Paint()
+      ..color = const Color(0x443B91FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (var i = 0; i < 7; i++) {
+      final rect = Rect.fromCenter(
+        center: Offset(center.dx, center.dy - 20 + i * 18.0),
+        width: size.width * (1.15 + i * .18),
+        height: size.height * (.24 + i * .055),
+      );
+      canvas.drawArc(rect, .12, 2.90, false, i.isEven ? gold : blue);
+    }
+
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [const Color(0x55FFD66B), const Color(0x00FFD66B)],
+      ).createShader(Rect.fromCircle(
+        center: Offset(size.width * .5, size.height * .28),
+        radius: size.width * .72,
+      ));
+    canvas.drawCircle(
+      Offset(size.width * .5, size.height * .28),
+      size.width * .72,
+      glow,
+    );
+
+    final light = Paint()..color = const Color(0xCCBBD9FF);
+    for (final side in [0.06, 0.94]) {
+      final origin = Offset(size.width * side, size.height * .15);
+      for (var i = 0; i < 9; i++) {
+        canvas.drawCircle(
+          origin.translate((side < .5 ? 1 : -1) * i * 7.0, i * 3.0),
+          i.isEven ? 1.7 : 1.1,
+          light,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
+}
+
