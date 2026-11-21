@@ -48,7 +48,8 @@ The account strip on Home opens **حساب کاربری** as a secondary hub. It
 - Tabs/segmented views: national league and verified province.
 - Explain eligibility and tie-break ordering.
 - A separate **XP و سطح کاربر** panel is reserved for the post-core milestone. XP is not league score and cannot be purchased.
-- Duels, practice, Academy, and paid activity do not affect the league.
+- A separate **رتبه‌بندی طراحان سؤال** view is reserved here, with national and province leaderboards, scientific quality score, approved question count, and contribution history. It is independent from the main league ranking and requires verified province for provincial standings.
+- Duels, practice, Academy, question-author contributions, and paid activity do not affect the main league.
 
 ### 3. آکادمی
 Use one destination with internal sections, not separate bottom tabs:
@@ -57,7 +58,11 @@ Use one destination with internal sections, not separate bottom tabs:
 - آزمون تشخیصی و تطبیقی: strengths/weaknesses and next-step plan.
 - مربی هوشمند: answers grounded in official sources, validity date, confidence, uncertainty, and expert escalation.
 - برنامه یادگیری، فلش‌کارت و تحلیل پیشرفت.
-- Human review remains mandatory for legal-sensitive content and publication. AI is assistive only.
+- **باشگاه طراحان سؤال مالیاتی**: ارسال سؤال پیشنهادی توسط کاربران، فرم چهارگزینه‌ای شامل موضوع/سطح/پاسخ تشریحی/مستند قانونی، پیگیری وضعیت بررسی، مشاهده ایرادات و دلیل رد، اصلاح و ارسال مجدد، اعتراض به نتیجه بررسی و مشاهده سوابق نسخه‌ها.
+- کنترل اولیه خودکار/هوشمند برای کامل‌بودن، تکرار، دشواری، ابهام، کیفیت گزینه‌ها و انطباق با منبع؛ هوش مصنوعی فقط ابزار کمکی است.
+- انتشار سؤال در آزمون شبانه یا بانک عمومی فقط پس از بررسی علمی و تأیید نهایی کارشناس مجاز است. هیچ سؤال پیشنهادی یا تأییدنشده‌ای وارد آزمون نمی‌شود.
+- نام یا نام مستعار طراح هنگام انتشار فقط با رضایت او نمایش داده می‌شود.
+- پاداش مشارکت/سکه، در صورت فعال‌سازی، مستقل از امتیاز لیگ و XP است و خرید یا پرداخت نمی‌تواند رتبه علمی طراح را بالا ببرد.
 - Heavy Academy/AI workloads are reduced during night-exam focus mode.
 
 ### 4. اشتراک
@@ -73,6 +78,7 @@ Use one destination with internal sections, not separate bottom tabs:
 - Appeals and support: existing appeal submissions/status plus future help center, FAQ, and contact/support-ticket channel when implemented.
 - About the League.
 - Founder introduction (authenticated only).
+- Submitted-question history and designer contribution details are accessible through the Question Designers Club; account may link to that destination.
 - Settings, privacy, terms, notification preferences, and sign out.
 - No founder data or image on splash, login, registration, OTP, public API, or pre-login pages.
 
@@ -89,6 +95,9 @@ Use one destination with internal sections, not separate bottom tabs:
 | Diagnostic / adaptive tests | آزمون‌ها and آکادمی learning path | No extra tab |
 | XP / levels | رتبه‌بندی > XP (separate from league) | Small separate profile metric when real |
 | Flashcards / study planner | آکادمی | No separate card |
+| Question Designers Club / submit a question | آکادمی > باشگاه طراحان سؤال | No separate Home card |
+| Designer national / province leaderboard | رتبه‌بندی > رتبه‌بندی طراحان سؤال | No separate Home card |
+| Designer review, approvals, audit trail | Admin panel > مدیریت طراحان و بررسی سؤالات | Admin-only |
 | Appeals / support / FAQ | حساب کاربری > پیگیری و پشتیبانی | Not on Home |
 | Founder introduction | حساب کاربری > درباره لیگ > معرفی بنیان‌گذار | Never on public Home |
 | Subscription / restore | اشتراک | Existing bottom tab |
@@ -109,4 +118,5 @@ Use one destination with internal sections, not separate bottom tabs:
 - XP/levels are roadmap items.
 - AI tutor and adaptive learning are roadmap items.
 - Support center/ticket workflow is not yet implemented.
+- Question Designers Club submission, review, rewards, and separate designer leaderboards require end-to-end implementation and acceptance tests; do not show as live before then.
 - Real-device visual validation of the approved home reference remains outstanding.
