@@ -593,7 +593,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             child: Column(children: [
               Image.asset(
                 "assets/brand/logo_full.png",
-                height: 118,
+                height: 190,
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 12),
@@ -608,10 +608,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
-                "مسیر حرفه‌ای شدن در دانش مالیاتی",
-                style: TextStyle(color: Color(0xFFB8C5D6), fontSize: 12),
-              ),
             ]),
           ),
           if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
@@ -628,27 +624,119 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ),
         ),
       ),
-      bottomNavigationBar: stats == null || focusMode ? null : NavigationBar(
-        height: 76, backgroundColor: const Color(0xFF020A20), indicatorColor: const Color(0x33FFD15A),
-        selectedIndex: accountPage == 4 ? 4 : accountPage == 5 ? 3 : selectedHomeSection == 1 ? 1 : selectedHomeSection == 3 ? 2 : 0,
-        onDestinationSelected: (index) { setState(() {
-          selectedHomeSection = null;
-          if (index == 0) { accountPage = 0; }
-          else if (index == 1) { accountPage = 0; selectedHomeSection = 1; }
-          else if (index == 2) { accountPage = 0; selectedHomeSection = 3; }
-          else if (index == 3) { accountPage = 5; }
-          else { accountPage = 4; }
-        }); },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: "خانه"),
-          NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: "آزمون‌ها"),
-          NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart_rounded), label: "رتبه‌بندی"),
-          NavigationDestination(icon: Icon(Icons.school_outlined), selectedIcon: Icon(Icons.school_rounded), label: "آکادمی"),
-          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart_rounded), label: "اشتراک"),
-        ],
+      bottomNavigationBar: stats == null || focusMode ? null : Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF061A45), Color(0xFF020A20)],
+          ),
+          border: Border(top: BorderSide(color: Color(0xFFFFD15A), width: 1.2)),
+          boxShadow: [BoxShadow(color: Color(0x553F8CFF), blurRadius: 16, offset: Offset(0, -5))],
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 72,
+            child: Row(children: [
+              _navigationItem(0, Icons.home_outlined, Icons.home_rounded, 'خانه'),
+              _navigationItem(1, Icons.emoji_events_outlined, Icons.emoji_events_rounded, 'آزمون‌ها'),
+              _navigationItem(2, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'رتبه‌بندی'),
+              _navigationItem(3, Icons.school_outlined, Icons.school_rounded, 'آکادمی'),
+              _navigationItem(4, Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
+            ]),
+          ),
+        ),
       ),
     ),
   );
+
+  int get _selectedNavigationIndex => accountPage == 4
+      ? 4
+      : accountPage == 5
+          ? 3
+          : selectedHomeSection == 1
+              ? 1
+              : selectedHomeSection == 3
+                  ? 2
+                  : 0;
+
+  void _selectNavigation(int index) {
+    setState(() {
+      selectedHomeSection = null;
+      if (index == 0) {
+        accountPage = 0;
+      } else if (index == 1) {
+        accountPage = 0;
+        selectedHomeSection = 1;
+      } else if (index == 2) {
+        accountPage = 0;
+        selectedHomeSection = 3;
+      } else if (index == 3) {
+        accountPage = 5;
+      } else {
+        accountPage = 4;
+      }
+    });
+  }
+
+  Widget _navigationItem(
+    int index,
+    IconData icon,
+    IconData selectedIcon,
+    String label,
+  ) {
+    final selected = _selectedNavigationIndex == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => _selectNavigation(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x443F8CFF), Color(0x223D8FFF), Color(0x00FFD15A)],
+                  )
+                : null,
+            border: Border(
+              left: BorderSide(
+                color: index == 0 ? Colors.transparent : const Color(0x334B91E8),
+                width: 0.7,
+              ),
+              bottom: selected
+                  ? const BorderSide(color: Color(0xFFFFD15A), width: 2)
+                  : BorderSide.none,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                selected ? selectedIcon : icon,
+                size: 29,
+                color: selected ? const Color(0xFFFFD76A) : const Color(0xFFE5F0FF),
+                shadows: selected
+                    ? const [Shadow(color: Color(0xCCFFB82E), blurRadius: 12)]
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  color: selected ? const Color(0xFFFFE18A) : Colors.white,
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _loginCard() {
     Widget feature(IconData icon, String title, String subtitle) {
@@ -1742,7 +1830,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountStrip(),
         GridView.count(
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: .94,
+          mainAxisSpacing: 13, crossAxisSpacing: 13, childAspectRatio: 1.34,
           children: [
             tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
