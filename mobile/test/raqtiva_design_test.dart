@@ -71,7 +71,7 @@ void main() {
     });
 
     testWidgets(
-        'six-destination navigation fits supported phone widths and routes taps',
+        'five-destination navigation matches the reference and routes taps',
         (tester) async {
       var selected = -1;
       for (final width in [320.0, 360.0, 393.0, 430.0]) {
@@ -96,11 +96,10 @@ void main() {
         expect(find.text('آزمون‌ها'), findsOneWidget);
         expect(find.text('رتبه‌بندی'), findsOneWidget);
         expect(find.text('آکادمی'), findsOneWidget);
-        expect(find.text('باشگاه طراحان'), findsOneWidget);
         expect(find.text('اشتراک'), findsOneWidget);
         expect(tester.takeException(), isNull, reason: 'width: $width');
 
-        await tester.tap(find.text('باشگاه طراحان'));
+        await tester.tap(find.text('اشتراک'));
         expect(selected, 4, reason: 'width: $width');
         expect(tester.takeException(), isNull, reason: 'width: $width');
       }
