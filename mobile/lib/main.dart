@@ -562,7 +562,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
-      appBar: AppBar(
+      appBar: stats != null && accountPage == 0 && selectedHomeSection == null ? null : AppBar(
         leading: stats != null && (accountPage > 0 || selectedHomeSection != null)
             ? IconButton(
                 onPressed: () => setState(() {
@@ -580,7 +580,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ],
       ),
       body: RaqtivaStadiumBackdrop(
-        child: RefreshIndicator(
+        child: SafeArea(
+          child: RefreshIndicator(
           onRefresh: loadDashboard,
           child: ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 20), children: [
           if (stats == null || accountPage == 0)
@@ -588,26 +589,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
             margin: const EdgeInsets.only(bottom: 18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF233957), Color(0xFF111E32)],
-              ),
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: const Color(0x44D2B477)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x33000000),
-                  blurRadius: 22,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
+            decoration: const BoxDecoration(),
             child: Column(children: [
               Image.asset(
                 "assets/brand/logo_full.png",
-                height: 92,
+                height: 118,
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 12),
@@ -639,6 +625,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ),
           ),
           ]),
+          ),
         ),
       ),
       bottomNavigationBar: stats == null || focusMode ? null : NavigationBar(
