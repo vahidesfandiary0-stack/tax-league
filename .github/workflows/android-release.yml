@@ -1,6 +1,9 @@
 name: Android signed release
 
 on:
+  push:
+    branches:
+      - mobile/formal-damask-skin-20261122
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -24,7 +27,7 @@ jobs:
 
       - name: Validate release configuration
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -228,7 +231,7 @@ jobs:
       - name: Build signed release APK
         working-directory: mobile
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
         run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Verify release internet permission

@@ -391,6 +391,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   int otpResendSeconds = 0;
   Timer? otpResendTimer;
   int accountPage = 0;
+  bool _soundEnabled = true;
+  bool _vibrationEnabled = true;
+  bool _reduceMotion = false;
+  bool _confirmExit = true;
   int? selectedHomeSection;
   String? error;
   Map<String, dynamic>? stats;
@@ -406,6 +410,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   void initState() {
     super.initState();
     _loadIfSignedIn();
+    _loadAppPreferences();
     focusPoller = Timer.periodic(const Duration(seconds: 10), (_) => _refreshFocusMode());
   }
   @override
@@ -440,6 +445,27 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> _loadIfSignedIn() async {
     if (await api.token != null) await loadDashboard();
   }
+
+  Future<void> _loadAppPreferences() async {
+    final values = await Future.wait([
+      LeagueApi.storage.read(key: 'pref_sound'),
+      LeagueApi.storage.read(key: 'pref_vibration'),
+      LeagueApi.storage.read(key: 'pref_reduce_motion'),
+      LeagueApi.storage.read(key: 'pref_confirm_exit'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _soundEnabled = values[0] != 'false';
+      _vibrationEnabled = values[1] != 'false';
+      _reduceMotion = values[2] == 'true';
+      _confirmExit = values[3] != 'false';
+    });
+  }
+
+  Future<void> _saveAppPreference(String key, bool value) async {
+    await LeagueApi.storage.write(key: key, value: value.toString());
+  }
+
 
   Future<void> requestCode() async {
     if (busy || otpResendSeconds > 0) return;
@@ -519,9 +545,49 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> logout() async {
+    if (_confirmExit) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: RaqtivaColors.navy900,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: RaqtivaColors.gold),
+          ),
+          title: const Text('خروج از حساب کاربری'),
+          content: const Text('آیا از حساب کاربری خود خارج می‌شوید؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('خروج'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
+    setState(() {
+      stats = null;
+      board = [];
+      provincialBoard = [];
+      provincialName = null;
+      provincialMessage = null;
+      appeals = [];
+      exams = [];
+      results = [];
+      focusMode = false;
+      focusEndsAt = null;
+      otpRequested = false;
+      accountPage = 0;
+      selectedHomeSection = null;
+      code.clear();
+    });
   }
 
   Future<void> loadDashboard() async {
@@ -591,13 +657,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 || accountPage == 10 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'تنظیمات برنامه' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -1202,65 +1268,186 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Widget _accountContent() {
     if (accountPage == 1) {
+      Widget accountTile(int index, IconData icon, String title, String subtitle) =>
+          _RaqtivaHomeTile(
+            icon: icon,
+            title: title,
+            subtitle: subtitle,
+            onTap: () => setState(() => accountPage = index),
+          );
+
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('اطلاعات حساب'),
-              subtitle: const Text('مشاهده و مدیریت اطلاعات کاربری'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF173A60), Color(0xFF08172D)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xB8E4D0A0), width: 1.15),
+              boxShadow: const [
+                RaqtivaEffects.cardGlow,
+                RaqtivaEffects.cardDepth,
+              ],
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.account_circle_rounded,
+                    color: Color(0xFFFFD76A), size: 42),
+                SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('مرکز حساب کاربری',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          )),
+                      SizedBox(height: 4),
+                      Text('مدیریت حساب، خدمات و اطلاعات لیگ',
+                          style: TextStyle(
+                            color: Color(0xFFD7E4FA),
+                            fontSize: 11,
+                          )),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.history_rounded),
-              title: const Text('تاریخچه نتایج'),
-              subtitle: const Text('نتایج نهایی آزمون‌های شما'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 7),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.support_agent_rounded),
-              title: const Text('پیگیری و پشتیبانی'),
-              subtitle: const Text('اعتراض‌ها، راهنما و مسیرهای پشتیبانی'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 6),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('اشتراک ویژه'),
-              subtitle: const Text('مشاهده طرح‌ها، خرید و بازیابی اشتراک بازار'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 4),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.edit_note_rounded),
-              title: const Text('خدمات و باشگاه طراحان سؤال'),
-              subtitle: const Text('طراحی، ارسال و پیگیری داوری'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 9),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('درباره لیگ'),
-              subtitle: const Text('اطلاعات و معرفی مجموعه'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 2),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              return GridView.count(
+                crossAxisCount: compact ? 1 : 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 13,
+                childAspectRatio: compact ? 2.45 : .98,
+                children: [
+                  accountTile(8, Icons.person_rounded, 'اطلاعات حساب',
+                      'مشاهده و مدیریت اطلاعات کاربری'),
+                  accountTile(10, Icons.tune_rounded, 'تنظیمات برنامه',
+                      'صدا، لرزش، حرکت و تأیید عملیات'),
+                  accountTile(7, Icons.history_rounded, 'تاریخچه نتایج',
+                      'نتایج نهایی آزمون‌های شما'),
+                  accountTile(6, Icons.support_agent_rounded, 'پیگیری و پشتیبانی',
+                      'اعتراض‌ها و درخواست‌های پشتیبانی'),
+                  accountTile(4, Icons.workspace_premium_rounded, 'اشتراک ویژه',
+                      'طرح‌ها، خرید و بازیابی اشتراک'),
+                  accountTile(9, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
+                      'طراحی و پیگیری داوری سؤال'),
+                  accountTile(2, Icons.info_rounded, 'درباره لیگ',
+                      'معرفی مجموعه و بنیان‌گذار'),
+                ],
+              );
+            },
           ),
         ],
       );
     }
+    if (accountPage == 10) {
+      Widget preference({
+        required IconData icon,
+        required String title,
+        required String description,
+        required bool value,
+        required ValueChanged<bool> onChanged,
+      }) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF123B68), Color(0xFF07172D)],
+              ),
+              borderRadius: BorderRadius.circular(19),
+              border: Border.all(color: RaqtivaColors.gold.withValues(alpha: .35)),
+              boxShadow: const [RaqtivaEffects.cardDepth],
+            ),
+            child: SwitchListTile.adaptive(
+              value: value,
+              onChanged: onChanged,
+              secondary: Icon(icon, color: RaqtivaColors.gold, size: 27),
+              title: Text(title, style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14,
+              )),
+              subtitle: Text(description, style: const TextStyle(
+                color: Color(0xFFB8C8DE), fontSize: 11, height: 1.6,
+              )),
+              activeColor: RaqtivaColors.gold,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+            ),
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const RaqtivaFeatureCard(
+            title: 'شخصی‌سازی تجربه لیگ',
+            description: 'تنظیمات این دستگاه ذخیره می‌شوند و با ورود مجدد نیز باقی می‌مانند.',
+            icon: Icons.tune_rounded,
+            trailing: RaqtivaGoldBadge('تنظیمات دستگاه'),
+          ),
+          const SizedBox(height: 15),
+          preference(
+            icon: Icons.volume_up_rounded,
+            title: 'صدای برنامه',
+            description: 'ترجیح پخش صدا در تعامل‌های برنامه؛ اعمال صدا در همه بخش‌ها نیازمند پشتیبانی هر بخش است.',
+            value: _soundEnabled,
+            onChanged: (v) { setState(() => _soundEnabled = v); _saveAppPreference('pref_sound', v); },
+          ),
+          preference(
+            icon: Icons.vibration_rounded,
+            title: 'لرزش و بازخورد لمسی',
+            description: 'ذخیره ترجیح بازخورد لمسی برای بخش‌هایی که آن را پشتیبانی می‌کنند.',
+            value: _vibrationEnabled,
+            onChanged: (v) { setState(() => _vibrationEnabled = v); _saveAppPreference('pref_vibration', v); },
+          ),
+          preference(
+            icon: Icons.motion_photos_off_rounded,
+            title: 'کاهش حرکت‌های بصری',
+            description: 'ترجیح دسترس‌پذیری برای کاهش انیمیشن‌ها؛ اعمال سراسری در مرحله تکمیلی رابط انجام می‌شود.',
+            value: _reduceMotion,
+            onChanged: (v) { setState(() => _reduceMotion = v); _saveAppPreference('pref_reduce_motion', v); },
+          ),
+          preference(
+            icon: Icons.logout_rounded,
+            title: 'تأیید پیش از خروج',
+            description: 'یادآوری پیش از خروج از حساب کاربری.',
+            value: _confirmExit,
+            onChanged: (v) { setState(() => _confirmExit = v); _saveAppPreference('pref_confirm_exit', v); },
+          ),
+          const SizedBox(height: 5),
+          const RaqtivaFeatureCard(
+            title: 'اعلان‌ها و پیام‌ها',
+            description: 'مرکز اعلان و اتصال اعلان‌های سیستمی هنوز به سرویس اعلان متصل نشده است؛ در این نسخه اعلان ساختگی نمایش داده نمی‌شود.',
+            icon: Icons.notifications_active_outlined,
+            trailing: RaqtivaGoldBadge('اتصال در مرحله بعد'),
+          ),
+          const SizedBox(height: 12),
+          const RaqtivaFeatureCard(
+            title: 'امنیت و حریم خصوصی',
+            description: 'توکن ورود در فضای امن دستگاه نگهداری می‌شود. مدیریت نشست‌ها، دریافت نسخه داده‌ها و حذف حساب باید از مسیر امن سمت سرور تکمیل شوند.',
+            icon: Icons.shield_outlined,
+            trailing: RaqtivaGoldBadge('اطلاعات شفاف'),
+          ),
+        ],
+      );
+    }
+
     if (accountPage == 4) {
       return BazaarSubscriptionPage(api: api);
     }
@@ -1353,15 +1540,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   if (appeals.isEmpty)
                     const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
                   for (final item in appeals)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text((item['reason'] ?? 'اعتراض').toString()),
-                      subtitle: Text(
-                        (item['decision_note'] ?? '').toString().isEmpty
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: RaqtivaFeatureCard(
+                        title: (item['reason'] ?? 'اعتراض').toString(),
+                        description: (item['decision_note'] ?? '').toString().isEmpty
                             ? 'در انتظار بررسی'
                             : item['decision_note'].toString(),
+                        icon: Icons.gavel_rounded,
+                        trailing: RaqtivaGoldBadge(_status(item['status'])),
                       ),
-                      trailing: Text(_status(item['status'])),
                     ),
                 ],
               ),
@@ -1411,26 +1599,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               if (results.isEmpty)
                 const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
               for (final item in results)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text((item['exam_title'] ?? 'آزمون').toString()),
-                  subtitle: Text(
-                    'شناسه: ${item['id']}
-'
-                    'صحیح: ${item['correct_count']}'
-                    ' · غلط: ${item['wrong_count']}'
-                    ' · نزده: ${item['blank_count']}',
-                  ),
-                  isThreeLine: true,
-                  onTap: () => _showAppealForm(
-                    item['id'].toString(),
-                    (item['exam_title'] ?? 'آزمون').toString(),
-                  ),
-                  trailing: Text(
-                    '${item['score'] ?? 0} امتیاز',
-                    style: const TextStyle(
-                      color: RaqtivaColors.goldLight,
-                      fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: RaqtivaFeatureCard(
+                    title: (item['exam_title'] ?? 'آزمون').toString(),
+                    description: 'صحیح: ${item['correct_count']} · غلط: ${item['wrong_count']} · نزده: ${item['blank_count']}',
+                    icon: Icons.history_rounded,
+                    trailing: RaqtivaGoldBadge('${item['score'] ?? 0} امتیاز'),
+                    onTap: () => _showAppealForm(
+                      item['id'].toString(),
+                      (item['exam_title'] ?? 'آزمون').toString(),
                     ),
                   ),
                 ),
@@ -1459,10 +1637,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ),
               ),
               const Divider(),
-              const ListTile(
-                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
-                title: Text('حریم خصوصی و تنظیمات'),
-                subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
+                title: const Text('تنظیمات و حریم خصوصی'),
+                subtitle: const Text('مدیریت ترجیحات برنامه و مشاهده توضیحات امنیتی'),
+                trailing: const Icon(Icons.chevron_left_rounded),
+                onTap: () => setState(() => accountPage = 10),
               ),
             ],
           ),
@@ -1470,43 +1650,119 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 2) {
-      return Card(
-        child: ListTile(
-          leading: const Icon(Icons.person_outline),
-          title: const Text('معرفی بنیان‌گذار'),
-          subtitle: const Text('آشنایی با بنیان‌گذار لیگ نخبگان مالیاتی'),
-          trailing: const Icon(Icons.chevron_left),
-          onTap: () => setState(() => accountPage = 3),
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF174879), Color(0xFF0A2341), Color(0xFF040F20)],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: RaqtivaColors.gold.withValues(alpha: .65)),
+              boxShadow: const [RaqtivaEffects.cardGlow, RaqtivaEffects.cardDepth],
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.emoji_events_rounded, size: 58, color: RaqtivaColors.gold,
+                  shadows: [Shadow(color: Color(0xFFFFC34A), blurRadius: 22)]),
+                SizedBox(height: 12),
+                Text('لیگ نخبگان مالیاتی', style: TextStyle(
+                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900,
+                )),
+                SizedBox(height: 7),
+                Text('رقابت کن، رتبه بگیر، نخبه شو!', style: TextStyle(
+                  color: RaqtivaColors.goldLight, fontWeight: FontWeight.w800,
+                )),
+                SizedBox(height: 12),
+                Text(
+                  'بستر رقابت تخصصی و رتبه‌بندی ملی و استانی در دانش مالیاتی؛ '
+                  'با آزمون‌های معتبر، مسیر یادگیری و امکانات ویژه اعضا.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFFD7E4FA), height: 1.9, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          RaqtivaFeatureCard(
+            title: 'معرفی بنیان‌گذار',
+            description: 'آشنایی با مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
+            icon: Icons.person_pin_rounded,
+            trailing: const RaqtivaGoldBadge('درباره ما'),
+            onTap: () => setState(() => accountPage = 3),
+          ),
+          const SizedBox(height: 11),
+          const RaqtivaFeatureCard(
+            title: 'اصول رقابت منصفانه',
+            description: 'رتبه لیگ بر پایه نتیجه معتبر آزمون شبانه است؛ خرید اشتراک امتیاز یا رتبه ایجاد نمی‌کند.',
+            icon: Icons.balance_rounded,
+          ),
+          const SizedBox(height: 11),
+          const RaqtivaFeatureCard(
+            title: 'قوانین و حریم خصوصی',
+            description: 'متن نهایی شرایط استفاده و سیاست حریم خصوصی باید از محتوای مصوب و قابل مدیریت سامانه بارگذاری شود.',
+            icon: Icons.policy_outlined,
+            trailing: RaqtivaGoldBadge('نیازمند محتوای مصوب'),
+          ),
+        ],
       );
     }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF173D64), Color(0xFF0A1E37), Color(0xFF040D1C)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: RaqtivaColors.gold.withValues(alpha: .6)),
+        boxShadow: const [RaqtivaEffects.cardGlow, RaqtivaEffects.cardDepth],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: RaqtivaColors.gold, width: 2),
+              boxShadow: const [BoxShadow(color: Color(0x55F4C64E), blurRadius: 24)],
+            ),
+            child: ClipOval(
               child: Image.asset(
                 'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 150,
-                height: 170,
+                width: 156,
+                height: 156,
                 fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'وحید اسفندیاری',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 18),
+          const RaqtivaGoldBadge('بنیان‌گذار لیگ'),
+          const SizedBox(height: 13),
+          const Text('وحید اسفندیاری', style: TextStyle(
+            color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900,
+          )),
+          const SizedBox(height: 8),
+          const Text(
+            'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 15),
+          const Divider(color: Color(0x55F4C64E)),
+          const Text(
+            'این صفحه صرفاً اطلاعات رسمی تأییدشده بنیان‌گذار را نمایش می‌دهد. '
+            'سوابق، مدارک و پیوندهای تکمیلی فقط پس از ثبت و تأیید مالک به این بخش افزوده می‌شوند.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFFD7E4FA), height: 1.9, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
@@ -2021,26 +2277,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           if (results.isEmpty)
             const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
           for (final item in results)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text((item['exam_title'] ?? 'آزمون').toString()),
-              subtitle: Text(
-                'شناسه: ${item['id']}
-'
-                'صحیح: ${item['correct_count']}'
-                ' · غلط: ${item['wrong_count']}'
-                ' · نزده: ${item['blank_count']}',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: RaqtivaFeatureCard(
+                title: (item['exam_title'] ?? 'آزمون').toString(),
+                description: 'صحیح: ${item['correct_count']} · غلط: ${item['wrong_count']} · نزده: ${item['blank_count']}',
+                icon: Icons.history_rounded,
+                trailing: RaqtivaGoldBadge('${item['score'] ?? 0} امتیاز'),
+                onTap: () => _showAppealForm(
+                  item['id'].toString(),
+                  (item['exam_title'] ?? 'آزمون').toString(),
+                ),
               ),
-              isThreeLine: true,
-              onTap: () => _showAppealForm(
-                item['id'].toString(),
-                (item['exam_title'] ?? 'آزمون').toString(),
-              ),
-              trailing: Text('${item['score'] ?? 0} امتیاز',
-                style: const TextStyle(
-                  color: Color(0xFFE4C98F),
-                  fontWeight: FontWeight.bold,
-                )),
             ),
         ]),
       )),
@@ -2113,18 +2361,33 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
         accountStrip(),
-        GridView.count(
-          crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
-          children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank
-امتیاز: $score
-آزمون رسمی: $examCount'),
-            tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
-            tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
-            tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
-            tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-                ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 360;
+            return GridView.count(
+              crossAxisCount: compact ? 1 : 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 15,
+              crossAxisSpacing: 13,
+              childAspectRatio: compact ? 2.45 : .98,
+              children: [
+                tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ',
+                    'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+                tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده',
+                    exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
+                tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من',
+                    results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
+                tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها',
+                    board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
+                tile(4, Icons.location_on_rounded,
+                    provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName',
+                    provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
+                tile(5, Icons.edit_note_rounded, 'باشگاه طراحان سؤال',
+                    'ثبت، ویرایش و پیگیری داوری سؤال'),
+              ],
+            );
+          },
         ),
       ];
     }
@@ -2244,10 +2507,17 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
       FilledButton.icon(onPressed:()=>setState(reset),icon:const Icon(Icons.add),label:const Text('ثبت سؤال جدید')),
       if(loading)const Center(child:CircularProgressIndicator()),
       if(!loading&&questions.isEmpty)const Text('هنوز سؤالی ثبت نکرده‌اید.'),
-      for(final q in questions)Card(child:ListTile(
-        title:Text((q['prompt']??'سؤال').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
-        subtitle:Text('${labels[q['subject']]??q['subject']} · ${statusText(q['status']?.toString())}'),
-        trailing:const Icon(Icons.chevron_left),onTap:()=>open(Map<String,dynamic>.from(q)))),
+      for(final q in questions)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: RaqtivaFeatureCard(
+            title: (q['prompt'] ?? 'سؤال').toString(),
+            description: '${labels[q['subject']] ?? q['subject']} · ${statusText(q['status']?.toString())}',
+            icon: Icons.fact_check_rounded,
+            trailing: const Icon(Icons.chevron_left_rounded, color: RaqtivaColors.gold),
+            onTap: () => open(Map<String, dynamic>.from(q)),
+          ),
+        ),
     ]);
   }
   Widget editor(){

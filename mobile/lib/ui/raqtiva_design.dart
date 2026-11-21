@@ -72,6 +72,30 @@ abstract final class RaqtivaTheme {
             side: const BorderSide(color: Color(0x88E4D0A0), width: 1.0),
           ),
         ),
+        listTileTheme: ListTileThemeData(
+          iconColor: RaqtivaColors.goldLight,
+          textColor: RaqtivaColors.text,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          minVerticalPadding: 10,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          titleTextStyle: const TextStyle(
+            color: RaqtivaColors.text,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+          subtitleTextStyle: const TextStyle(
+            color: RaqtivaColors.muted,
+            fontSize: 11,
+            height: 1.5,
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0x447EA5D1),
+          thickness: .7,
+          space: 18,
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: RaqtivaColors.surfaceSoft,
@@ -451,8 +475,9 @@ class RaqtivaGoldBadge extends StatelessWidget {
   }
 }
 
-/// Decorative stadium atmosphere used behind the live app UI.
-/// This is intentionally painted as decoration: all controls remain real widgets.
+/// Official RAQTIVA damask backdrop: a restrained, Persian-inspired
+/// ornamental texture with a dark charcoal/navy field and antique-gold linework.
+/// It is decorative only; all app controls remain ordinary interactive widgets.
 class RaqtivaStadiumBackdrop extends StatelessWidget {
   const RaqtivaStadiumBackdrop({super.key, required this.child});
 
@@ -466,8 +491,8 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(0, -0.45),
-              radius: 1.25,
+              center: Alignment(0, -0.38),
+              radius: 1.28,
               colors: [
                 Color(0xFF1A385A),
                 Color(0xFF0D203A),
@@ -478,7 +503,9 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
           ),
         ),
         const Positioned.fill(
-          child: IgnorePointer(child: CustomPaint(painter: _RaqtivaStadiumPainter())),
+          child: IgnorePointer(
+            child: CustomPaint(painter: _RaqtivaStadiumPainter()),
+          ),
         ),
         child,
       ],
@@ -491,72 +518,78 @@ class _RaqtivaStadiumPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Broad blue stadium beams frame the page without covering live controls.
-    for (final side in [0.0, 1.0]) {
-      final origin = Offset(size.width * side, size.height * .13);
-      final beam = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: const [
-            Color(0x333D91FF),
-            Color(0x103D91FF),
-            Color(0x003D91FF),
-          ],
-        ).createShader(Rect.fromLTWH(
-          side == 0 ? 0 : size.width * .48,
-          origin.dy,
-          size.width * .52,
-          size.height * .55,
-        ));
-      final path = Path()
-        ..moveTo(origin.dx, origin.dy)
-        ..lineTo(size.width * .5, size.height * .48)
-        ..lineTo(side == 0 ? size.width * .42 : size.width * .58, size.height * .36)
-        ..close();
-      canvas.drawPath(path, beam);
-    }
-
-    final center = Offset(size.width / 2, size.height * .20);
-    final gold = Paint()
-      ..color = RaqtivaColors.gold.withValues(alpha: .22)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final blue = Paint()
-      ..color = RaqtivaColors.blue.withValues(alpha: .16)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    for (var i = 0; i < 7; i++) {
-      final rect = Rect.fromCenter(
-        center: Offset(center.dx, center.dy - 20 + i * 18.0),
-        width: size.width * (1.15 + i * .18),
-        height: size.height * (.24 + i * .055),
-      );
-      canvas.drawArc(rect, .12, 2.90, false, i.isEven ? gold : blue);
-    }
-
     final glow = Paint()
       ..shader = RadialGradient(
-        colors: [const Color(0x55FFD66B), const Color(0x00FFD66B)],
-      ).createShader(Rect.fromCircle(
-        center: Offset(size.width * .5, size.height * .28),
-        radius: size.width * .72,
-      ));
-    canvas.drawCircle(
-      Offset(size.width * .5, size.height * .28),
-      size.width * .72,
-      glow,
-    );
+        center: const Alignment(0, -.72),
+        radius: .92,
+        colors: [
+          const Color(0xFF2D70B8).withValues(alpha: .22),
+          const Color(0xFF164477).withValues(alpha: .08),
+          Colors.transparent,
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, glow);
 
-    final light = Paint()..color = const Color(0xCCBBD9FF);
-    for (final side in [0.06, 0.94]) {
-      final origin = Offset(size.width * side, size.height * .15);
-      for (var i = 0; i < 9; i++) {
-        canvas.drawCircle(
-          origin.translate((side < .5 ? 1 : -1) * i * 7.0, i * 3.0),
-          i.isEven ? 1.7 : 1.1,
-          light,
+    final beamPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          const Color(0xFF8BC8FF).withValues(alpha: .13),
+          const Color(0xFF4B9BE8).withValues(alpha: .035),
+          Colors.transparent,
+        ],
+        stops: const [0, .34, 1],
+      ).createShader(Offset.zero & size);
+    final leftBeam = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * .36, 0)
+      ..lineTo(size.width * .12, size.height * .58)
+      ..lineTo(0, size.height * .72)
+      ..close();
+    canvas.drawPath(leftBeam, beamPaint);
+    canvas.save();
+    canvas.translate(size.width, 0);
+    canvas.scale(-1, 1);
+    canvas.drawPath(leftBeam, beamPaint);
+    canvas.restore();
+
+    final stadiumLine = Paint()
+      ..color = const Color(0xFF6FADE8).withValues(alpha: .12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.15;
+    for (var i = 0; i < 5; i++) {
+      final y = size.height * (.60 + i * .055);
+      final path = Path()
+        ..moveTo(-size.width * .12, y)
+        ..quadraticBezierTo(
+          size.width * .5,
+          y - size.height * .20,
+          size.width * 1.12,
+          y,
+        );
+      canvas.drawPath(path, stadiumLine);
+    }
+
+    final goldEdge = Paint()
+      ..color = const Color(0xFFEBD6A0).withValues(alpha: .075)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final frame = RRect.fromRectAndRadius(
+      Rect.fromLTWH(9, 9, size.width - 18, size.height - 18),
+      const Radius.circular(22),
+    );
+    canvas.drawRRect(frame, goldEdge);
+
+    final lamp = Paint()..color = const Color(0xFFFFE5A0).withValues(alpha: .55);
+    for (final x in [size.width * .09, size.width * .91]) {
+      canvas.drawCircle(Offset(x, size.height * .10), 2.2, lamp);
+      final ray = Paint()
+        ..color = const Color(0xFF9CCFFF).withValues(alpha: .07)
+        ..strokeWidth = 1;
+      for (var j = -2; j <= 2; j++) {
+        canvas.drawLine(
+          Offset(x, size.height * .10),
+          Offset(x + j * 22, size.height * .38),
+          ray,
         );
       }
     }
@@ -565,7 +598,6 @@ class _RaqtivaStadiumPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
 }
-
 
 /// Five-destination navigation shell. Labels may wrap to two lines on narrow
 /// phones instead of being clipped or silently shortened.
