@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
-  static const navy = Color(0xFF0B1220);
-  static const navyLight = Color(0xFF121F33);
-  static const surface = Color(0xFF18263B);
-  static const surfaceSoft = Color(0xFF202F45);
-  static const gold = Color(0xFFE5B85C);
-  static const goldLight = Color(0xFFF4D58A);
+  static const navy = Color(0xFF020A20);
+  static const navyLight = Color(0xFF061A45);
+  static const surface = Color(0xFF071D49);
+  static const surfaceSoft = Color(0xFF0B2B67);
+  static const gold = Color(0xFFFFC83D);
+  static const goldLight = Color(0xFFFFE58D);
   static const text = Color(0xFFF5F3ED);
   static const muted = Color(0xFF9EADBF);
-  static const border = Color(0xFF314158);
+  static const border = Color(0xFFB98727);
   static const green = Color(0xFF55C69A);
   static const red = Color(0xFFE47777);
 }
@@ -40,7 +40,7 @@ abstract final class RaqtivaTheme {
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: RaqtivaColors.border),
+            side: const BorderSide(color: RaqtivaColors.gold, width: 1.15),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
