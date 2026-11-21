@@ -567,7 +567,7 @@ class _RaqtivaStadiumPainter extends CustomPainter {
 }
 
 
-/// Six-destination navigation shell. Labels may wrap to two lines on narrow
+/// Five-destination navigation shell. Labels may wrap to two lines on narrow
 /// phones instead of being clipped or silently shortened.
 class RaqtivaBottomNavigationBar extends StatelessWidget {
   const RaqtivaBottomNavigationBar({
