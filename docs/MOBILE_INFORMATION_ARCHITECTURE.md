@@ -7,8 +7,8 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 
 ## Non-negotiable design constraints
 
-- Keep the approved visual identity: deep navy/royal blue stadium atmosphere, luminous gold frames, Persian RTL typography, official logo and six-item bottom navigation.
-- Academy and Question Designers Club are two independent first-level destinations with separate navigation entry points. The bottom navigation therefore has six fixed destinations; do not merge these two areas. Other future capabilities must be placed inside the appropriate destination rather than adding more bottom tabs.
+- Keep the approved visual identity: deep navy/royal blue stadium atmosphere, luminous gold frames, Persian RTL typography, official logo and five-item bottom navigation.
+- Academy and Question Designers Club are separate capabilities. The fixed bottom navigation has five destinations: Home, Exams, Rankings, Academy, and Subscription. Question Designers Club is not a bottom tab; its entry point is Account > Services. Other future capabilities must be placed inside the appropriate destination rather than adding more bottom tabs.
 - Preserve existing working flows while adding navigation.
 - A planned feature must be visibly marked as unavailable / in preparation until its real API, permissions, data, and acceptance tests exist. Never simulate scores, XP, duels, lessons, payments, support tickets, or AI answers.
 - Paid access must never affect the main league score, rank, exam validity, or XP.
@@ -21,7 +21,7 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 2. **آزمون‌ها** — official night exam first; future practice / diagnostic / adaptive exam types are separate and explicitly excluded from the main league unless the owner changes the rules.
 3. **رتبه‌بندی** — national and verified-province league tables; XP/levels are shown in a separate panel and never merged with league points.
 4. **آکادمی** — learning experience only: specialist question bank for learners, Trapology Academy, diagnostic learning, AI tutor, study plan, flashcards, and progress analytics.
-5. **باشگاه طراحان سؤال** — independent creator workspace for authoring, submitting, tracking, revising, and reviewing proposed tax questions.
+Question Designers Club — creator workspace for authoring, submitting, tracking, revising, and reviewing proposed tax questions; entered from Account > Services, not the bottom navigation.
 6. **اشتراک** — Bazaar plans, purchase, restore, entitlement state, and billing history. Subscription never changes competition fairness.
 
 The account strip on Home opens **حساب کاربری** as a secondary hub, not a bottom-navigation destination.
@@ -62,7 +62,7 @@ This is a standalone learning destination, separate from the Question Designers 
 - Heavy Academy/AI workloads are reduced during night-exam focus mode.
 
 
-### 4. باشگاه طراحان سؤال (independent destination)
+### 4. باشگاه طراحان سؤال (Account > Services; not a bottom destination)
 This is a separate first-level product area, not a subsection of Academy and not a learning feature:
 - Structured question-authoring workspace and four-option submission form: subject, difficulty, correct answer, full explanation, official legal citation, and legal-validity date.
 - Drafts, submitted questions, review status, reviewer feedback/rejection reasons, revision and resubmission, appeal of review outcome, and version history.
@@ -102,8 +102,8 @@ This is a separate first-level product area, not a subsection of Academy and not
 | Diagnostic / adaptive tests | آزمون‌ها and آکادمی learning path | No extra tab |
 | XP / levels | رتبه‌بندی > XP (separate from league) | Small separate profile metric when real |
 | Flashcards / study planner | آکادمی | No separate card |
-| Question Designers Club / submit a question | باشگاه طراحان سؤال (independent bottom destination) | No separate Home card |
-| Designer national / province leaderboard | باشگاه طراحان سؤال > رتبه‌بندی طراحان | No separate Home card |
+| Question Designers Club / submit a question | حساب کاربری > خدمات > باشگاه طراحان سؤال | No separate Home card |
+| Designer national / province leaderboard | حساب کاربری > خدمات > باشگاه طراحان سؤال > رتبه‌بندی طراحان | No separate Home card |
 | Designer review, approvals, audit trail | Admin panel > مدیریت طراحان و بررسی سؤالات | Admin-only |
 | Appeals / support / FAQ | حساب کاربری > پیگیری و پشتیبانی | Not on Home |
 | Founder introduction | حساب کاربری > درباره لیگ > معرفی بنیان‌گذار | Never on public Home |
