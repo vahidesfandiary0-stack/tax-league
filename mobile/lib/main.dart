@@ -573,7 +573,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'اعتراض‌های من'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -1981,25 +1981,33 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ]),
       )),
 
-      Card(child: Padding(
-        padding: const EdgeInsets.all(17),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          heading(Icons.support_agent, 'اعتراض‌های من'),
-          if (appeals.isEmpty)
-            const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
-          for (final item in appeals)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text((item['reason'] ?? 'اعتراض').toString()),
-              subtitle: Text(
-                (item['decision_note'] ?? '').toString().isEmpty
-                    ? 'در انتظار بررسی'
-                    : item['decision_note'].toString(),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              heading(
+                Icons.sports_kabaddi_rounded,
+                'میدان رقابت و دوئل‌ها',
+                subtitle: 'رقابت یک‌در‌یک با انتخاب حریف و موضوع',
               ),
-              trailing: Text(_status(item['status'])),
-            ),
-        ]),
-      )),
+              const Text(
+                'جایگاه دوئل در ساختار برنامه مشخص شده است. این قابلیت پس از تکمیل چرخه دعوت، اتصال، ثبت پاسخ و تعیین نتیجه فعال می‌شود.',
+                style: TextStyle(height: 1.8),
+              ),
+              const SizedBox(height: 10),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: RaqtivaGoldBadge(
+                  'در حال آماده‌سازی',
+                  icon: Icons.construction_rounded,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     ];
 
     if (!focusMode) {
@@ -2043,7 +2051,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-            tile(5, Icons.shield_rounded, 'اعتراض‌های من', appeals.isEmpty ? 'هنوز اعتراضی ثبت نکرده‌اید.' : '${appeals.length} اعتراض ثبت‌شده'),
+            tile(5, Icons.sports_kabaddi_rounded, 'میدان رقابت و دوئل‌ها', 'رقابت یک‌در‌یک؛ در حال آماده‌سازی'),
           ],
         ),
       ];
