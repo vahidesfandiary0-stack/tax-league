@@ -55,7 +55,7 @@ jobs:
           content = path.read_text(encoding="utf-8")
           content = content.replace("jcenter()", "mavenCentral()")
           old = 'plugins { id "com.android.library" id "kotlin-android" }'
-          new = 'apply plugin: "com.android.library"\\napply plugin: "kotlin-android"'
+          new = 'apply plugin: "com.android.library"' + chr(10) + 'apply plugin: "kotlin-android"'
           if old in content:
               content = content.replace(old, new, 1)
           elif 'apply plugin: "com.android.library"' not in content or 'apply plugin: "kotlin-android"' not in content:
