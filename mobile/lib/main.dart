@@ -2081,7 +2081,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
       Widget tile(int section, IconData icon, String title, String subtitle) => _RaqtivaHomeTile(
         icon: icon, title: title, subtitle: subtitle,
-        onTap: () => setState(() => selectedHomeSection = section),
+        onTap: () => setState(() {
+          if (section == 5) {
+            accountPage = 9;
+            selectedHomeSection = null;
+          } else {
+            selectedHomeSection = section;
+          }
+        }),
       );
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
@@ -2095,7 +2102,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-            tile(5, Icons.sports_kabaddi_rounded, 'میدان رقابت و دوئل‌ها', 'رقابت یک‌در‌یک؛ در حال آماده‌سازی'),
+            tile(5, Icons.edit_note_rounded, 'باشگاه طراحان سؤال', 'طراحی، ارسال و پیگیری سؤالات تخصصی'),
           ],
         ),
       ];
