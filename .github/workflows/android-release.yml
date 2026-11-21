@@ -1,6 +1,9 @@
 name: Android signed release
 
 on:
+  push:
+    branches:
+      - mobile/formal-damask-skin-20261122
   workflow_dispatch:
     inputs:
       api_base_url:
