@@ -47,8 +47,6 @@ abstract final class RaqtivaTheme {
         scaffoldBackgroundColor: RaqtivaColors.navy,
         splashColor: const Color(0x22EBD6A0),
         highlightColor: const Color(0x12A9CFFF),
-        splashColor: const Color(0x22EBD6A0),
-        highlightColor: const Color(0x12A9CFFF),
         colorScheme: const ColorScheme.dark(
           primary: RaqtivaColors.gold,
           secondary: RaqtivaColors.goldLight,
@@ -109,6 +107,17 @@ abstract final class RaqtivaTheme {
             ),
           ),
         ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: RaqtivaColors.gold,
+            foregroundColor: RaqtivaColors.navy,
+            minimumSize: const Size.fromHeight(54),
+            elevation: 2,
+            shadowColor: const Color(0x664A83B8),
+            textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
         textTheme: const TextTheme(
           headlineLarge: TextStyle(
             color: RaqtivaColors.text,
@@ -150,9 +159,9 @@ class RaqtivaPageBackground extends StatelessWidget {
           center: Alignment(0, -0.42),
           radius: 1.28,
           colors: [
-            Color(0xFF10294B),
-            Color(0xFF07162F),
-            Color(0xFF030918),
+            Color(0xFF1A3555),
+            Color(0xFF0C1D36),
+            Color(0xFF050D1D),
           ],
           stops: [0, .48, 1],
         ),
@@ -460,8 +469,8 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
               center: Alignment(0, -0.45),
               radius: 1.25,
               colors: [
-                Color(0xFF142D4D),
-                Color(0xFF09172D),
+                Color(0xFF1A385A),
+                Color(0xFF0D203A),
                 RaqtivaColors.navy,
               ],
               stops: [0, .48, 1],
