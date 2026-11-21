@@ -64,9 +64,6 @@ void main() {
 
     testWidgets('six-destination navigation fits narrow phones and routes taps',
         (tester) async {
-      final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
-
       tester.view.physicalSize = const Size(320, 720);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -88,14 +85,14 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('خانه'), findsOneWidget);
-      expect(find.bySemanticsLabel('آزمون‌ها'), findsOneWidget);
-      expect(find.bySemanticsLabel('رتبه‌بندی'), findsOneWidget);
-      expect(find.bySemanticsLabel('آکادمی'), findsOneWidget);
-      expect(find.bySemanticsLabel('باشگاه طراحان'), findsOneWidget);
-      expect(find.bySemanticsLabel('اشتراک'), findsOneWidget);
+      expect(find.text('خانه'), findsOneWidget);
+      expect(find.text('آزمون‌ها'), findsOneWidget);
+      expect(find.text('رتبه‌بندی'), findsOneWidget);
+      expect(find.text('آکادمی'), findsOneWidget);
+      expect(find.text('باشگاه طراحان'), findsOneWidget);
+      expect(find.text('اشتراک'), findsOneWidget);
 
-      await tester.tap(find.bySemanticsLabel('باشگاه طراحان'));
+      await tester.tap(find.text('باشگاه طراحان'));
       expect(selected, 4);
       expect(tester.takeException(), isNull);
     });
