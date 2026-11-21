@@ -606,6 +606,23 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             margin: const EdgeInsets.only(bottom: 18),
             decoration: const BoxDecoration(),
             child: Column(children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: .88, end: 1),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutBack,
+                builder: (context, scale, child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  size: 62,
+                  color: Color(0xFFFFD76A),
+                  shadows: [
+                    Shadow(color: Color(0xFFFFC34A), blurRadius: 18),
+                    Shadow(color: Color(0xAAFFB82E), blurRadius: 30),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
               Image.asset(
                 "assets/brand/logo_full.png",
                 height: 190,
