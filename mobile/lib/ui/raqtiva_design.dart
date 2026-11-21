@@ -405,6 +405,32 @@ class _RaqtivaStadiumPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Broad blue stadium beams frame the page without covering live controls.
+    for (final side in [0.0, 1.0]) {
+      final origin = Offset(size.width * side, size.height * .13);
+      final beam = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [
+            Color(0x553D91FF),
+            Color(0x183D91FF),
+            Color(0x003D91FF),
+          ],
+        ).createShader(Rect.fromLTWH(
+          side == 0 ? 0 : size.width * .48,
+          origin.dy,
+          size.width * .52,
+          size.height * .55,
+        ));
+      final path = Path()
+        ..moveTo(origin.dx, origin.dy)
+        ..lineTo(size.width * .5, size.height * .48)
+        ..lineTo(side == 0 ? size.width * .42 : size.width * .58, size.height * .36)
+        ..close();
+      canvas.drawPath(path, beam);
+    }
+
     final center = Offset(size.width / 2, size.height * .20);
     final gold = Paint()
       ..color = const Color(0x66F6C64B)
