@@ -28,14 +28,14 @@ abstract final class RaqtivaRadii {
 
 abstract final class RaqtivaEffects {
   static const cardGlow = BoxShadow(
-    color: Color(0x77FFC34A),
-    blurRadius: 15,
-    spreadRadius: .5,
+    color: Color(0x44D9B76F),
+    blurRadius: 18,
+    spreadRadius: .2,
   );
   static const cardDepth = BoxShadow(
-    color: Color(0xCC00051B),
-    blurRadius: 13,
-    offset: Offset(0, 7),
+    color: Color(0xDD00030D),
+    blurRadius: 20,
+    offset: Offset(0, 10),
   );
   static const stadiumGlow = Color(0x553D91FF);
 }
@@ -144,9 +144,9 @@ class RaqtivaPageBackground extends StatelessWidget {
           center: Alignment(0, -0.42),
           radius: 1.28,
           colors: [
-            Color(0xFF07347F),
-            Color(0xFF001044),
-            Color(0xFF000020),
+            Color(0xFF10294B),
+            Color(0xFF07162F),
+            Color(0xFF030918),
           ],
           stops: [0, .48, 1],
         ),
@@ -254,9 +254,9 @@ class RaqtivaMetricCard extends StatelessWidget {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [
-            Color(0xFF0752B8),
-            Color(0xFF06265F),
-            Color(0xFF020B2B),
+            Color(0xFF243A56),
+            Color(0xFF14243D),
+            Color(0xFF080F22),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -334,13 +334,13 @@ class RaqtivaFeatureCard extends StatelessWidget {
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: [
-                Color(0xFF0756C7),
-                Color(0xFF06265F),
-                Color(0xFF020B2B),
+                Color(0xFF263D5B),
+                Color(0xFF14253F),
+                Color(0xFF080F22),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: RaqtivaColors.goldLight, width: 1.45),
+            border: Border.all(color: const Color(0x99E8C982), width: 1.1),
             boxShadow: const [
               RaqtivaEffects.cardGlow,
               RaqtivaEffects.cardDepth,
@@ -355,13 +355,14 @@ class RaqtivaFeatureCard extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFE68C), Color(0xFFD58A16)],
+                      colors: [Color(0xFFFFE9AD), Color(0xFFE0BD70), Color(0xFF9D7135)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x88FFC34A), blurRadius: 12),
+                      BoxShadow(color: Color(0x55E6C27B), blurRadius: 15, offset: Offset(0, 4)),
+                      BoxShadow(color: Color(0x88000000), blurRadius: 7, offset: Offset(0, 3)),
                     ],
                   ),
                   child: Icon(icon, color: RaqtivaColors.navy, size: 27),
@@ -453,8 +454,8 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
               center: Alignment(0, -0.45),
               radius: 1.25,
               colors: [
-                RaqtivaColors.blue,
-                RaqtivaColors.navy800,
+                Color(0xFF142D4D),
+                Color(0xFF09172D),
                 RaqtivaColors.navy,
               ],
               stops: [0, .48, 1],
@@ -483,8 +484,8 @@ class _RaqtivaStadiumPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: const [
-            Color(0x553D91FF),
-            Color(0x183D91FF),
+            Color(0x333D91FF),
+            Color(0x103D91FF),
             Color(0x003D91FF),
           ],
         ).createShader(Rect.fromLTWH(
@@ -503,11 +504,11 @@ class _RaqtivaStadiumPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height * .20);
     final gold = Paint()
-      ..color = RaqtivaColors.gold.withValues(alpha: .40)
+      ..color = RaqtivaColors.gold.withValues(alpha: .22)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     final blue = Paint()
-      ..color = RaqtivaColors.blue.withValues(alpha: .27)
+      ..color = RaqtivaColors.blue.withValues(alpha: .16)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -578,12 +579,12 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF061A45), Color(0xFF020A20)],
+          colors: [Color(0xFF101E34), Color(0xFF030817)],
         ),
         border: Border(top: BorderSide(color: Color(0xFFFFD15A), width: 1.2)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x553F8CFF),
+            color: Color(0x333F8CFF),
             blurRadius: 16,
             offset: Offset(0, -5),
           ),
