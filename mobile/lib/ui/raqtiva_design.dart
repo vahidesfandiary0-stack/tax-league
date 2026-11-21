@@ -470,9 +470,9 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
               center: Alignment(0, -0.38),
               radius: 1.28,
               colors: [
-                Color(0xFF29212A),
-                Color(0xFF17151C),
-                Color(0xFF090D17),
+                Color(0xFF1A385A),
+                Color(0xFF0D203A),
+                RaqtivaColors.navy,
               ],
               stops: [0, .48, 1],
             ),
