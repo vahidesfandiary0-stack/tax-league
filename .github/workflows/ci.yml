@@ -77,6 +77,14 @@ jobs:
       - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --project-name tax_league .
+      - name: Generate official Android launcher icon
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          test -s assets/brand/logo_full.png
+          dart run flutter_launcher_icons
+          test -s android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          echo "Official launcher icon generated from assets/brand/logo_full.png"
       - name: Set Persian Android launcher name
         run: |
           set -euo pipefail
