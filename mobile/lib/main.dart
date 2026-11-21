@@ -582,9 +582,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: loadDashboard,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+      body: RaqtivaStadiumBackdrop(
+        child: RefreshIndicator(
+          onRefresh: loadDashboard,
+          child: ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 20), children: [
           if (stats == null || accountPage == 0)
             Container(
               width: double.infinity,
@@ -640,7 +641,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: CircularProgressIndicator(),
             ),
           ),
-        ]),
+          ]),
+        ),
       ),
       bottomNavigationBar: stats == null || focusMode
           ? null
