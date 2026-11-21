@@ -8,7 +8,7 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 ## Non-negotiable design constraints
 
 - Keep the approved visual identity: deep navy/royal blue stadium atmosphere, luminous gold frames, Persian RTL typography, official logo and five-item bottom navigation.
-- Do not add a sixth bottom-navigation item. New capabilities must be placed inside the five existing destinations.
+- Academy and Question Designers Club are two independent first-level destinations with separate navigation entry points. The bottom navigation therefore has six fixed destinations; do not merge these two areas. Other future capabilities must be placed inside the appropriate destination rather than adding more bottom tabs.
 - Preserve existing working flows while adding navigation.
 - A planned feature must be visibly marked as unavailable / in preparation until its real API, permissions, data, and acceptance tests exist. Never simulate scores, XP, duels, lessons, payments, support tickets, or AI answers.
 - Paid access must never affect the main league score, rank, exam validity, or XP.
@@ -20,10 +20,11 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 1. **خانه** — personal competition dashboard and concise shortcuts.
 2. **آزمون‌ها** — official night exam first; future practice / diagnostic / adaptive exam types are separate and explicitly excluded from the main league unless the owner changes the rules.
 3. **رتبه‌بندی** — national and verified-province league tables; XP/levels are shown in a separate panel and never merged with league points.
-4. **آکادمی** — question bank learning, Trapology Academy, diagnostic learning, AI tutor, study plan, flashcards, and progress analytics.
-5. **اشتراک** — Bazaar plans, purchase, restore, entitlement state, and billing history. Subscription never changes competition fairness.
+4. **آکادمی** — learning experience only: specialist question bank for learners, Trapology Academy, diagnostic learning, AI tutor, study plan, flashcards, and progress analytics.
+5. **باشگاه طراحان سؤال** — independent creator workspace for authoring, submitting, tracking, revising, and reviewing proposed tax questions.
+6. **اشتراک** — Bazaar plans, purchase, restore, entitlement state, and billing history. Subscription never changes competition fairness.
 
-The account strip on Home opens **حساب کاربری** as a secondary hub. It is not a sixth bottom tab.
+The account strip on Home opens **حساب کاربری** as a secondary hub, not a bottom-navigation destination.
 
 ## Home screen (keep the approved six-card visual grid)
 
@@ -52,26 +53,32 @@ The account strip on Home opens **حساب کاربری** as a secondary hub. It
 - Duels, practice, Academy, question-author contributions, and paid activity do not affect the main league.
 
 ### 3. آکادمی
-Use one destination with internal sections, not separate bottom tabs:
+This is a standalone learning destination, separate from the Question Designers Club. It is for learners and contains no author submission/review workflow. Use internal learning sections:
 - بانک سؤالات تخصصی: subject filters, difficulty (hard / very hard / specialist only for public release), source, legal validity date, explanation, and review status.
 - آکادمی تله‌شناسی: trap patterns, distractor analysis, timed solving, and learning paths.
 - آزمون تشخیصی و تطبیقی: strengths/weaknesses and next-step plan.
 - مربی هوشمند: answers grounded in official sources, validity date, confidence, uncertainty, and expert escalation.
 - برنامه یادگیری، فلش‌کارت و تحلیل پیشرفت.
-- **باشگاه طراحان سؤال مالیاتی**: ارسال سؤال پیشنهادی توسط کاربران، فرم چهارگزینه‌ای شامل موضوع/سطح/پاسخ تشریحی/مستند قانونی، پیگیری وضعیت بررسی، مشاهده ایرادات و دلیل رد، اصلاح و ارسال مجدد، اعتراض به نتیجه بررسی و مشاهده سوابق نسخه‌ها.
-- کنترل اولیه خودکار/هوشمند برای کامل‌بودن، تکرار، دشواری، ابهام، کیفیت گزینه‌ها و انطباق با منبع؛ هوش مصنوعی فقط ابزار کمکی است.
-- انتشار سؤال در آزمون شبانه یا بانک عمومی فقط پس از بررسی علمی و تأیید نهایی کارشناس مجاز است. هیچ سؤال پیشنهادی یا تأییدنشده‌ای وارد آزمون نمی‌شود.
-- نام یا نام مستعار طراح هنگام انتشار فقط با رضایت او نمایش داده می‌شود.
-- پاداش مشارکت/سکه، در صورت فعال‌سازی، مستقل از امتیاز لیگ و XP است و خرید یا پرداخت نمی‌تواند رتبه علمی طراح را بالا ببرد.
 - Heavy Academy/AI workloads are reduced during night-exam focus mode.
 
-### 4. اشتراک
+
+### 4. باشگاه طراحان سؤال (independent destination)
+This is a separate first-level product area, not a subsection of Academy and not a learning feature:
+- Structured question-authoring workspace and four-option submission form: subject, difficulty, correct answer, full explanation, official legal citation, and legal-validity date.
+- Drafts, submitted questions, review status, reviewer feedback/rejection reasons, revision and resubmission, appeal of review outcome, and version history.
+- Preliminary automated checks for completeness, duplication, difficulty, ambiguity, distractor quality, and source alignment; AI is assistive only.
+- Publication into night exams or the public question bank requires expert review and final authorized approval. Unapproved submissions never enter an exam.
+- Designer display name/alias is public only with the designer's consent.
+- Contribution rewards, if introduced, remain separate from league score and XP; payment cannot buy acceptance or scientific rank.
+- Independent designer profile and contribution history; designer national/province tables live inside this destination and remain separate from the main league rankings.
+
+### 5. اشتراک
 - Monthly / quarterly / annual Bazaar plans.
 - Current entitlement, purchase, restore, pending payment, transaction history, and help.
 - Clearly list included Academy/extra-duel entitlements.
 - Never sell rank, score, XP, exam priority, or a competitive advantage.
 
-### 5. حساب کاربری (secondary hub)
+### 6. حساب کاربری (secondary hub)
 - Profile and account information.
 - Province selection / verification status.
 - Exam history and finalized results.
@@ -95,8 +102,8 @@ Use one destination with internal sections, not separate bottom tabs:
 | Diagnostic / adaptive tests | آزمون‌ها and آکادمی learning path | No extra tab |
 | XP / levels | رتبه‌بندی > XP (separate from league) | Small separate profile metric when real |
 | Flashcards / study planner | آکادمی | No separate card |
-| Question Designers Club / submit a question | آکادمی > باشگاه طراحان سؤال | No separate Home card |
-| Designer national / province leaderboard | رتبه‌بندی > رتبه‌بندی طراحان سؤال | No separate Home card |
+| Question Designers Club / submit a question | باشگاه طراحان سؤال (independent bottom destination) | No separate Home card |
+| Designer national / province leaderboard | باشگاه طراحان سؤال > رتبه‌بندی طراحان | No separate Home card |
 | Designer review, approvals, audit trail | Admin panel > مدیریت طراحان و بررسی سؤالات | Admin-only |
 | Appeals / support / FAQ | حساب کاربری > پیگیری و پشتیبانی | Not on Home |
 | Founder introduction | حساب کاربری > درباره لیگ > معرفی بنیان‌گذار | Never on public Home |
@@ -118,5 +125,5 @@ Use one destination with internal sections, not separate bottom tabs:
 - XP/levels are roadmap items.
 - AI tutor and adaptive learning are roadmap items.
 - Support center/ticket workflow is not yet implemented.
-- Question Designers Club submission, review, rewards, and separate designer leaderboards require end-to-end implementation and acceptance tests; do not show as live before then.
+- Question Designers Club is a separate first-level destination; its submission, review, rewards, and separate designer leaderboards require end-to-end implementation and acceptance tests. Do not show these workflows as live before then.
 - Real-device visual validation of the approved home reference remains outstanding.
