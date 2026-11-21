@@ -2907,33 +2907,144 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
 
 
 class _RaqtivaHomeTile extends StatelessWidget {
-  const _RaqtivaHomeTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
-  final IconData icon; final String title; final String subtitle; final VoidCallback onTap;
+  const _RaqtivaHomeTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap, borderRadius: BorderRadius.circular(27),
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0750B5), Color(0xFF062B70), Color(0xFF031735)]),
-          borderRadius: BorderRadius.circular(27), border: Border.all(color: const Color(0xFFFFD15A), width: 1.5),
-          boxShadow: const [BoxShadow(color: Color(0x88F5B82E), blurRadius: 15, spreadRadius: -6), BoxShadow(color: Color(0xAA000000), blurRadius: 13, offset: Offset(0, 6))],
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(25),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0755C8),
+                  Color(0xFF07377F),
+                  Color(0xFF031735),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: const Color(0xFFFFD15A), width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x99F5B82E),
+                  blurRadius: 16,
+                  spreadRadius: -7,
+                ),
+                BoxShadow(
+                  color: Color(0xAA000000),
+                  blurRadius: 13,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment(0, -0.5),
+                          radius: 1.1,
+                          colors: [
+                            Color(0x443E9BFF),
+                            Color(0x003E9BFF),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(painter: _RaqtivaTileLinesPainter()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 9, 8, 8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 48,
+                        color: const Color(0xFFFFD76A),
+                        shadows: const [
+                          Shadow(color: Color(0xCCFFB82E), blurRadius: 13),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFFFE18A),
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            subtitle,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.bottomLeft,
+                        child: Container(
+                          width: 31,
+                          height: 31,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF020A20).withOpacity(.86),
+                            border: Border.all(
+                              color: const Color(0xFFFFD15A),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.chevron_left_rounded,
+                            size: 24,
+                            color: Color(0xFFFFD15A),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Stack(children: [
-          Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _RaqtivaTileLinesPainter()))),
-          Padding(padding: const EdgeInsets.fromLTRB(10, 13, 10, 12), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, size: 55, color: const Color(0xFFFFD76A), shadows: const [Shadow(color: Color(0xCCFFB82E), blurRadius: 13)]),
-            const SizedBox(height: 8),
-            Text(title, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFFFE18A), fontSize: 15, fontWeight: FontWeight.w900, height: 1.35)),
-            const SizedBox(height: 5),
-            Expanded(child: Align(alignment: Alignment.center, child: Text(subtitle, textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10.5, height: 1.5)))),
-            Align(alignment: Alignment.bottomLeft, child: Container(width: 37, height: 37, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF020A20).withOpacity(.82), border: Border.all(color: const Color(0xFFFFD15A), width: 1.5)), child: const Icon(Icons.chevron_left_rounded, size: 28, color: Color(0xFFFFD15A)))),
-          ])),
-        ]),
-      ),
-    ),
-  );
+      );
 }
 class _RaqtivaTileLinesPainter extends CustomPainter {
   @override
