@@ -63,6 +63,7 @@ jobs:
           python - <<'INNER'
           from pathlib import Path
           import os
+          import re
 
           cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
           matches = sorted(cache.glob("hosted/pub.dev/flutter_poolakey-*/android/build.gradle"))
@@ -72,17 +73,21 @@ jobs:
           path = matches[0]
           content = path.read_text(encoding="utf-8")
 
-          if "jcenter()" not in content:
-              raise SystemExit("Expected jcenter() was not found")
-
-          old_plugins = 'plugins {\n    id "com.android.library"\n    id "kotlin-android"\n}'
-          new_plugins = 'apply plugin: "com.android.library"\napply plugin: "kotlin-android"'
-
-          if old_plugins not in content:
-              raise SystemExit("Unexpected Poolakey plugins block; refusing unsafe patch")
-
           content = content.replace("jcenter()", "mavenCentral()")
-          content = content.replace(old_plugins, new_plugins, 1)
+
+          pattern = r"""(?m)^\s*plugins\s*\{\s*id\s*["']com\.android\.library["']\s*id\s*["']kotlin-android["']\s*\}"""
+          updated, count = re.subn(
+              pattern,
+              'apply plugin: "com.android.library"\napply plugin: "kotlin-android"',
+              content,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit(
+                  "Unexpected Poolakey Gradle plugin structure; refusing unsafe patch.\n"
+                  + content
+              )
+          content = updated
           path.write_text(content, encoding="utf-8")
           print(f"Patched {path}")
           INNER
