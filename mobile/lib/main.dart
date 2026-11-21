@@ -1455,9 +1455,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
-                    'شناسه: ${item['id']}'
-                    '\
-صحیح: ${item['correct_count']}'
+                    'شناسه: ${item['id']}\n'
+                    'صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
                   ),
@@ -2065,9 +2064,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               contentPadding: EdgeInsets.zero,
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
-                'شناسه: ${item['id']}'
-                '
-صحیح: ${item['correct_count']}'
+                'شناسه: ${item['id']}\n'
+                'صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
               ),
