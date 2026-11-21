@@ -70,6 +70,9 @@ def reject_selected(modeladmin, request, queryset):
 
 @admin.action(description="انتشار سؤالات تأییدشده")
 def publish_selected(modeladmin, request, queryset):
+    if not request.user.is_superuser:
+        modeladmin.message_user(request, "انتشار نهایی فقط با تأیید مالک سامانه مجاز است.", level=messages.ERROR)
+        return
     count = 0
     published = []
     for question in queryset:
