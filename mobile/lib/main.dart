@@ -2795,19 +2795,34 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 13),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF172238),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [
+                      Color(0xFF0A3B88),
+                      Color(0xFF071F50),
+                      Color(0xFF020D29),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(19),
                   border: Border.all(
                     color: isAnnual
-                        ? const Color(0xFFC6A96A)
-                        : Colors.white.withOpacity(0.12),
+                        ? const Color(0xFFFFD15A)
+                        : const Color(0x88D9A83D),
                     width: isAnnual ? 1.5 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.14),
-                      blurRadius: 12,
+                      color: const Color(0xFFFFC83D).withOpacity(
+                        isAnnual ? 0.18 : 0.08,
+                      ),
+                      blurRadius: isAnnual ? 16 : 10,
                       offset: const Offset(0, 5),
+                    ),
+                    const BoxShadow(
+                      color: Color(0x55000000),
+                      blurRadius: 12,
+                      offset: Offset(0, 5),
                     ),
                   ],
                 ),
