@@ -617,13 +617,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 || accountPage == 10 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'تنظیمات برنامه' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -1597,10 +1597,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ),
               ),
               const Divider(),
-              const ListTile(
-                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
-                title: Text('حریم خصوصی و تنظیمات'),
-                subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
+                title: const Text('تنظیمات و حریم خصوصی'),
+                subtitle: const Text('مدیریت ترجیحات برنامه و مشاهده توضیحات امنیتی'),
+                trailing: const Icon(Icons.chevron_left_rounded),
+                onTap: () => setState(() => accountPage = 10),
               ),
             ],
           ),
