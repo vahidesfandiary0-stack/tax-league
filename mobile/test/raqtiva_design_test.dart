@@ -11,6 +11,14 @@ void main() {
       expect(theme.scaffoldBackgroundColor, RaqtivaColors.navy);
       expect(theme.colorScheme.primary, RaqtivaColors.gold);
       expect(theme.colorScheme.surface, RaqtivaColors.surface);
+      expect(RaqtivaColors.navy, const Color(0xFF000020));
+      expect(RaqtivaColors.navy900, const Color(0xFF000030));
+      expect(RaqtivaColors.navy850, const Color(0xFF001030));
+      expect(RaqtivaColors.navy800, const Color(0xFF001040));
+      expect(RaqtivaColors.blue, const Color(0xFF0040A0));
+      expect(RaqtivaColors.gold, const Color(0xFFF4C64E));
+      expect(RaqtivaColors.goldLight, const Color(0xFFFFD76A));
+      expect(RaqtivaColors.goldDeep, const Color(0xFFB87916));
     });
 
     testWidgets('feature card exposes its title and invokes its action',
