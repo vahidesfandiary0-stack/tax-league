@@ -64,6 +64,9 @@ void main() {
 
     testWidgets('six-destination navigation fits narrow phones and routes taps',
         (tester) async {
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
       tester.view.physicalSize = const Size(320, 720);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
