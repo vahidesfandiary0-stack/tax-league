@@ -584,7 +584,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           child: RefreshIndicator(
           onRefresh: loadDashboard,
           child: ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 20), children: [
-          if (stats == null || accountPage == 0)
+          if (stats == null || (accountPage == 0 && selectedHomeSection == null))
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
