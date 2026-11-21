@@ -1,19 +1,43 @@
 import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
-  static const navy = Color(0xFF000020);
-  static const navyLight = Color(0xFF001044);
-  static const surface = Color(0xFF061A45);
-  static const surfaceSoft = Color(0xFF082B70);
-  static const blue = Color(0xFF0756C7);
-  static const gold = Color(0xFFF4C64E);
-  static const goldLight = Color(0xFFFFE18A);
-  static const goldDeep = Color(0xFFB87916);
+  // Canonical palette from docs/MOBILE_UI_MASTER_SPEC.md.
+  static const navy = Color(0xFF000020); // Navy 950
+  static const navy900 = Color(0xFF000030);
+  static const navy850 = Color(0xFF001030);
+  static const navy800 = Color(0xFF001040);
+  static const navyLight = navy800;
+  static const surface = navy850;
+  static const surfaceSoft = Color(0xFF002060); // Navy 700
+  static const blue = Color(0xFF0040A0); // Blue 600
+  static const gold = Color(0xFFF4C64E); // Gold 500
+  static const goldLight = Color(0xFFFFD76A); // Gold 400
+  static const goldDeep = Color(0xFFB87916); // Gold 700
   static const text = Color(0xFFF5F5F5);
   static const muted = Color(0xFFD9E2F2);
-  static const border = Color(0xFFFFD15A);
+  static const border = goldLight;
   static const green = Color(0xFF55C69A);
   static const red = Color(0xFFE47777);
+}
+
+abstract final class RaqtivaRadii {
+  static const card = 20.0;
+  static const panel = 22.0;
+  static const control = 16.0;
+}
+
+abstract final class RaqtivaEffects {
+  static const cardGlow = BoxShadow(
+    color: Color(0x77FFC34A),
+    blurRadius: 15,
+    spreadRadius: .5,
+  );
+  static const cardDepth = BoxShadow(
+    color: Color(0xCC00051B),
+    blurRadius: 13,
+    offset: Offset(0, 7),
+  );
+  static const stadiumGlow = Color(0x553D91FF);
 }
 
 abstract final class RaqtivaTheme {
@@ -318,16 +342,8 @@ class RaqtivaFeatureCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: RaqtivaColors.goldLight, width: 1.45),
             boxShadow: const [
-              BoxShadow(
-                color: Color(0x77FFC34A),
-                blurRadius: 15,
-                spreadRadius: .5,
-              ),
-              BoxShadow(
-                color: Color(0xCC00051B),
-                blurRadius: 13,
-                offset: Offset(0, 7),
-              ),
+              RaqtivaEffects.cardGlow,
+              RaqtivaEffects.cardDepth,
             ],
           ),
           child: Padding(
@@ -437,9 +453,9 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
               center: Alignment(0, -0.45),
               radius: 1.25,
               colors: [
-                Color(0xFF092D70),
-                Color(0xFF061A45),
-                Color(0xFF020A20),
+                RaqtivaColors.blue,
+                RaqtivaColors.navy800,
+                RaqtivaColors.navy,
               ],
               stops: [0, .48, 1],
             ),
@@ -487,11 +503,11 @@ class _RaqtivaStadiumPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height * .20);
     final gold = Paint()
-      ..color = const Color(0x66F6C64B)
+      ..color = RaqtivaColors.gold.withValues(alpha: .40)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     final blue = Paint()
-      ..color = const Color(0x443B91FF)
+      ..color = RaqtivaColors.blue.withValues(alpha: .27)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
