@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 abstract final class RaqtivaColors {
   // Canonical palette from docs/MOBILE_UI_MASTER_SPEC.md.
   static const navy = Color(0xFF000020); // Navy 950
-  static const navy900 = Color(0xFF000030);
-  static const navy850 = Color(0xFF001030);
-  static const navy800 = Color(0xFF001040);
+  static const navy900 = Color(0xFF0A1A32);
+  static const navy850 = Color(0xFF10233D);
+  static const navy800 = Color(0xFF142A49);
   static const navyLight = navy800;
   static const surface = navy850;
-  static const surfaceSoft = Color(0xFF002060); // Navy 700
-  static const blue = Color(0xFF0040A0); // Blue 600
-  static const gold = Color(0xFFF4C64E); // Gold 500
-  static const goldLight = Color(0xFFFFD76A); // Gold 400
-  static const goldDeep = Color(0xFFB87916); // Gold 700
+  static const surfaceSoft = Color(0xFF1A304D); // Raised input surface
+  static const blue = Color(0xFF326DAA); // Restrained stadium blue
+  static const gold = Color(0xFFD8B978); // Warm champagne gold
+  static const goldLight = Color(0xFFEBD6A0); // Soft champagne highlight
+  static const goldDeep = Color(0xFF9B7437); // Muted antique gold
   static const text = Color(0xFFF5F5F5);
   static const muted = Color(0xFFD9E2F2);
   static const border = goldLight;
@@ -28,7 +28,7 @@ abstract final class RaqtivaRadii {
 
 abstract final class RaqtivaEffects {
   static const cardGlow = BoxShadow(
-    color: Color(0x44D9B76F),
+    color: Color(0x33D9BD83),
     blurRadius: 18,
     spreadRadius: .2,
   );
@@ -44,7 +44,7 @@ abstract final class RaqtivaTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: RaqtivaColors.navy,
+        scaffoldBackgroundColor: RaqtivaColors.navy,\n        splashColor: const Color(0x22EBD6A0),\n        highlightColor: const Color(0x12A9CFFF),
         colorScheme: const ColorScheme.dark(
           primary: RaqtivaColors.gold,
           secondary: RaqtivaColors.goldLight,
@@ -54,7 +54,7 @@ abstract final class RaqtivaTheme {
           onSurface: RaqtivaColors.text,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: RaqtivaColors.navy,
+          backgroundColor: RaqtivaColors.navy900,
           foregroundColor: RaqtivaColors.text,
           centerTitle: false,
           elevation: 0,
@@ -66,7 +66,7 @@ abstract final class RaqtivaTheme {
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: RaqtivaColors.gold, width: 1.15),
+            side: const BorderSide(color: Color(0x88E4D0A0), width: 1.0),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -260,7 +260,7 @@ class RaqtivaMetricCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: RaqtivaColors.goldLight, width: 1.35),
+        border: Border.all(color: const Color(0x99E4D0A0), width: 1.0),
         boxShadow: const [
           BoxShadow(
             color: Color(0x66FFB82E),
@@ -340,7 +340,7 @@ class RaqtivaFeatureCard extends StatelessWidget {
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0x99E8C982), width: 1.1),
+            border: Border.all(color: const Color(0x99E4D0A0), width: 1.0),
             boxShadow: const [
               RaqtivaEffects.cardGlow,
               RaqtivaEffects.cardDepth,
@@ -579,9 +579,9 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF101E34), Color(0xFF030817)],
+          colors: [Color(0xFF142A45), Color(0xFF071326)],
         ),
-        border: Border(top: BorderSide(color: Color(0xFFFFD15A), width: 1.2)),
+        border: Border(top: BorderSide(color: Color(0x99E4D0A0), width: 1.0)),
         boxShadow: [
           BoxShadow(
             color: Color(0x333F8CFF),
