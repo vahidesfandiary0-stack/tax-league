@@ -1,7 +1,7 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Question
+from .models import Question, QuestionRevision
 from .serializers import PublicQuestionSerializer
 
 
@@ -21,10 +21,9 @@ class PublishedQuestionDetailView(PublishedQuestionQuerysetMixin, RetrieveAPIVie
     serializer_class = PublicQuestionSerializer
 
 
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
-from rest_framework.exceptions import PermissionDenied, ValidationError as APIValidationError
+from rest_framework.exceptions import ValidationError as APIValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
