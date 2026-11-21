@@ -144,20 +144,20 @@ jobs:
           from pathlib import Path
           import re
 
-          candidates = [Path("android/settings.gradle.kts"), Path("android/settings.gradle")]
+          candidates = [Path("android/build.gradle.kts"), Path("android/build.gradle")]
           path = next((candidate for candidate in candidates if candidate.is_file()), None)
           if path is None:
-              raise SystemExit("Generated Android settings.gradle(.kts) was not found.")
+              raise SystemExit("Generated Android root build.gradle(.kts) was not found.")
           content = path.read_text(encoding="utf-8")
           if "https://jitpack.io" not in content:
-              pattern = r"(dependencyResolutionManagement\s*\{.*?repositories\s*\{)"
+              pattern = r"(allprojects\\s*\\{\\s*repositories\\s*\\{)"
               match = re.search(pattern, content, flags=re.S)
               if match is None:
-                  raise SystemExit("Could not safely locate dependencyResolutionManagement.repositories.")
+                  raise SystemExit("Could not safely locate allprojects.repositories in Android root build file.")
               repository = ('maven { url = uri("https://jitpack.io") }'
                             if path.suffix == ".kts"
                             else "maven { url 'https://jitpack.io' }")
-              content = content[:match.end()] + "\n        " + repository + content[match.end():]
+              content = content[:match.end()] + "\\n        " + repository + content[match.end():]
               path.write_text(content, encoding="utf-8")
           if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
               raise SystemExit("JitPack repository verification failed.")
@@ -171,20 +171,20 @@ jobs:
           from pathlib import Path
           import re
 
-          candidates = [Path("android/settings.gradle.kts"), Path("android/settings.gradle")]
+          candidates = [Path("android/build.gradle.kts"), Path("android/build.gradle")]
           path = next((candidate for candidate in candidates if candidate.is_file()), None)
           if path is None:
-              raise SystemExit("Generated Android settings.gradle(.kts) was not found.")
+              raise SystemExit("Generated Android root build.gradle(.kts) was not found.")
           content = path.read_text(encoding="utf-8")
           if "https://jitpack.io" not in content:
-              pattern = r"(dependencyResolutionManagement\s*\{.*?repositories\s*\{)"
+              pattern = r"(allprojects\\s*\\{\\s*repositories\\s*\\{)"
               match = re.search(pattern, content, flags=re.S)
               if match is None:
-                  raise SystemExit("Could not safely locate dependencyResolutionManagement.repositories.")
+                  raise SystemExit("Could not safely locate allprojects.repositories in Android root build file.")
               repository = ('maven { url = uri("https://jitpack.io") }'
                             if path.suffix == ".kts"
                             else "maven { url 'https://jitpack.io' }")
-              content = content[:match.end()] + "\n        " + repository + content[match.end():]
+              content = content[:match.end()] + "\\n        " + repository + content[match.end():]
               path.write_text(content, encoding="utf-8")
           if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
               raise SystemExit("JitPack repository verification failed.")
