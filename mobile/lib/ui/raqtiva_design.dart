@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
-  static const navy = Color(0xFF020A20);
-  static const navyLight = Color(0xFF061A45);
-  static const surface = Color(0xFF071D49);
-  static const surfaceSoft = Color(0xFF0B2B67);
-  static const gold = Color(0xFFFFC83D);
-  static const goldLight = Color(0xFFFFE58D);
-  static const text = Color(0xFFF5F3ED);
-  static const muted = Color(0xFF9EADBF);
-  static const border = Color(0xFFB98727);
+  static const navy = Color(0xFF000020);
+  static const navyLight = Color(0xFF001044);
+  static const surface = Color(0xFF061A45);
+  static const surfaceSoft = Color(0xFF082B70);
+  static const blue = Color(0xFF0756C7);
+  static const gold = Color(0xFFF4C64E);
+  static const goldLight = Color(0xFFFFE18A);
+  static const goldDeep = Color(0xFFB87916);
+  static const text = Color(0xFFF5F5F5);
+  static const muted = Color(0xFFD9E2F2);
+  static const border = Color(0xFFFFD15A);
   static const green = Color(0xFF55C69A);
   static const red = Color(0xFFE47777);
 }
@@ -114,14 +116,15 @@ class RaqtivaPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
+        gradient: const RadialGradient(
+          center: Alignment(0, -0.42),
+          radius: 1.28,
           colors: [
-            Color(0xFF17263C),
-            RaqtivaColors.navy,
-            Color(0xFF090F1A),
+            Color(0xFF07347F),
+            Color(0xFF001044),
+            Color(0xFF000020),
           ],
+          stops: [0, .48, 1],
         ),
       ),
       child: SafeArea(
@@ -223,9 +226,30 @@ class RaqtivaMetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: RaqtivaColors.surface,
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            Color(0xFF0752B8),
+            Color(0xFF06265F),
+            Color(0xFF020B2B),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: RaqtivaColors.border),
+        border: Border.all(color: RaqtivaColors.goldLight, width: 1.35),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66FFB82E),
+            blurRadius: 13,
+            spreadRadius: .4,
+            offset: Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Color(0x99000824),
+            blurRadius: 12,
+            offset: Offset(0, 7),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,55 +299,85 @@ class RaqtivaFeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: RaqtivaColors.surface,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(17),
+        child: Ink(
           decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                Color(0xFF0756C7),
+                Color(0xFF06265F),
+                Color(0xFF020B2B),
+              ],
+            ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: RaqtivaColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: .13),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(icon, color: accent, size: 24),
+            border: Border.all(color: RaqtivaColors.goldLight, width: 1.45),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x77FFC34A),
+                blurRadius: 15,
+                spreadRadius: .5,
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                          color: RaqtivaColors.text,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                        )),
-                    const SizedBox(height: 5),
-                    Text(description,
-                        style: const TextStyle(
-                          color: RaqtivaColors.muted,
-                          fontSize: 12,
-                          height: 1.5,
-                        )),
-                  ],
-                ),
+              BoxShadow(
+                color: Color(0xCC00051B),
+                blurRadius: 13,
+                offset: Offset(0, 7),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing!,
-              ] else
-                const Icon(Icons.chevron_left, color: RaqtivaColors.muted),
             ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(17),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFE68C), Color(0xFFD58A16)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x88FFC34A), blurRadius: 12),
+                    ],
+                  ),
+                  child: Icon(icon, color: RaqtivaColors.navy, size: 27),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                            color: RaqtivaColors.goldLight,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          )),
+                      const SizedBox(height: 5),
+                      Text(description,
+                          style: const TextStyle(
+                            color: RaqtivaColors.text,
+                            fontSize: 12,
+                            height: 1.5,
+                          )),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  trailing!,
+                ] else
+                  const Icon(Icons.chevron_left, color: RaqtivaColors.goldLight),
+              ],
+            ),
           ),
         ),
       ),
