@@ -201,9 +201,9 @@ class _LeagueSplashArtwork extends StatelessWidget {
             center: Alignment(0, -0.42),
             radius: 1.28,
             colors: [
-              Color(0xFF0B347C),
-              Color(0xFF061A45),
-              Color(0xFF020A20),
+              Color(0xFF183A5E),
+              Color(0xFF0B1D36),
+              Color(0xFF050D1D),
             ],
             stops: [0, .48, 1],
           ),
@@ -263,9 +263,9 @@ class _LeagueSplashArtwork extends StatelessWidget {
                               begin: Alignment.topRight,
                               end: Alignment.bottomLeft,
                               colors: [
-                                Color(0xFF0D3A83),
-                                Color(0xFF061A45),
-                                Color(0xFF020A20),
+                                Color(0xFF254766),
+                                Color(0xFF132B48),
+                                Color(0xFF071326),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(38),
@@ -757,9 +757,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
                 colors: [
-                  Color(0xFF263F60),
-                  Color(0xFF17263D),
-                  Color(0xFF101827),
+                  Color(0xFF294968),
+                  Color(0xFF172F4C),
+                  Color(0xFF09172A),
                 ],
               ),
               border: Border.all(
