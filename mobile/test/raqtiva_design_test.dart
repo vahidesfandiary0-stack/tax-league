@@ -62,6 +62,41 @@ void main() {
       expect(find.text('۱۲'), findsOneWidget);
     });
 
+    testWidgets('six-destination navigation fits narrow phones and routes taps',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var selected = -1;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: RaqtivaTheme.dark,
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              bottomNavigationBar: RaqtivaBottomNavigationBar(
+                selectedIndex: 0,
+                onDestinationSelected: (index) => selected = index,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('خانه'), findsOneWidget);
+      expect(find.bySemanticsLabel('آزمون‌ها'), findsOneWidget);
+      expect(find.bySemanticsLabel('رتبه‌بندی'), findsOneWidget);
+      expect(find.bySemanticsLabel('آکادمی'), findsOneWidget);
+      expect(find.bySemanticsLabel('باشگاه طراحان'), findsOneWidget);
+      expect(find.bySemanticsLabel('اشتراک'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('باشگاه طراحان'));
+      expect(selected, 4);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('gold badge renders the supplied label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
