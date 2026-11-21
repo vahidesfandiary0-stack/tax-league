@@ -3338,8 +3338,6 @@ class _RaqtivaHomeTile extends StatelessWidget {
                   ),
                 ),
               ],
-                ),
-              ],
             ),
           ),
         ),
