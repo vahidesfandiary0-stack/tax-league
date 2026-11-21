@@ -624,31 +624,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ),
         ),
       ),
-      bottomNavigationBar: stats == null || focusMode ? null : Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF061A45), Color(0xFF020A20)],
-          ),
-          border: Border(top: BorderSide(color: Color(0xFFFFD15A), width: 1.2)),
-          boxShadow: [BoxShadow(color: Color(0x553F8CFF), blurRadius: 16, offset: Offset(0, -5))],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 72,
-            child: Row(children: [
-              _navigationItem(0, Icons.home_outlined, Icons.home_rounded, 'خانه'),
-              _navigationItem(1, Icons.assignment_outlined, Icons.assignment_rounded, 'آزمون‌ها'),
-              _navigationItem(2, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'رتبه‌بندی'),
-              _navigationItem(3, Icons.school_outlined, Icons.school_rounded, 'آکادمی'),
-              _navigationItem(4, Icons.edit_note_outlined, Icons.edit_note_rounded, 'باشگاه طراحان'),
-              _navigationItem(5, Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
-            ]),
-          ),
-        ),
-      ),
+      bottomNavigationBar: stats == null || focusMode
+          ? null
+          : RaqtivaBottomNavigationBar(
+              selectedIndex: _selectedNavigationIndex,
+              onDestinationSelected: _selectNavigation,
+            ),
     ),
   );
 
@@ -683,65 +664,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountPage = 4;
       }
     });
-  }
-
-  Widget _navigationItem(
-    int index,
-    IconData icon,
-    IconData selectedIcon,
-    String label,
-  ) {
-    final selected = _selectedNavigationIndex == index;
-    return Expanded(
-      child: InkWell(
-        onTap: () => _selectNavigation(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          decoration: BoxDecoration(
-            gradient: selected
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x443F8CFF), Color(0x223D8FFF), Color(0x00FFD15A)],
-                  )
-                : null,
-            border: Border(
-              left: BorderSide(
-                color: index == 0 ? Colors.transparent : const Color(0x334B91E8),
-                width: 0.7,
-              ),
-              bottom: selected
-                  ? const BorderSide(color: Color(0xFFFFD15A), width: 2)
-                  : BorderSide.none,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                size: 25,
-                color: selected ? const Color(0xFFFFD76A) : const Color(0xFFE5F0FF),
-                shadows: selected
-                    ? const [Shadow(color: Color(0xCCFFB82E), blurRadius: 12)]
-                    : null,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? const Color(0xFFFFE18A) : Colors.white,
-                  fontSize: 9.5,
-                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _loginCard() {
