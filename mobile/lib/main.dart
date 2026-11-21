@@ -604,7 +604,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
             margin: const EdgeInsets.only(bottom: 18),
-            decoration: const BoxDecoration(),
+            decoration: BoxDecoration(\n              gradient: const LinearGradient(\n                begin: Alignment.topRight,\n                end: Alignment.bottomLeft,\n                colors: [Color(0xFF1A385A), Color(0xFF102541), Color(0xFF071326)],\n              ),\n              borderRadius: BorderRadius.circular(26),\n              border: Border.all(color: const Color(0x77E4D0A0), width: 1),\n              boxShadow: const [\n                BoxShadow(color: Color(0x224D8BC4), blurRadius: 28, offset: Offset(0, 5)),\n                BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 13)),\n              ],\n            ),
             child: Column(children: [
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: .88, end: 1),
@@ -1869,7 +1869,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(21),
-                border: Border.all(color: const Color(0x99E8C982), width: 1.15),
+                border: Border.all(color: const Color(0x88E4D0A0), width: 1.0),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x33D9B76F),
@@ -2109,10 +2109,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [Color(0xFF082B68), Color(0xFF020D29)]),
+            gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [Color(0xFF173A60), Color(0xFF08172D)]),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFFFD15A), width: 1.5),
-            boxShadow: const [BoxShadow(color: Color(0x88F5B82E), blurRadius: 13, spreadRadius: -5), BoxShadow(color: Color(0x99000000), blurRadius: 16, offset: Offset(0, 7))],
+            border: Border.all(color: const Color(0xB8E4D0A0), width: 1.15),
+            boxShadow: const [BoxShadow(color: Color(0x33E4D0A0), blurRadius: 18, spreadRadius: -4), BoxShadow(color: Color(0x99000000), blurRadius: 16, offset: Offset(0, 7))],
           ),
           child: Row(children: [
             Container(width: 66, height: 66, decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [Color(0xFFFFE58D), Color(0xFFD99A19)]), border: Border.all(color: const Color(0xFFFFF0B7), width: 2)), child: const Icon(Icons.person_rounded, size: 43, color: Color(0xFF071A3E))),
