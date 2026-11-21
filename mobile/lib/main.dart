@@ -1378,15 +1378,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   if (appeals.isEmpty)
                     const Text('هنوز اعتراضی ثبت نکرده‌اید.'),
                   for (final item in appeals)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text((item['reason'] ?? 'اعتراض').toString()),
-                      subtitle: Text(
-                        (item['decision_note'] ?? '').toString().isEmpty
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: RaqtivaFeatureCard(
+                        title: (item['reason'] ?? 'اعتراض').toString(),
+                        description: (item['decision_note'] ?? '').toString().isEmpty
                             ? 'در انتظار بررسی'
                             : item['decision_note'].toString(),
+                        icon: Icons.gavel_rounded,
+                        trailing: RaqtivaGoldBadge(_status(item['status'])),
                       ),
-                      trailing: Text(_status(item['status'])),
                     ),
                 ],
               ),
@@ -1436,26 +1437,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               if (results.isEmpty)
                 const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
               for (final item in results)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text((item['exam_title'] ?? 'آزمون').toString()),
-                  subtitle: Text(
-                    'شناسه: ${item['id']}
-'
-                    'صحیح: ${item['correct_count']}'
-                    ' · غلط: ${item['wrong_count']}'
-                    ' · نزده: ${item['blank_count']}',
-                  ),
-                  isThreeLine: true,
-                  onTap: () => _showAppealForm(
-                    item['id'].toString(),
-                    (item['exam_title'] ?? 'آزمون').toString(),
-                  ),
-                  trailing: Text(
-                    '${item['score'] ?? 0} امتیاز',
-                    style: const TextStyle(
-                      color: RaqtivaColors.goldLight,
-                      fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: RaqtivaFeatureCard(
+                    title: (item['exam_title'] ?? 'آزمون').toString(),
+                    description: 'صحیح: ${item['correct_count']} · غلط: ${item['wrong_count']} · نزده: ${item['blank_count']}',
+                    icon: Icons.history_rounded,
+                    trailing: RaqtivaGoldBadge('${item['score'] ?? 0} امتیاز'),
+                    onTap: () => _showAppealForm(
+                      item['id'].toString(),
+                      (item['exam_title'] ?? 'آزمون').toString(),
                     ),
                   ),
                 ),
@@ -2046,26 +2037,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           if (results.isEmpty)
             const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
           for (final item in results)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text((item['exam_title'] ?? 'آزمون').toString()),
-              subtitle: Text(
-                'شناسه: ${item['id']}
-'
-                'صحیح: ${item['correct_count']}'
-                ' · غلط: ${item['wrong_count']}'
-                ' · نزده: ${item['blank_count']}',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: RaqtivaFeatureCard(
+                title: (item['exam_title'] ?? 'آزمون').toString(),
+                description: 'صحیح: ${item['correct_count']} · غلط: ${item['wrong_count']} · نزده: ${item['blank_count']}',
+                icon: Icons.history_rounded,
+                trailing: RaqtivaGoldBadge('${item['score'] ?? 0} امتیاز'),
+                onTap: () => _showAppealForm(
+                  item['id'].toString(),
+                  (item['exam_title'] ?? 'آزمون').toString(),
+                ),
               ),
-              isThreeLine: true,
-              onTap: () => _showAppealForm(
-                item['id'].toString(),
-                (item['exam_title'] ?? 'آزمون').toString(),
-              ),
-              trailing: Text('${item['score'] ?? 0} امتیاز',
-                style: const TextStyle(
-                  color: Color(0xFFE4C98F),
-                  fontWeight: FontWeight.bold,
-                )),
             ),
         ]),
       )),
