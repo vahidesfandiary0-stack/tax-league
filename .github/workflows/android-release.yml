@@ -137,27 +137,31 @@ jobs:
           INNER
 
       - name: Configure JitPack for Cafe Bazaar SDK
+        working-directory: mobile
         run: |
           set -euo pipefail
           python - <<'INNER'
           from pathlib import Path
           import re
 
-          path = Path("android/build.gradle")
-          if not path.is_file():
-              raise SystemExit("Generated android/build.gradle was not found.")
+          candidates = [Path("android/settings.gradle.kts"), Path("android/settings.gradle")]
+          path = next((candidate for candidate in candidates if candidate.is_file()), None)
+          if path is None:
+              raise SystemExit("Generated Android settings.gradle(.kts) was not found.")
           content = path.read_text(encoding="utf-8")
           if "https://jitpack.io" not in content:
-              pattern = r"(allprojects\s*\{.*?repositories\s*\{)"
+              pattern = r"(dependencyResolutionManagement\\s*\\{.*?repositories\\s*\\{)"
               match = re.search(pattern, content, flags=re.S)
               if match is None:
-                  raise SystemExit("Could not locate allprojects.repositories in android/build.gradle.")
-              content = content[:match.end()] + '\n        maven { url "https://jitpack.io" }' + content[match.end():]
+                  raise SystemExit("Could not safely locate dependencyResolutionManagement.repositories.")
+              repository = ('maven { url = uri("https://jitpack.io") }'
+                            if path.suffix == ".kts"
+                            else "maven { url 'https://jitpack.io' }")
+              content = content[:match.end()] + "\\n        " + repository + content[match.end():]
               path.write_text(content, encoding="utf-8")
-          verified = path.read_text(encoding="utf-8")
-          if "https://jitpack.io" not in verified:
+          if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
               raise SystemExit("JitPack repository verification failed.")
-          print("JitPack configured in android/build.gradle")
+          print(f"JitPack configured in {path}")
           INNER
       - name: Configure JitPack in Android dependency repositories
         working-directory: mobile
