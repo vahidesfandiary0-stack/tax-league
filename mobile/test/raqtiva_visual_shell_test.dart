@@ -5,7 +5,7 @@ import 'package:tax_league/ui/raqtiva_design.dart';
 void main() {
   group('RAQTIVA visual shell', () {
     for (final width in <double>[320, 360, 393, 430]) {
-      testWidgets('stadium shell and six destinations render at ${width.toInt()}px',
+      testWidgets('stadium shell and five destinations render at ${width.toInt()}px',
           (tester) async {
         tester.view.physicalSize = Size(width, 800);
         tester.view.devicePixelRatio = 1;
@@ -42,13 +42,12 @@ void main() {
           'آزمون‌ها',
           'رتبه‌بندی',
           'آکادمی',
-          'باشگاه طراحان',
           'اشتراک',
         ]) {
           expect(find.text(label), findsOneWidget);
         }
         await tester.tap(find.text('اشتراک'));
-        expect(selected, 5);
+        expect(selected, 4);
         expect(tester.takeException(), isNull);
       });
     }
