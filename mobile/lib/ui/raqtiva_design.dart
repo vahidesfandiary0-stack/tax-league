@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
   // Canonical palette from docs/MOBILE_UI_MASTER_SPEC.md.
-  static const navy = Color(0xFF000020); // Navy 950
+  static const navy = Color(0xFF071226); // Deep layered navy
   static const navy900 = Color(0xFF0A1A32);
   static const navy850 = Color(0xFF10233D);
   static const navy800 = Color(0xFF142A49);
@@ -44,7 +44,11 @@ abstract final class RaqtivaTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: RaqtivaColors.navy,\n        splashColor: const Color(0x22EBD6A0),\n        highlightColor: const Color(0x12A9CFFF),
+        scaffoldBackgroundColor: RaqtivaColors.navy,
+        splashColor: const Color(0x22EBD6A0),
+        highlightColor: const Color(0x12A9CFFF),
+        splashColor: const Color(0x22EBD6A0),
+        highlightColor: const Color(0x12A9CFFF),
         colorScheme: const ColorScheme.dark(
           primary: RaqtivaColors.gold,
           secondary: RaqtivaColors.goldLight,
@@ -62,7 +66,8 @@ abstract final class RaqtivaTheme {
         ),
         cardTheme: CardThemeData(
           color: RaqtivaColors.surface,
-          elevation: 0,
+          elevation: 2,
+          shadowColor: const Color(0x99000000),
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -95,7 +100,8 @@ abstract final class RaqtivaTheme {
             backgroundColor: RaqtivaColors.gold,
             foregroundColor: RaqtivaColors.navy,
             minimumSize: const Size.fromHeight(54),
-            elevation: 0,
+            elevation: 2,
+            shadowColor: const Color(0x664A83B8),
             textStyle:
                 const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
             shape: RoundedRectangleBorder(
