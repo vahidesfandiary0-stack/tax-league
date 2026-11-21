@@ -568,7 +568,6 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
     (Icons.assignment_outlined, Icons.assignment_rounded, 'آزمون‌ها'),
     (Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'رتبه‌بندی'),
     (Icons.school_outlined, Icons.school_rounded, 'آکادمی'),
-    (Icons.edit_note_outlined, Icons.edit_note_rounded, 'باشگاه طراحان'),
     (Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
   ];
 
@@ -593,7 +592,7 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 76,
+          height: 82,
           child: Row(
             children: [
               for (var index = 0; index < _destinations.length; index++)
@@ -673,7 +672,7 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
                                         color: selectedIndex == index
                                             ? const Color(0xFFFFE18A)
                                             : Colors.white,
-                                        fontSize: 9,
+                                        fontSize: 10,
                                         height: 1.15,
                                         fontWeight: selectedIndex == index
                                             ? FontWeight.w900
