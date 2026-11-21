@@ -21,8 +21,8 @@ Product authority: RAQTIVA project mother document (updated 27 Aban 1405)
 2. **آزمون‌ها** — official night exam first; future practice / diagnostic / adaptive exam types are separate and explicitly excluded from the main league unless the owner changes the rules.
 3. **رتبه‌بندی** — national and verified-province league tables; XP/levels are shown in a separate panel and never merged with league points.
 4. **آکادمی** — learning experience only: specialist question bank for learners, Trapology Academy, diagnostic learning, AI tutor, study plan, flashcards, and progress analytics.
-Question Designers Club — creator workspace for authoring, submitting, tracking, revising, and reviewing proposed tax questions; entered from Account > Services, not the bottom navigation.
-6. **اشتراک** — Bazaar plans, purchase, restore, entitlement state, and billing history. Subscription never changes competition fairness.
+- **باشگاه طراحان سؤال** — creator workspace for authoring, submitting, tracking, revising, and reviewing proposed tax questions; entered from Account > Services, not the bottom navigation.
+5. **اشتراک** — Bazaar plans, purchase, restore, entitlement state, and billing history. Subscription never changes competition fairness.
 
 The account strip on Home opens **حساب کاربری** as a secondary hub, not a bottom-navigation destination.
 
