@@ -480,3 +480,151 @@ class _RaqtivaStadiumPainter extends CustomPainter {
   bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
 }
 
+
+/// Six-destination navigation shell. Labels may wrap to two lines on narrow
+/// phones instead of being clipped or silently shortened.
+class RaqtivaBottomNavigationBar extends StatelessWidget {
+  const RaqtivaBottomNavigationBar({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    super.key,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  static const _destinations = <(IconData, IconData, String)>[
+    (Icons.home_outlined, Icons.home_rounded, 'خانه'),
+    (Icons.assignment_outlined, Icons.assignment_rounded, 'آزمون‌ها'),
+    (Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'رتبه‌بندی'),
+    (Icons.school_outlined, Icons.school_rounded, 'آکادمی'),
+    (Icons.edit_note_outlined, Icons.edit_note_rounded, 'باشگاه طراحان'),
+    (Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'اشتراک'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF061A45), Color(0xFF020A20)],
+        ),
+        border: Border(top: BorderSide(color: Color(0xFFFFD15A), width: 1.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x553F8CFF),
+            blurRadius: 16,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 76,
+          child: Row(
+            children: [
+              for (var index = 0; index < _destinations.length; index++)
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: selectedIndex == index,
+                    label: _destinations[index].$3,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onDestinationSelected(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 1,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: selectedIndex == index
+                                ? const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Color(0x443F8CFF),
+                                      Color(0x223D8FFF),
+                                      Color(0x00FFD15A),
+                                    ],
+                                  )
+                                : null,
+                            border: Border(
+                              left: BorderSide(
+                                color: index == 0
+                                    ? Colors.transparent
+                                    : const Color(0x334B91E8),
+                                width: .7,
+                              ),
+                              bottom: selectedIndex == index
+                                  ? const BorderSide(
+                                      color: Color(0xFFFFD15A),
+                                      width: 2,
+                                    )
+                                  : BorderSide.none,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Icon(
+                                selectedIndex == index
+                                    ? _destinations[index].$2
+                                    : _destinations[index].$1,
+                                size: 23,
+                                color: selectedIndex == index
+                                    ? const Color(0xFFFFD76A)
+                                    : const Color(0xFFE5F0FF),
+                                shadows: selectedIndex == index
+                                    ? const [
+                                        Shadow(
+                                          color: Color(0xCCFFB82E),
+                                          blurRadius: 12,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              const SizedBox(height: 3),
+                              Flexible(
+                                child: Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      _destinations[index].$3,
+                                      maxLines: 2,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: selectedIndex == index
+                                            ? const Color(0xFFFFE18A)
+                                            : Colors.white,
+                                        fontSize: 9,
+                                        height: 1.15,
+                                        fontWeight: selectedIndex == index
+                                            ? FontWeight.w900
+                                            : FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
