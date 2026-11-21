@@ -77,6 +77,26 @@ jobs:
       - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --project-name tax_league .
+      - name: Set Persian Android launcher name
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import re
+
+          path = Path("android/app/src/main/res/values/strings.xml")
+          if not path.is_file():
+              raise SystemExit("Generated Android strings.xml was not found.")
+          content = path.read_text(encoding="utf-8")
+          pattern = r'(<string\\s+name="app_name">).*?(</string>)'
+          updated, count = re.subn(pattern, r'\\g<1>لیگ نخبگان مالیاتی\\g<2>', content, count=1)
+          if count == 0:
+              raise SystemExit("Could not safely locate Android app_name string.")
+          path.write_text(updated, encoding="utf-8")
+          if "لیگ نخبگان مالیاتی" not in path.read_text(encoding="utf-8"):
+              raise SystemExit("Persian launcher label verification failed.")
+          print("Android launcher name set to لیگ نخبگان مالیاتی")
+          INNER
       - name: Configure JitPack for Cafe Bazaar SDK
         working-directory: mobile
         run: |
