@@ -90,18 +90,20 @@ jobs:
           set -euo pipefail
           python - <<'INNER'
           from pathlib import Path
-          import re
+          import xml.etree.ElementTree as ET
 
-          path = Path("android/app/src/main/res/values/strings.xml")
+          path = Path("android/app/src/main/AndroidManifest.xml")
           if not path.is_file():
-              raise SystemExit("Generated Android strings.xml was not found.")
-          content = path.read_text(encoding="utf-8")
-          pattern = r'(<string\s+name="app_name">).*?(</string>)'
-          updated, count = re.subn(pattern, r'\g<1>لیگ نخبگان مالیاتی\g<2>', content, count=1)
-          if count == 0:
-              raise SystemExit("Could not safely locate Android app_name string.")
-          path.write_text(updated, encoding="utf-8")
-          if "لیگ نخبگان مالیاتی" not in path.read_text(encoding="utf-8"):
+              raise SystemExit("Generated AndroidManifest.xml was not found.")
+          tree = ET.parse(path)
+          application = tree.getroot().find("application")
+          if application is None:
+              raise SystemExit("Android manifest has no application element.")
+          application.set("{http://schemas.android.com/apk/res/android}label", "لیگ نخبگان مالیاتی")
+          tree.write(path, encoding="utf-8", xml_declaration=True)
+          verified = ET.parse(path).getroot().find("application")
+          label = verified.get("{http://schemas.android.com/apk/res/android}label") if verified is not None else None
+          if label != "لیگ نخبگان مالیاتی":
               raise SystemExit("Persian launcher label verification failed.")
           print("Android launcher name set to لیگ نخبگان مالیاتی")
           INNER
