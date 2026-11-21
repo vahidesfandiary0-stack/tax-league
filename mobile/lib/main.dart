@@ -2158,7 +2158,7 @@ class DesignerClubPage extends StatefulWidget {
 
 class _DesignerClubPageState extends State<DesignerClubPage> {
   final formKey = GlobalKey<FormState>();
-  final prompt = TextEditingController(), explanation = TextEditingController(), source = TextEditingController();
+  final prompt = TextEditingController(), explanation = TextEditingController(), source = TextEditingController(), validFrom = TextEditingController(), validUntil = TextEditingController();
   final options = List.generate(4, (_) => TextEditingController());
   final labels = const {'direct_tax':'مالیات‌های مستقیم','vat':'مالیات بر ارزش افزوده','taxpayer_system':'سامانه مؤدیان','disputes':'دادرسی مالیاتی','audit':'حسابرسی مالیاتی','other_laws':'سایر قوانین'};
   final difficulties = const {'hard':'سخت','very_hard':'خیلی سخت','specialist':'تخصصی'};
@@ -2171,7 +2171,7 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   @override
   void initState(){super.initState();load();}
   @override
-  void dispose(){prompt.dispose();explanation.dispose();source.dispose();for(final c in options){c.dispose();}super.dispose();}
+  void dispose(){prompt.dispose();explanation.dispose();source.dispose();validFrom.dispose();validUntil.dispose();for(final c in options){c.dispose();}super.dispose();}
 
   Future<void> load() async {
     setState(()=>loading=true);
@@ -2181,13 +2181,13 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   }
   void reset(){
     editingId=null;status=null;feedback=null;subject='direct_tax';difficulty='hard';correct=0;
-    prompt.clear();explanation.clear();source.clear();for(final c in options){c.clear();}revisions=[];
+    prompt.clear();explanation.clear();source.clear();validFrom.clear();validUntil.clear();for(final c in options){c.clear();}revisions=[];
   }
   Future<void> open(Map<String,dynamic> q) async {
     setState((){
       editingId=q['id'].toString();status=q['status']?.toString();feedback=q['review_feedback']?.toString();
       subject=q['subject']??'direct_tax';difficulty=q['difficulty']??'hard';
-      prompt.text=q['prompt']??'';explanation.text=q['explanation']??'';source.text=q['source_reference']??'';
+      prompt.text=q['prompt']??'';explanation.text=q['explanation']??'';source.text=q['source_reference']??'';validFrom.text=q['valid_from']?.toString()??'';validUntil.text=q['valid_until']?.toString()??'';
       correct=0;
       final list=List<dynamic>.from(q['options']??[]);
       for(var i=0;i<4;i++){
@@ -2200,7 +2200,7 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   }
   Map<String,dynamic> payload()=>{
     'subject':subject,'difficulty':difficulty,'prompt':prompt.text.trim(),
-    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),
+    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),\n    'valid_from':validFrom.text.trim().isEmpty?null:validFrom.text.trim(),'valid_until':validUntil.text.trim().isEmpty?null:validUntil.text.trim(),
     'options':List.generate(4,(i)=>{'position':i+1,'text':options[i].text.trim(),'is_correct':i==correct}),
   };
   Future<void> save() async {
@@ -2262,7 +2262,7 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
         for(var i=0;i<4;i++)Row(children:[
           Expanded(child:field('گزینه ${i+1}',options[i])),
           Radio<int>(value:i,groupValue:correct,onChanged:(v)=>setState(()=>correct=v??0)),const Text('صحیح')]),
-        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),
+        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),\n        TextFormField(controller:validFrom,decoration:const InputDecoration(labelText:'اعتبار از تاریخ (YYYY-MM-DD)')),\n        TextFormField(controller:validUntil,decoration:const InputDecoration(labelText:'اعتبار تا تاریخ (YYYY-MM-DD)')),
         const Text('یادداشت تله‌شناسی و نکات اختصاصی در فرم عمومی ثبت نمی‌شود.',style:TextStyle(fontSize:11,color:RaqtivaColors.muted)),
         FilledButton.icon(onPressed:saving?null:save,icon:const Icon(Icons.save),label:Text(saving?'در حال ذخیره…':'ذخیره پیش‌نویس')),
         if(editingId!=null)OutlinedButton.icon(onPressed:saving?null:submit,icon:const Icon(Icons.send),label:const Text('ارسال برای داوری')),
