@@ -119,6 +119,15 @@ class LeagueApi {
     return decode(response);
   }
 
+  Future<dynamic> requestPatch(String path, Map<String, dynamic> body) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final response = await http.patch(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
+      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
   Future<dynamic> request(String path) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
@@ -582,7 +591,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 || accountPage == 9 ? 0 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
@@ -1233,6 +1242,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.edit_note_rounded),
+              title: const Text('خدمات و باشگاه طراحان سؤال'),
+              subtitle: const Text('طراحی، ارسال و پیگیری داوری'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => setState(() => accountPage = 9),
+            ),
+          ),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.info_outline),
               title: const Text('درباره لیگ'),
               subtitle: const Text('اطلاعات و معرفی مجموعه'),
@@ -1310,65 +1328,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ],
       );
     }
-    if (accountPage == 9) {
-      Widget clubItem(IconData icon, String title, String description) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 11),
-          child: RaqtivaFeatureCard(
-            title: title,
-            description: description,
-            icon: icon,
-            trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
-          ),
-        );
-      }
-
-      return Column(
-        children: [
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  Icon(Icons.edit_note_rounded, size: 48, color: RaqtivaColors.gold),
-                  SizedBox(height: 12),
-                  Text(
-                    'باشگاه طراحان سؤال',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'فضای مستقل طراحی و پیشنهاد سؤال‌های مالیاتی؛ هر پیشنهاد تا زمان داوری تخصصی و تأیید نهایی، پیش‌نویس باقی می‌ماند و وارد آزمون یا بانک عمومی نمی‌شود.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(height: 1.8),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          clubItem(
-            Icons.post_add_rounded,
-            'طراحی و ارسال سؤال',
-            'فرم ساخت سؤال چهارگزینه‌ای همراه با منبع رسمی و توضیح مستند',
-          ),
-          clubItem(
-            Icons.rule_folder_rounded,
-            'پیگیری داوری و اصلاح',
-            'مشاهده نظر داور، اصلاح نسخه و ارسال مجدد پیشنهاد',
-          ),
-          clubItem(
-            Icons.history_rounded,
-            'سوابق مشارکت و نسخه‌ها',
-            'تاریخچه پیشنهادها، تغییرات و نتیجه بررسی',
-          ),
-          clubItem(
-            Icons.leaderboard_rounded,
-            'رتبه‌بندی مستقل طراحان',
-            'جدول ملی و استانی جدا از رتبه‌بندی اصلی لیگ',
-          ),
-        ],
-      );
-    }
+    if (accountPage == 9) return DesignerClubPage(api: api);
     if (accountPage == 6) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2160,8 +2120,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-            tile(5, Icons.edit_note_rounded, 'باشگاه طراحان سؤال', 'طراحی، ارسال و پیگیری سؤالات تخصصی'),
-          ],
+                ],
         ),
       ];
     }
@@ -2186,6 +2145,136 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   String _status(dynamic status) => switch (status) {
     'pending' => 'در انتظار', 'approved' => 'پذیرفته', 'rejected' => 'ردشده', _ => 'نامشخص',
   };
+}
+
+
+
+class DesignerClubPage extends StatefulWidget {
+  const DesignerClubPage({super.key, required this.api});
+  final LeagueApi api;
+  @override
+  State<DesignerClubPage> createState() => _DesignerClubPageState();
+}
+
+class _DesignerClubPageState extends State<DesignerClubPage> {
+  final formKey = GlobalKey<FormState>();
+  final prompt = TextEditingController(), explanation = TextEditingController(), source = TextEditingController();
+  final options = List.generate(4, (_) => TextEditingController());
+  final labels = const {'direct_tax':'مالیات‌های مستقیم','vat':'مالیات بر ارزش افزوده','taxpayer_system':'سامانه مؤدیان','disputes':'دادرسی مالیاتی','audit':'حسابرسی مالیاتی','other_laws':'سایر قوانین'};
+  final difficulties = const {'hard':'سخت','very_hard':'خیلی سخت','specialist':'تخصصی'};
+  List<dynamic> questions = [], revisions = [];
+  String subject='direct_tax', difficulty='hard';
+  String? editingId, status, feedback, error;
+  int correct=0;
+  bool loading=true, saving=false;
+
+  @override
+  void initState(){super.initState();load();}
+  @override
+  void dispose(){prompt.dispose();explanation.dispose();source.dispose();for(final c in options){c.dispose();}super.dispose();}
+
+  Future<void> load() async {
+    setState(()=>loading=true);
+    try { final d=await widget.api.request('questions/designer/'); if(mounted)setState(()=>questions=List<dynamic>.from(d)); }
+    catch(e){if(mounted)setState(()=>error=e.toString());}
+    finally{if(mounted)setState(()=>loading=false);}
+  }
+  void reset(){
+    editingId=null;status=null;feedback=null;subject='direct_tax';difficulty='hard';correct=0;
+    prompt.clear();explanation.clear();source.clear();for(final c in options){c.clear();}revisions=[];
+  }
+  Future<void> open(Map<String,dynamic> q) async {
+    setState((){
+      editingId=q['id'].toString();status=q['status']?.toString();feedback=q['review_feedback']?.toString();
+      subject=q['subject']??'direct_tax';difficulty=q['difficulty']??'hard';
+      prompt.text=q['prompt']??'';explanation.text=q['explanation']??'';source.text=q['source_reference']??'';
+      correct=0;
+      final list=List<dynamic>.from(q['options']??[]);
+      for(var i=0;i<4;i++){
+        final o=list.firstWhere((v)=>v['position']==i+1,orElse:()=>{});
+        options[i].text=o['text']?.toString()??'';
+        if(o['is_correct']==true)correct=i;
+      }
+    });
+    try{final d=await widget.api.request('questions/designer/${editingId}/revisions/');if(mounted)setState(()=>revisions=List<dynamic>.from(d));}catch(_){}
+  }
+  Map<String,dynamic> payload()=>{
+    'subject':subject,'difficulty':difficulty,'prompt':prompt.text.trim(),
+    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),
+    'options':List.generate(4,(i)=>{'position':i+1,'text':options[i].text.trim(),'is_correct':i==correct}),
+  };
+  Future<void> save() async {
+    if(!formKey.currentState!.validate())return;
+    setState(()=>saving=true);
+    try{
+      if(editingId==null){await widget.api.requestPost('questions/designer/',payload());}
+      else{await widget.api.requestPatch('questions/designer/${editingId}/',payload());}
+      setState(reset);await load();
+    }catch(e){if(mounted)setState(()=>error=e.toString());}
+    finally{if(mounted)setState(()=>saving=false);}
+  }
+  Future<void> submit() async {
+    if(editingId==null)return;setState(()=>saving=true);
+    try{await widget.api.requestPost('questions/designer/${editingId}/submit/',{});setState(reset);await load();}
+    catch(e){if(mounted)setState(()=>error=e.toString());}
+    finally{if(mounted)setState(()=>saving=false);}
+  }
+  String statusText(String? v)=>switch(v){
+    'draft'=>'پیش‌نویس','pending_review'=>'در انتظار داوری','approved'=>'تأیید داور؛ منتظر تأیید مالک',
+    'rejected'=>'نیازمند اصلاح','published'=>'منتشرشده با تأیید مالک',_=>'نامشخص'};
+  Widget field(String label,TextEditingController c,{int lines=1})=>Padding(
+    padding:const EdgeInsets.only(bottom:10),
+    child:TextFormField(controller:c,minLines:lines,maxLines:lines,decoration:InputDecoration(labelText:label),
+      validator:(v)=>(v==null||v.trim().isEmpty)?'این فیلد الزامی است.':null));
+  @override
+  Widget build(BuildContext context){
+    if(editingId!=null || (!loading&&questions.isEmpty))return editor();
+    return Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+      const Card(child:Padding(padding:EdgeInsets.all(16),child:Column(children:[
+        Icon(Icons.edit_note_rounded,size:42,color:RaqtivaColors.gold),SizedBox(height:8),
+        Text('باشگاه طراحان سؤال',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),
+        SizedBox(height:6),Text('هر پیشنهاد ابتدا پیش‌نویس است؛ پس از داوری تخصصی، انتشار فقط با تأیید نهایی مالک انجام می‌شود.',textAlign:TextAlign.center),
+      ]))),
+      if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
+      FilledButton.icon(onPressed:()=>setState(reset),icon:const Icon(Icons.add),label:const Text('ثبت سؤال جدید')),
+      if(loading)const Center(child:CircularProgressIndicator()),
+      if(!loading&&questions.isEmpty)const Text('هنوز سؤالی ثبت نکرده‌اید.'),
+      for(final q in questions)Card(child:ListTile(
+        title:Text((q['prompt']??'سؤال').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+        subtitle:Text('${labels[q['subject']]??q['subject']} · ${statusText(q['status']?.toString())}'),
+        trailing:const Icon(Icons.chevron_left),onTap:()=>open(Map<String,dynamic>.from(q)))),
+    ]);
+  }
+  Widget editor(){
+    final editable=status==null||status=='draft'||status=='rejected';
+    return Form(key:formKey,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+      Row(children:[IconButton(onPressed:(){setState(reset);load();},icon:const Icon(Icons.arrow_back)),const Text('طراحی و پیگیری سؤال',style:TextStyle(fontWeight:FontWeight.w900))]),
+      if(status!=null)Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('وضعیت: ${statusText(status)}'),
+        if(feedback?.isNotEmpty==true)Text('نظر داور: ${feedback!}'),
+      ]))),
+      if(editable)...[
+        DropdownButtonFormField<String>(value:subject,decoration:const InputDecoration(labelText:'موضوع'),
+          items:labels.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),onChanged:(v)=>setState(()=>subject=v??subject)),
+        DropdownButtonFormField<String>(value:difficulty,decoration:const InputDecoration(labelText:'سطح دشواری'),
+          items:difficulties.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),onChanged:(v)=>setState(()=>difficulty=v??difficulty)),
+        const SizedBox(height:10),field('متن کامل سؤال',prompt,lines:4),
+        for(var i=0;i<4;i++)Row(children:[
+          Expanded(child:field('گزینه ${i+1}',options[i])),
+          Radio<int>(value:i,groupValue:correct,onChanged:(v)=>setState(()=>correct=v??0)),const Text('صحیح')]),
+        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),
+        const Text('یادداشت تله‌شناسی و نکات اختصاصی در فرم عمومی ثبت نمی‌شود.',style:TextStyle(fontSize:11,color:RaqtivaColors.muted)),
+        FilledButton.icon(onPressed:saving?null:save,icon:const Icon(Icons.save),label:Text(saving?'در حال ذخیره…':'ذخیره پیش‌نویس')),
+        if(editingId!=null)OutlinedButton.icon(onPressed:saving?null:submit,icon:const Icon(Icons.send),label:const Text('ارسال برای داوری')),
+      ] else ...[
+        Text(prompt.text),for(var i=0;i<4;i++)ListTile(title:Text(options[i].text),trailing:i==correct?const Icon(Icons.check_circle,color:Colors.green):null),
+        Text('پاسخ تشریحی: ${explanation.text}'),Text('منبع: ${source.text}'),
+      ],
+      if(revisions.isNotEmpty)ExpansionTile(title:const Text('تاریخچه نسخه‌ها'),children:[
+        for(final v in revisions)ListTile(title:Text('نسخه ${v['version']}'),subtitle:Text('${v['created_at']}'))]),
+      if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
+    ]));
+  }
 }
 
 
