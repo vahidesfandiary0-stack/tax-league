@@ -118,6 +118,42 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Ensure Android plugin repositories
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import re
+
+          path = Path("android/settings.gradle.kts")
+          if not path.is_file():
+              raise SystemExit("Generated Android settings.gradle.kts was not found.")
+          content = path.read_text(encoding="utf-8")
+          match = re.search(r"(?s)(pluginManagement\\s*\\{.*?repositories\\s*\\{)", content)
+          if match is None:
+              raise SystemExit("Could not safely locate pluginManagement.repositories.")
+          start = match.end()
+          end = content.find("}", start)
+          if end < 0:
+              raise SystemExit("Could not locate the end of pluginManagement.repositories.")
+          block = content[start:end]
+          additions = []
+          if not re.search(r"(?m)^\\s*google\\s*\\(\\s*\\)", block):
+              additions.append("google()")
+          if not re.search(r"(?m)^\\s*mavenCentral\\s*\\(\\s*\\)", block):
+              additions.append("mavenCentral()")
+          if additions:
+              indent = "        "
+              content = content[:start] + "\\n" + "\\n".join(indent + item for item in additions) + content[start:]
+              path.write_text(content, encoding="utf-8")
+          verified = path.read_text(encoding="utf-8")
+          section = re.search(r"(?s)pluginManagement\\s*\\{.*?repositories\\s*\\{(.*?)\\}", verified)
+          if section is None or not all(token in section.group(1) for token in ("google()", "mavenCentral()")):
+              raise SystemExit("Android plugin repositories verification failed.")
+          print("Google Maven and Maven Central configured for plugin resolution.")
+          INNER
+
       - name: Ensure Android internet permission
         working-directory: mobile
         run: |
