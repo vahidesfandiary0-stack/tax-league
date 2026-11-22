@@ -18,6 +18,8 @@ class Question(models.Model):
         EASY = "easy", "آسان"
         MEDIUM = "medium", "متوسط"
         HARD = "hard", "سخت"
+        VERY_HARD = "very_hard", "خیلی سخت"
+        SPECIALIST = "specialist", "تخصصی"
 
     class Provenance(models.TextChoices):
         OFFICIAL = "official", "متن رسمی آزمون"
@@ -104,3 +106,27 @@ class QuestionOption(models.Model):
 
     def __str__(self):
         return f"{self.question_id} / گزینه {self.position}"
+
+
+
+class QuestionRevision(models.Model):
+    """Immutable snapshot of every authoring version; never contains private trap notes."""
+    question = models.ForeignKey(Question, on_delete=models.PROTECT, related_name="revisions")
+    version = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="question_revisions")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-version"]
+        constraints = [
+            models.UniqueConstraint(fields=["question", "version"], name="uq_question_revision_version"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and QuestionRevision.objects.filter(pk=self.pk).exists():
+            raise ValidationError("نسخه‌های سؤال غیرقابل‌ویرایش هستند.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("سوابق نسخه سؤال قابل حذف نیستند.")
