@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
   // Canonical palette from docs/MOBILE_UI_MASTER_SPEC.md.
-  static const navy = Color(0xFF071226); // Deep layered navy
-  static const navy900 = Color(0xFF0A1A32);
-  static const navy850 = Color(0xFF10233D);
-  static const navy800 = Color(0xFF142A49);
+  static const navy = Color(0xFF020817); // Deep stadium navy
+  static const navy900 = Color(0xFF061735);
+  static const navy850 = Color(0xFF092653);
+  static const navy800 = Color(0xFF0B3470);
   static const navyLight = navy800;
   static const surface = navy850;
   static const surfaceSoft = Color(0xFF1A304D); // Raised input surface
-  static const blue = Color(0xFF326DAA); // Restrained stadium blue
-  static const gold = Color(0xFFD8B978); // Warm champagne gold
-  static const goldLight = Color(0xFFEBD6A0); // Soft champagne highlight
-  static const goldDeep = Color(0xFF9B7437); // Muted antique gold
+  static const blue = Color(0xFF1268D8); // Champions electric blue
+  static const gold = Color(0xFFFFC928); // Bright championship gold
+  static const goldLight = Color(0xFFFFE69A); // Bright gold highlight
+  static const goldDeep = Color(0xFF9A6500); // Deep championship gold
   static const text = Color(0xFFF5F5F5);
   static const muted = Color(0xFFD9E2F2);
   static const border = goldLight;
@@ -533,8 +533,8 @@ class _RaqtivaStadiumPainter extends CustomPainter {
     final beamPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFF8BC8FF).withValues(alpha: .13),
-          const Color(0xFF4B9BE8).withValues(alpha: .035),
+          const Color(0xFF4AA8FF).withValues(alpha: .22),
+          const Color(0xFF1D73D2).withValues(alpha: .08),
           Colors.transparent,
         ],
         stops: const [0, .34, 1],
@@ -553,7 +553,7 @@ class _RaqtivaStadiumPainter extends CustomPainter {
     canvas.restore();
 
     final stadiumLine = Paint()
-      ..color = const Color(0xFF6FADE8).withValues(alpha: .12)
+      ..color = const Color(0xFF4F9FFF).withValues(alpha: .18)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.15;
     for (var i = 0; i < 5; i++) {
@@ -570,7 +570,7 @@ class _RaqtivaStadiumPainter extends CustomPainter {
     }
 
     final goldEdge = Paint()
-      ..color = const Color(0xFFEBD6A0).withValues(alpha: .075)
+      ..color = const Color(0xFFFFD44F).withValues(alpha: .12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final frame = RRect.fromRectAndRadius(
@@ -579,7 +579,7 @@ class _RaqtivaStadiumPainter extends CustomPainter {
     );
     canvas.drawRRect(frame, goldEdge);
 
-    final lamp = Paint()..color = const Color(0xFFFFE5A0).withValues(alpha: .55);
+    final lamp = Paint()..color = const Color(0xFFFFD35B).withValues(alpha: .82);
     for (final x in [size.width * .09, size.width * .91]) {
       canvas.drawCircle(Offset(x, size.height * .10), 2.2, lamp);
       final ray = Paint()
