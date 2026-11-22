@@ -1,6 +1,9 @@
 name: Android signed release
 
 on:
+  push:
+    branches:
+      - release/raqtiva-official-20261122
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -24,7 +27,7 @@ jobs:
 
       - name: Validate release configuration
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -43,6 +46,74 @@ jobs:
       - name: Install Flutter dependencies
         working-directory: mobile
         run: flutter pub get
+
+      - name: Verify Flutter lock file
+        working-directory: mobile
+        run: test -s pubspec.lock
+
+      - name: Upload resolved Flutter lock file
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqtiva-flutter-lock
+          path: mobile/pubspec.lock
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Patch legacy Cafe Bazaar Gradle plugin
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import os
+          import re
+
+          cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
+          matches = sorted(cache.glob("hosted/pub.dev/flutter_poolakey-*/android/build.gradle"))
+          if len(matches) != 1:
+              raise SystemExit(f"Expected exactly one flutter_poolakey Gradle file, found {len(matches)}")
+
+          path = matches[0]
+          content = path.read_text(encoding="utf-8")
+
+          content = content.replace("jcenter()", "mavenCentral()")
+
+          plugins_pattern = r"""(?m)^\s*plugins\s*\{\s*id\s*["']com\.android\.library["']\s*id\s*["']kotlin-android["']\s*\}"""
+          has_apply_plugins = (
+              'apply plugin: "com.android.library"' in content
+              and 'apply plugin: "kotlin-android"' in content
+          )
+
+          if has_apply_plugins:
+              print("Poolakey already uses compatible apply plugin syntax")
+          else:
+              updated, count = re.subn(
+                  plugins_pattern,
+                  'apply plugin: "com.android.library"\napply plugin: "kotlin-android"',
+                  content,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit(
+                      "Unrecognized Poolakey Gradle plugin structure; refusing unsafe patch.\n"
+                      + content
+                  )
+              content = updated
+          path.write_text(content, encoding="utf-8")
+          print(f"Patched {path}")
+          INNER
+
+      - name: Check Dart formatting
+        working-directory: mobile
+        run: dart format lib test
+
+      - name: Analyze Flutter code
+        working-directory: mobile
+        run: flutter analyze --no-pub --no-fatal-infos
+
+      - name: Run Flutter tests
+        working-directory: mobile
+        run: flutter test --no-pub
 
       - name: Generate Android project
         working-directory: mobile
@@ -76,24 +147,25 @@ jobs:
           from pathlib import Path
           import re
 
-          path = Path("android/build.gradle.kts")
+          candidates = [Path("android/build.gradle.kts"), Path("android/build.gradle")]
+          path = next((candidate for candidate in candidates if candidate.is_file()), None)
+          if path is None:
+              raise SystemExit("Generated Android root build.gradle(.kts) was not found.")
           content = path.read_text(encoding="utf-8")
-          repository = 'maven { url = uri("https://jitpack.io") }'
-          if repository not in content:
-              pattern = r'(allprojects\s*\{\s*repositories\s*\{)'
-              updated, count = re.subn(
-                  pattern,
-                  lambda m: m.group(1) + "\n        " + repository,
-                  content,
-                  count=1,
-                  flags=re.S,
-              )
-              if count != 1:
-                  raise SystemExit("Could not safely locate allprojects.repositories")
-              path.write_text(updated, encoding="utf-8")
-          print("JitPack repository configured.")
+          if "https://jitpack.io" not in content:
+              pattern = r"(allprojects\s*\{\s*repositories\s*\{)"
+              match = re.search(pattern, content, flags=re.S)
+              if match is None:
+                  raise SystemExit("Could not safely locate allprojects.repositories in Android root build file.")
+              repository = ('maven { url = uri("https://jitpack.io") }'
+                            if path.suffix == ".kts"
+                            else "maven { url 'https://jitpack.io' }")
+              content = content[:match.end()] + "\n        " + repository + content[match.end():]
+              path.write_text(content, encoding="utf-8")
+          if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
+              raise SystemExit("JitPack repository verification failed.")
+          print(f"JitPack configured in {path}")
           INNER
-
       - name: Verify permanent Android application identity
         working-directory: mobile
         run: |
@@ -159,7 +231,7 @@ jobs:
       - name: Build signed release APK
         working-directory: mobile
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
         run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Verify release internet permission
@@ -168,6 +240,7 @@ jobs:
           set -euo pipefail
           AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
           "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "android.permission.INTERNET"
+          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
 
       - name: Verify APK signature
         working-directory: mobile
