@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'ui/raqtiva_design.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_poolakey/flutter_poolakey.dart';
@@ -663,7 +664,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'تنظیمات برنامه' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'تنظیمات برنامه' : accountPage == 11 ? 'راهنما و پرسش‌های متداول' : accountPage == 12 ? 'قوانین و حریم خصوصی' : accountPage == 13 ? 'درباره برنامه' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -1347,6 +1348,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                       'طراحی و پیگیری داوری سؤال'),
                   accountTile(2, Icons.info_rounded, 'درباره لیگ',
                       'معرفی مجموعه و بنیان‌گذار'),
+                  accountTile(11, Icons.help_outline_rounded, 'راهنما و پرسش‌های متداول', 'پاسخ پرسش‌های رایج'),
+                  accountTile(12, Icons.policy_outlined, 'قوانین و حریم خصوصی', 'اصول استفاده و حفاظت از داده‌ها'),
+                  accountTile(13, Icons.apps_rounded, 'درباره برنامه', 'نسخه و اشتراک‌گذاری اپلیکیشن'),
                 ],
               );
             },
@@ -1448,6 +1452,74 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
 
+    if (accountPage == 11) {
+      final faqs = <(String, String)>[
+        ('چگونه وارد لیگ شوم؟', 'شماره تلفن همراه را وارد کنید، کد یک‌بارمصرف را دریافت و تأیید کنید. برای حساب جدید یا تأییدنشده، انتخاب استان لازم است.'),
+        ('کدام آزمون‌ها در رتبه‌بندی اثر دارند؟', 'طبق قواعد لیگ، فقط نتیجه معتبر آزمون شبانه در رتبه‌بندی ملی و استانی اثر دارد. تمرین‌ها و فعالیت‌های آموزشی امتیاز رتبه‌بندی ایجاد نمی‌کنند.'),
+        ('چرا رتبه استانی من نمایش داده نمی‌شود؟', 'رتبه استانی پس از ثبت و تأیید استان و وجود نتیجه معتبر آزمون شبانه قابل محاسبه است.'),
+        ('اگر اینترنت هنگام آزمون قطع شود چه کنم؟', 'اتصال اینترنت را بررسی کنید و از ورود مجدد یا ارسال مکرر پاسخ‌ها خودداری کنید. وضعیت تلاش را از تاریخچه نتایج پیگیری کنید.'),
+        ('چگونه به نتیجه آزمون اعتراض کنم؟', 'از تاریخچه نتایج، تلاش مربوط را باز کنید و در صورت فعال بودن گزینه اعتراض، موضوع و شرح مستند را ارسال کنید.'),
+        ('خرید اشتراک چه اثری بر رتبه دارد؟', 'اشتراک فقط امکانات اختصاصی را فعال می‌کند و نباید بر امتیاز، رتبه یا عدالت رقابت اثر بگذارد.'),
+      ];
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const RaqtivaFeatureCard(title: 'مرکز راهنمای لیگ', description: 'راهنمای ورود، آزمون، رتبه‌بندی، اعتراض و اشتراک', icon: Icons.support_agent_rounded, trailing: RaqtivaGoldBadge('راهنمای برنامه')),
+        const SizedBox(height: 12),
+        for (final item in faqs)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 9),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF0C3C80), Color(0xFF061A3B)]),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: const Color(0x99FFC928)),
+              ),
+              child: ExpansionTile(
+                iconColor: RaqtivaColors.gold, collapsedIconColor: RaqtivaColors.goldLight,
+                title: Text(item.$1, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 15),
+                children: [Text(item.$2, style: const TextStyle(color: Color(0xFFDCE9FF), height: 1.8, fontSize: 12))],
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+        const Text('مرکز تیکت پشتیبانی هنوز به سرویس پشتیبان متصل نشده است.', style: TextStyle(color: RaqtivaColors.muted, height: 1.8, fontSize: 11)),
+      ]);
+    }
+    if (accountPage == 12) {
+      return const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        RaqtivaFeatureCard(title: 'شرایط استفاده از لیگ', description: 'استفاده از حساب کاربری مستلزم رعایت قوانین آزمون، منع تقلب و احترام به حقوق سایر شرکت‌کنندگان است. نتیجه‌های نامعتبر یا فعالیت مغایر با مقررات می‌توانند از رتبه‌بندی کنار گذاشته شوند.', icon: Icons.gavel_rounded, trailing: RaqtivaGoldBadge('اصول رقابت')),
+        SizedBox(height: 12),
+        RaqtivaFeatureCard(title: 'حریم خصوصی و داده‌ها', description: 'اطلاعات حساب برای ورود، ارائه خدمات آزمون و محاسبه رتبه استفاده می‌شود. توکن ورود در فضای امن دستگاه نگهداری می‌شود. اطلاعات ورود را در اختیار دیگران قرار ندهید.', icon: Icons.privacy_tip_rounded, trailing: RaqtivaGoldBadge('امنیت حساب')),
+        SizedBox(height: 12),
+        RaqtivaFeatureCard(title: 'شفافیت امکانات', description: 'اعلان‌های سیستمی، مدیریت نشست‌ها، دریافت نسخه داده‌ها و حذف حساب تا زمان تکمیل سرویس‌های پشتیبان، از داخل برنامه قابل انجام نیستند. این صفحه خلاصه اطلاع‌رسانی است و جایگزین متن حقوقی نهایی نیست.', icon: Icons.info_outline_rounded, trailing: RaqtivaGoldBadge('اطلاع‌رسانی')),
+      ]);
+    }
+    if (accountPage == 13) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF0D4A9A), Color(0xFF061632)]),
+            borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFFFC928), width: 1.2),
+            boxShadow: const [RaqtivaEffects.cardGlow, RaqtivaEffects.cardDepth],
+          ),
+          child: Column(children: [
+            Image.asset('assets/brand/logo_full.png', height: 116, fit: BoxFit.contain),
+            const Text('لیگ نخبگان مالیاتی', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+            const SizedBox(height: 5),
+            const Text('رقابت کن، رتبه بگیر، نخبه شو!', style: TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            const Text('نسخه ۰.۱.۱+۲', style: TextStyle(color: RaqtivaColors.muted)),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        RaqtivaFeatureCard(title: 'اشتراک‌گذاری لیگ', description: 'کپی پیوند رسمی برنامه برای ارسال به دوستان', icon: Icons.share_rounded,
+          onTap: () async { await Clipboard.setData(const ClipboardData(text: 'https://raqtiva.ir')); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('پیوند رسمی لیگ کپی شد.'))); },
+          trailing: const Icon(Icons.copy_rounded, color: RaqtivaColors.gold)),
+        const SizedBox(height: 12),
+        const RaqtivaFeatureCard(title: 'به‌روزرسانی برنامه', description: 'برای دریافت نسخه‌های جدید، صفحه رسمی لیگ و اطلاعیه‌های انتشار را بررسی کنید. بررسی خودکار فروشگاه هنوز متصل نشده است.', icon: Icons.system_update_rounded, trailing: RaqtivaGoldBadge('بررسی دستی')),
+      ]);
+    }
     if (accountPage == 4) {
       return BazaarSubscriptionPage(api: api);
     }
