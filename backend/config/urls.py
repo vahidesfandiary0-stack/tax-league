@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.urls import include, path
 
 from config.admin_dashboard import dashboard
+from config.landing import home
 from config.league_admin import league_appeals
 
 urlpatterns = [
+    path("", home, name="home"),
     path("admin/overview/", dashboard, name="admin-dashboard"),
     path("admin/league/appeals/", league_appeals, name="admin-league-appeals"),
     path("admin/", admin.site.urls),
