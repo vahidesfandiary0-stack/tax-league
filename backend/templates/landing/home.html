@@ -1,0 +1,65 @@
+<!doctype html>
+{% load static %}
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081426">
+  <meta name="description" content="لیگ نخبگان مالیاتی؛ رقابت تخصصی، آزمون شبانه و مسیر رشد حرفه‌ای در دانش مالیاتی.">
+  <title>لیگ نخبگان مالیاتی | رقابت کن، رتبه بگیر، نخبه شو!</title>
+  <style>
+    :root{color-scheme:dark;--navy:#081426;--navy2:#0d2038;--panel:#102743;--gold:#e9bd63;--gold2:#f7d991;--muted:#a9b8ca;--white:#f8f5ee;--line:rgba(233,189,99,.2)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--navy);color:var(--white);font-family:Tahoma,"Segoe UI",sans-serif;line-height:1.9}
+    a{color:inherit;text-decoration:none}.wrap{width:min(1160px,calc(100% - 40px));margin:auto}
+    .top{position:sticky;top:0;z-index:10;background:rgba(8,20,38,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.07)}
+    .nav{height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:12px;font-weight:800}.brand-mark{width:42px;height:42px;border:1px solid var(--gold);border-radius:13px;display:grid;place-items:center;color:var(--gold);font-size:22px;background:linear-gradient(145deg,#1a3655,#09172a);box-shadow:0 0 25px #e9bd6322}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:500;line-height:1.4}.links{display:flex;gap:26px;color:#c5d0dc;font-size:13px}.links a:hover{color:var(--gold2)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:11px 21px;border-radius:12px;font-weight:700;font-size:13px;transition:.2s;border:1px solid transparent}.btn-gold{background:linear-gradient(135deg,var(--gold2),#dba94d);color:#172238;box-shadow:0 9px 28px #e9bd6325}.btn-gold:hover{transform:translateY(-2px);box-shadow:0 12px 32px #e9bd6340}.btn-outline{border-color:#ffffff2b;color:#f1eee7}.btn-outline:hover{border-color:var(--gold);color:var(--gold2)}
+    .hero{position:relative;overflow:hidden;padding:94px 0 80px;background:radial-gradient(ellipse at 15% 20%,#173a5c 0,transparent 42%),radial-gradient(ellipse at 90% 70%,#47371d44 0,transparent 34%),linear-gradient(145deg,#09172b,#0c2039 60%,#081426)}
+    .hero:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,#000,transparent 85%);pointer-events:none}
+    .hero-grid{position:relative;display:grid;grid-template-columns:1.15fr .85fr;align-items:center;gap:60px}.eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--gold2);font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:#e9bd630d}.eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+    h1{font-size:clamp(34px,5vw,58px);line-height:1.45;margin:20px 0 12px;letter-spacing:-1.4px}h1 span{color:var(--gold2)}.lead{font-size:16px;color:#c2cedb;max-width:610px;line-height:2.2}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}.hero-note{font-size:11px;color:#9aabbd;margin-top:18px}
+    .visual{position:relative;min-height:390px;display:grid;place-items:center}.orbit{position:absolute;width:330px;height:330px;border:1px solid #e9bd6333;border-radius:50%;box-shadow:0 0 0 30px #e9bd6308,0 0 0 60px #e9bd6305}.trophy{position:relative;width:220px;height:250px;border-radius:34px;background:linear-gradient(145deg,#193b5d,#0b1a2d);border:1px solid #e9bd6366;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 30px 90px #0008, inset 0 1px #ffffff20;transform:rotate(-4deg)}.cup{font-size:94px;line-height:1.3;filter:drop-shadow(0 12px 18px #e9bd6344)}.trophy strong{font-size:17px;color:var(--gold2)}.trophy small{color:var(--muted);font-size:11px}.float{position:absolute;background:#102943;border:1px solid #ffffff20;padding:10px 14px;border-radius:13px;box-shadow:0 15px 40px #0006;font-size:12px}.float b{color:var(--gold2)}.f1{top:44px;right:0}.f2{bottom:42px;left:0}
+    section{padding:82px 0}.section-head{text-align:center;max-width:700px;margin:0 auto 38px}.kicker{color:var(--gold);font-size:12px;font-weight:700}.section-head h2{font-size:30px;margin:8px 0}.section-head p{color:var(--muted);font-size:14px;margin:0}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.feature{background:linear-gradient(145deg,#122b47,#0d2037);border:1px solid #ffffff12;border-radius:20px;padding:25px;min-height:205px}.feature .ico{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#e9bd6317;color:var(--gold2);font-size:23px;margin-bottom:16px}.feature h3{font-size:17px;margin:0 0 8px}.feature p{color:var(--muted);font-size:13px;margin:0;line-height:2.1}
+    .band{background:linear-gradient(110deg,#122b46,#0d1c31);border-block:1px solid #ffffff0d}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.step{padding:22px;border-right:2px solid var(--gold);background:#ffffff06;border-radius:14px}.step b{font-size:12px;color:var(--gold)}.step h3{margin:7px 0;font-size:16px}.step p{margin:0;color:var(--muted);font-size:12px}
+    .download{border:1px solid var(--line);border-radius:26px;padding:42px;background:radial-gradient(circle at 10% 20%,#e9bd6318,transparent 35%),linear-gradient(135deg,#132e4b,#0b1a2d);display:flex;justify-content:space-between;align-items:center;gap:30px}.download h2{margin:0 0 8px;font-size:26px}.download p{color:var(--muted);margin:0;font-size:13px}.soon{display:inline-block;margin-top:12px;color:var(--gold2);font-size:11px}
+    .faq{max-width:820px;margin:auto;display:grid;gap:12px}.faq details{background:#10243b;border:1px solid #ffffff12;border-radius:14px;padding:16px 20px}.faq summary{cursor:pointer;font-weight:700;font-size:14px}.faq p{color:var(--muted);font-size:13px;margin:12px 0 0}
+    footer{padding:30px 0;border-top:1px solid #ffffff12;color:#94a6ba;font-size:11px}.foot{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.foot strong{color:var(--gold2)}
+    @media(max-width:850px){.links{display:none}.hero{padding:65px 0 48px}.hero-grid{grid-template-columns:1fr;gap:20px}.visual{min-height:300px}.orbit{width:260px;height:260px}.trophy{width:180px;height:210px}.cup{font-size:76px}.features{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}.download{align-items:flex-start;flex-direction:column}}
+    @media(max-width:560px){.wrap{width:min(100% - 28px,1160px)}.nav{height:66px}.nav>.btn{padding:9px 12px;font-size:11px}.brand{font-size:13px}.hero{padding-top:48px}h1{font-size:34px}.lead{font-size:14px}.visual{min-height:260px}.float{font-size:10px}.f1{right:0;top:20px}.f2{left:0;bottom:15px}section{padding:58px 0}.features{grid-template-columns:1fr}.section-head h2{font-size:25px}.download{padding:26px}.download h2{font-size:22px}}
+  </style>
+</head>
+<body>
+<header class="top"><div class="wrap nav">
+  <a class="brand" href="/" aria-label="صفحه اصلی لیگ نخبگان مالیاتی"><span class="brand-mark">ن</span><span>لیگ نخبگان مالیاتی<small>RAQTIVA · رقابت تخصصی مالیاتی</small></span></a>
+  <nav class="links" aria-label="ناوبری اصلی"><a href="#features">امکانات</a><a href="#how">مسیر رقابت</a><a href="#download">دریافت اپلیکیشن</a><a href="#faq">پرسش‌های متداول</a></nav>
+  <a class="btn btn-outline" href="#download">ورود به رقابت <span>←</span></a>
+</div></header>
+<main>
+  <section class="hero"><div class="wrap hero-grid">
+    <div><span class="eyebrow">جایی برای سنجش دانش واقعی مالیاتی</span>
+      <h1>دانش مالیاتی‌ات را<br><span>به رتبه تبدیل کن</span></h1>
+      <p class="lead">در لیگ نخبگان مالیاتی، دانسته‌هایت را در آزمون‌های تخصصی بسنج، پیشرفتت را دنبال کن و برای جایگاه برتر در رقابت ملی و استانی تلاش کن.</p>
+      <div class="actions"><a class="btn btn-gold" href="#download">آشنایی با نسخه اندروید <span>←</span></a><a class="btn btn-outline" href="#features">کشف امکانات لیگ</a></div>
+      <p class="hero-note">رقابت کن، رتبه بگیر، نخبه شو!</p>
+    </div>
+    <div class="visual" aria-label="نماد رقابت و کسب رتبه"><div class="orbit"></div><div class="trophy"><div class="cup">🏆</div><strong>نخبه شو</strong><small>مسیر رشد تخصصی</small></div><div class="float f1">رقابت <b>ملی</b> و استانی</div><div class="float f2">دانش بیشتر · <b>رتبه بهتر</b></div></div>
+  </div></section>
+  <section id="features"><div class="wrap"><div class="section-head"><span class="kicker">تجربه لیگ</span><h2>رقابت، یادگیری و پیشرفت در یک مسیر</h2><p>امکانات اصلی برای سنجش دانش و پیگیری مسیر حرفه‌ای مالیاتی</p></div>
+    <div class="features">
+      <article class="feature"><div class="ico">◷</div><h3>آزمون شبانه</h3><p>دانش تخصصی خود را در آزمون رقابتی بسنج و نتیجه عملکردت را مشاهده کن.</p></article>
+      <article class="feature"><div class="ico">♜</div><h3>جدول رتبه‌بندی</h3><p>جایگاه رقابتی در سطح کشور و استان را بر اساس نتایج معتبر دنبال کن.</p></article>
+      <article class="feature"><div class="ico">✦</div><h3>آکادمی مالیاتی</h3><p>برای عمیق‌تر کردن دانش و شناخت نکات دشوار قوانین مالیاتی، مسیر یادگیری را ادامه بده.</p></article>
+    </div>
+  </div></section>
+  <section class="band" id="how"><div class="wrap"><div class="section-head"><span class="kicker">شروع مسیر</span><h2>سه گام تا ورود به رقابت</h2><p>از آماده‌سازی تا سنجش و پیگیری نتیجه</p></div>
+    <div class="steps"><article class="step"><b>گام ۰۱</b><h3>اپلیکیشن را آماده کن</h3><p>نسخه اندروید رسمی را از مسیر اعلام‌شده دریافت و نصب کن.</p></article><article class="step"><b>گام ۰۲</b><h3>حساب کاربری بساز</h3><p>ثبت‌نام کن و اطلاعات لازم برای حضور در لیگ را تکمیل کن.</p></article><article class="step"><b>گام ۰۳</b><h3>در آزمون شرکت کن</h3><p>به پرسش‌ها پاسخ بده و نتیجه و جایگاهت را پیگیری کن.</p></article></div>
+  </div></section>
+  <section id="download"><div class="wrap"><div class="download"><div><span class="kicker">نسخه اندروید</span><h2>آماده‌ای وارد لیگ شوی؟</h2><p>صفحه دریافت نسخه رسمی و راهنمای نصب از همین بخش در دسترس قرار می‌گیرد.</p><span class="soon">لینک دانلود مستقیم پس از اتصال فایل انتشار نهایی فعال می‌شود.</span></div><a class="btn btn-gold" href="https://raqtiva.ir/#download" aria-label="بخش دریافت اپلیکیشن">اطلاع از انتشار نسخه <span>←</span></a></div></div></section>
+  <section id="faq"><div class="wrap"><div class="section-head"><span class="kicker">پاسخ پرسش‌ها</span><h2>پرسش‌های متداول</h2></div><div class="faq">
+    <details><summary>لیگ نخبگان مالیاتی برای چه کسانی است؟</summary><p>برای علاقه‌مندان و فعالان حوزه مالیات که می‌خواهند دانش تخصصی خود را بسنجند و مسیر پیشرفتشان را دنبال کنند.</p></details>
+    <details><summary>نتایج کدام آزمون‌ها در رتبه‌بندی لیگ اثر دارند؟</summary><p>مطابق قواعد لیگ، فقط نتایج معتبر آزمون شبانه در رتبه‌بندی ملی و استانی محاسبه می‌شوند.</p></details>
+    <details><summary>آیا امکانات آموزشی و اشتراک بر رتبه اثر می‌گذارند؟</summary><p>خیر؛ امکانات غیررقابتی و اشتراک، امتیاز یا رتبه لیگ را افزایش نمی‌دهند.</p></details>
+  </div></div></section>
+</main>
+<footer><div class="wrap foot"><span><strong>لیگ نخبگان مالیاتی</strong> · رقابت کن، رتبه بگیر، نخبه شو!</span><span>© کلیه حقوق برای لیگ نخبگان مالیاتی محفوظ است.</span></div></footer>
+</body></html>
