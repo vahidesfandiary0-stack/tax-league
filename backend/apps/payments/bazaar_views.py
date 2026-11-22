@@ -42,14 +42,15 @@ def _verify_and_activate(order, user, product_id, purchase_token):
 
     with transaction.atomic():
         locked = PaymentOrder.objects.select_for_update().select_related("plan").get(pk=order.pk)
-        if locked.status == PaymentOrder.Status.APPROVED:
-            existing = UserSubscription.objects.filter(source_order=locked).first()
-            if existing:
-                return existing
-            raise ValidationError("وضعیت سفارش با سابقه فعال‌سازی اشتراک سازگار نیست.")
-        if locked.status not in (PaymentOrder.Status.AWAITING_PAYMENT, PaymentOrder.Status.REJECTED):
+        if locked.status not in (
+            PaymentOrder.Status.AWAITING_PAYMENT,
+            PaymentOrder.Status.REJECTED,
+            PaymentOrder.Status.APPROVED,
+        ):
             raise ValidationError("این سفارش در وضعیت قابل تأیید نیست.")
         purchase = BazaarPurchase.objects.filter(order=locked).first()
+        if locked.status == PaymentOrder.Status.APPROVED and not purchase:
+            raise ValidationError("وضعیت سفارش با سابقه فعال‌سازی اشتراک سازگار نیست.")
         if purchase and purchase.purchase_token_hash != digest:
             raise ValidationError("این سفارش قبلاً به توکن خرید دیگری متصل شده است.")
         if purchase:
