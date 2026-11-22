@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from pathlib import Path
 
@@ -122,3 +123,25 @@ class PurchasedExamAccess(models.Model):
 
     def __str__(self):
         return f"{self.user} · {self.exam}"
+
+
+
+class BazaarPurchase(models.Model):
+    """Server-verified Bazaar subscription; never persist the raw purchase token."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.OneToOneField(PaymentOrder, on_delete=models.PROTECT, related_name="bazaar_purchase")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="bazaar_purchases")
+    product_id = models.CharField(max_length=100)
+    purchase_token_hash = models.CharField(max_length=64, unique=True)
+    bazaar_order_id = models.CharField(max_length=160, blank=True)
+    expires_at = models.DateTimeField()
+    auto_renewing = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def token_digest(purchase_token):
+        return hashlib.sha256(purchase_token.encode("utf-8")).hexdigest()
+
+    def __str__(self):
+        return f"{self.product_id} · {self.user_id}"

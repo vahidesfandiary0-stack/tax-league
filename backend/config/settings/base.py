@@ -74,6 +74,12 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = "accounts.User"
 
+# CafeBazaar credentials are provided only through server environment variables.
+BAZAAR_CLIENT_ID = os.getenv("BAZAAR_CLIENT_ID", "")
+BAZAAR_CLIENT_SECRET = os.getenv("BAZAAR_CLIENT_SECRET", "")
+BAZAAR_REFRESH_TOKEN = os.getenv("BAZAAR_REFRESH_TOKEN", "")
+BAZAAR_PACKAGE_NAME = os.getenv("BAZAAR_PACKAGE_NAME", "ir.raqtiva.tax_league")
+
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = [
     "rest_framework.throttling.AnonRateThrottle",
     "rest_framework.throttling.UserRateThrottle",
