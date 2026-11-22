@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.cache import cache
@@ -19,7 +20,7 @@ class BazaarVerificationTests(SimpleTestCase):
 
     @patch("apps.payments.bazaar._request_json")
     def test_valid_paid_subscription_returns_server_expiry(self, request_json):
-        expiry = int((timezone.now() + timezone.timedelta(days=30)).timestamp() * 1000)
+        expiry = int((timezone.now() + timedelta(days=30)).timestamp() * 1000)
         request_json.side_effect = [
             {"access_token": "server-token", "expires_in": 3600},
             {"paymentState": 1, "expiryTimeMillis": expiry, "autoRenewing": True, "orderId": "bazaar-order"},
