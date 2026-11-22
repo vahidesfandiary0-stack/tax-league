@@ -1,10 +1,11 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["main", "mobile/ui-redesign-20261119", "release/raqtiva-official-20261122", "mobile/champions-dashboard-general-features-20261122"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "mobile/ui-redesign-20261119"]
 
 jobs:
   backend:
@@ -40,13 +41,122 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Patch legacy Cafe Bazaar Gradle plugin
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import os
+          import re
+
+          cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
+          matches = sorted(cache.glob("hosted/pub.dev/flutter_poolakey-*/android/build.gradle"))
+          if len(matches) != 1:
+              raise SystemExit(f"Expected exactly one flutter_poolakey Gradle file, found {len(matches)}")
+
+          path = matches[0]
+          content = path.read_text(encoding="utf-8").replace("jcenter()", "mavenCentral()")
+          pattern = re.compile(
+              r"""(?m)^plugins\s*\{\s*id\s+["']com\.android\.library["']\s*id\s+["']kotlin-android["']\s*\}"""
+          )
+          content, count = pattern.subn(
+              'apply plugin: "com.android.library"\napply plugin: "kotlin-android"',
+              content,
+              count=1,
+          )
+          if count == 0:
+              if ('apply plugin: "com.android.library"' not in content or
+                      'apply plugin: "kotlin-android"' not in content):
+                  raise SystemExit("Unrecognized Poolakey Gradle plugin structure; refusing unsafe patch.")
+          if "jcenter()" in content or "plugins {" in content:
+              raise SystemExit("Poolakey Gradle patch verification failed.")
+          path.write_text(content, encoding="utf-8")
+          print(f"Patched and verified {path}")
+          INNER
       - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --project-name tax_league .
+      - name: Generate official Android launcher icon
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          test -s assets/brand/logo_full.png
+          dart run flutter_launcher_icons
+          test -s android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          echo "Official launcher icon generated from assets/brand/logo_full.png"
+      - name: Set Persian Android launcher name
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          if not path.is_file():
+              raise SystemExit("Generated AndroidManifest.xml was not found.")
+          tree = ET.parse(path)
+          application = tree.getroot().find("application")
+          if application is None:
+              raise SystemExit("Android manifest has no application element.")
+          android_ns = "{http://schemas.android.com/apk/res/android}"
+          application.set(android_ns + "label", "لیگ نخبگان مالیاتی")
+          embedding = next(
+              (item for item in application.findall("meta-data")
+               if item.get(android_ns + "name") == "flutterEmbedding"),
+              None,
+          )
+          if embedding is None:
+              embedding = ET.SubElement(application, "meta-data")
+              embedding.set(android_ns + "name", "flutterEmbedding")
+          embedding.set(android_ns + "value", "2")
+          tree.write(path, encoding="utf-8", xml_declaration=True)
+          verified = ET.parse(path).getroot().find("application")
+          label = verified.get(android_ns + "label") if verified is not None else None
+          metadata = next(
+              (item for item in verified.findall("meta-data")
+               if item.get(android_ns + "name") == "flutterEmbedding"),
+              None,
+          ) if verified is not None else None
+          raw_manifest = path.read_text(encoding="utf-8")
+          if (label != "لیگ نخبگان مالیاتی" or metadata is None
+                  or metadata.get(android_ns + "value") != "2"
+                  or "android:name=" not in raw_manifest
+                  or "android:value=" not in raw_manifest):
+              raise SystemExit("Android launcher label / v2 embedding XML verification failed.")
+          print("Android launcher name and v2 embedding metadata verified in Android-prefixed XML")
+          INNER
+      - name: Configure JitPack for Cafe Bazaar SDK
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'INNER'
+          from pathlib import Path
+          import re
+
+          candidates = [Path("android/build.gradle.kts"), Path("android/build.gradle")]
+          path = next((candidate for candidate in candidates if candidate.is_file()), None)
+          if path is None:
+              raise SystemExit("Generated Android root build.gradle(.kts) was not found.")
+          content = path.read_text(encoding="utf-8")
+          if "https://jitpack.io" not in content:
+              pattern = r"(allprojects\s*\{\s*repositories\s*\{)"
+              match = re.search(pattern, content, flags=re.S)
+              if match is None:
+                  raise SystemExit("Could not safely locate allprojects.repositories in Android root build file.")
+              repository = ('maven { url = uri("https://jitpack.io") }'
+                            if path.suffix == ".kts"
+                            else "maven { url 'https://jitpack.io' }")
+              content = content[:match.end()] + "\n        " + repository + content[match.end():]
+              path.write_text(content, encoding="utf-8")
+          if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
+              raise SystemExit("JitPack repository verification failed.")
+          print(f"JitPack configured in {path}")
+          INNER
       - name: Build debug APK
-        run: flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid
+        run: flutter build apk --debug --dart-define=API_BASE_URL=https://raqtiva.ir
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:

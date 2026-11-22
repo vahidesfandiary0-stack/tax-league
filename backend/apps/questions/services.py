@@ -44,7 +44,9 @@ def review_question(question_id, reviewer, approve, reason=""):
 
 
 @transaction.atomic
-def publish_question(question_id):
+def publish_question(question_id, owner):
+    if not owner.is_superuser:
+        raise ValidationError("انتشار نهایی فقط با تأیید مالک سامانه مجاز است.")
     question = Question.objects.select_for_update().get(pk=question_id)
     if question.status != Question.Status.APPROVED or not question.reviewer_id:
         raise ValidationError("فقط سؤال تأییدشده توسط بازبین دیگر قابل انتشار است.")
