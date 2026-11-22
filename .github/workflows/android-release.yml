@@ -130,7 +130,7 @@ jobs:
           if not path.is_file():
               raise SystemExit("Generated Android settings.gradle.kts was not found.")
           content = path.read_text(encoding="utf-8")
-          match = re.search(r"(?s)(pluginManagement\\s*\\{.*?repositories\\s*\\{)", content)
+          match = re.search(r"(?s)(pluginManagement[ ]*[{].*?repositories[ ]*[{])", content)
           if match is None:
               raise SystemExit("Could not safely locate pluginManagement.repositories.")
           start = match.end()
@@ -139,16 +139,16 @@ jobs:
               raise SystemExit("Could not locate the end of pluginManagement.repositories.")
           block = content[start:end]
           additions = []
-          if not re.search(r"(?m)^\\s*google\\s*\\(\\s*\\)", block):
+          if not re.search(r"(?m)^[ ]*google[ ]*[(][ ]*[)]", block):
               additions.append("google()")
-          if not re.search(r"(?m)^\\s*mavenCentral\\s*\\(\\s*\\)", block):
+          if not re.search(r"(?m)^[ ]*mavenCentral[ ]*[(][ ]*[)]", block):
               additions.append("mavenCentral()")
           if additions:
-              indent = "        "
-              content = content[:start] + "\\n" + "\\n".join(indent + item for item in additions) + content[start:]
+              newline = chr(10)
+              content = content[:start] + newline + newline.join("        " + item for item in additions) + content[start:]
               path.write_text(content, encoding="utf-8")
           verified = path.read_text(encoding="utf-8")
-          section = re.search(r"(?s)pluginManagement\\s*\\{.*?repositories\\s*\\{(.*?)\\}", verified)
+          section = re.search(r"(?s)pluginManagement[ ]*[{].*?repositories[ ]*[{](.*?)[}]", verified)
           if section is None or not all(token in section.group(1) for token in ("google()", "mavenCentral()")):
               raise SystemExit("Android plugin repositories verification failed.")
           print("Google Maven and Maven Central configured for plugin resolution.")
