@@ -51,6 +51,8 @@ def _verify_and_activate(order, user, product_id, purchase_token):
         purchase = BazaarPurchase.objects.filter(order=locked).first()
         if locked.status == PaymentOrder.Status.APPROVED and not purchase:
             raise ValidationError("وضعیت سفارش با سابقه فعال‌سازی اشتراک سازگار نیست.")
+        if locked.status == PaymentOrder.Status.APPROVED and not purchase:
+            raise ValidationError("وضعیت سفارش با سابقه فعال‌سازی اشتراک سازگار نیست.")
         if purchase and purchase.purchase_token_hash != digest:
             raise ValidationError("این سفارش قبلاً به توکن خرید دیگری متصل شده است.")
         if purchase:
