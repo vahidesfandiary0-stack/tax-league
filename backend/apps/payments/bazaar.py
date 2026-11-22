@@ -57,6 +57,11 @@ def _access_token(config):
     return token
 
 
+def ensure_bazaar_ready():
+    config = _config()
+    _access_token(config)
+
+
 def verify_bazaar_subscription(product_id, purchase_token):
     config = _config()
     access_token = _access_token(config)
