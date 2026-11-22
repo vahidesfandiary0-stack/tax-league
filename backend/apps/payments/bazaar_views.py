@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.subscriptions.models import SubscriptionPlan, UserSubscription
-from .bazaar import BazaarConfigurationError, BazaarVerificationError, verify_bazaar_subscription
+from .bazaar import BazaarConfigurationError, BazaarVerificationError, ensure_bazaar_ready, verify_bazaar_subscription
 from .models import BazaarPurchase, PaymentOrder
 
 
@@ -29,9 +29,6 @@ def _verify_and_activate(order, user, product_id, purchase_token):
         raise NotFound("سفارش اشتراک پیدا نشد.")
     if product_id != expected:
         raise ValidationError({"product_id": "شناسه محصول با طرح سفارش مطابقت ندارد."})
-    current = UserSubscription.objects.filter(source_order=order).select_related("plan").first()
-    if current and order.status == PaymentOrder.Status.APPROVED:
-        return current
     try:
         verified = verify_bazaar_subscription(product_id, purchase_token)
     except BazaarConfigurationError as exc:
@@ -52,18 +49,30 @@ def _verify_and_activate(order, user, product_id, purchase_token):
             raise ValidationError("وضعیت سفارش با سابقه فعال‌سازی اشتراک سازگار نیست.")
         if locked.status not in (PaymentOrder.Status.AWAITING_PAYMENT, PaymentOrder.Status.REJECTED):
             raise ValidationError("این سفارش در وضعیت قابل تأیید نیست.")
-        try:
-            BazaarPurchase.objects.create(
-                order=locked, user=user, product_id=product_id,
-                purchase_token_hash=digest, bazaar_order_id=verified["bazaar_order_id"],
-                expires_at=verified["expires_at"], auto_renewing=verified["auto_renewing"],
+        purchase = BazaarPurchase.objects.filter(order=locked).first()
+        if purchase and purchase.purchase_token_hash != digest:
+            raise ValidationError("این سفارش قبلاً به توکن خرید دیگری متصل شده است.")
+        if purchase:
+            purchase.expires_at = verified["expires_at"]
+            purchase.auto_renewing = verified["auto_renewing"]
+            purchase.bazaar_order_id = verified["bazaar_order_id"]
+            purchase.save(update_fields=["expires_at", "auto_renewing", "bazaar_order_id", "verified_at"])
+            subscription = UserSubscription.objects.get(source_order=locked)
+            subscription.ends_at = verified["expires_at"]
+            subscription.save(update_fields=["ends_at"])
+        else:
+            try:
+                BazaarPurchase.objects.create(
+                    order=locked, user=user, product_id=product_id,
+                    purchase_token_hash=digest, bazaar_order_id=verified["bazaar_order_id"],
+                    expires_at=verified["expires_at"], auto_renewing=verified["auto_renewing"],
+                )
+            except IntegrityError as exc:
+                raise ValidationError("این توکن خرید قبلاً ثبت شده است.") from exc
+            subscription = UserSubscription.objects.create(
+                user=user, plan=locked.plan, starts_at=timezone.now(),
+                ends_at=verified["expires_at"], source_order=locked,
             )
-        except IntegrityError as exc:
-            raise ValidationError("این توکن خرید قبلاً ثبت شده است.") from exc
-        subscription = UserSubscription.objects.create(
-            user=user, plan=locked.plan, starts_at=timezone.now(),
-            ends_at=verified["expires_at"], source_order=locked,
-        )
         locked.status = PaymentOrder.Status.APPROVED
         locked.review_note = "پرداخت اشتراک توسط API کافه‌بازار تأیید شد."
         locked.reviewed_at = timezone.now()
@@ -75,6 +84,12 @@ class BazaarCreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        try:
+            ensure_bazaar_ready()
+        except BazaarConfigurationError as exc:
+            raise BazaarServiceUnavailable(str(exc)) from exc
+        except BazaarVerificationError as exc:
+            raise BazaarServiceUnavailable(str(exc)) from exc
         product_id = request.data.get("product_id")
         if product_id not in PRODUCT_IDS.values():
             raise ValidationError({"product_id": "شناسه محصول کافه‌بازار معتبر نیست."})
