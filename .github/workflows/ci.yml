@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "mobile/ui-redesign-20261119", "mobile/formal-damask-skin-20261122"]
+    branches: ["main", "mobile/ui-redesign-20261119", "mobile/formal-damask-skin-20261122", "bazaar-subscription-backend-20261122"]
   pull_request:
     branches: ["main", "mobile/ui-redesign-20261119"]
 
