@@ -20,8 +20,10 @@ html = html.replace('<title>tax_league</title>', '<title>لیگ نخبگان م�
 html = html.replace('content="black"', 'content="black-translucent"')
 if 'name="theme-color"' not in html:
     html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n  <meta name="theme-color" content="#101827">')
-if 'viewport-fit=cover' not in html:
-    html = html.replace('content="width=device-width, initial-scale=1.0"', 'content="width=device-width, initial-scale=1.0, viewport-fit=cover"')
+html = html.replace(
+    '<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> -->',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">',
+)
 index.write_text(html, encoding="utf-8")
 
 manifest_path = web / "manifest.json"
