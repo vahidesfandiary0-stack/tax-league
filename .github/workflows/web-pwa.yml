@@ -30,6 +30,12 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=web --org ir.raqtiva --project-name tax_league .
 
+      - name: Prepare RAQTIVA web branding
+        working-directory: mobile
+        run: |
+          python -m pip install --disable-pip-version-check Pillow
+          python tool/prepare_web_pwa.py
+
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
