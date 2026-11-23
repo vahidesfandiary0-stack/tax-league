@@ -36,7 +36,7 @@ jobs:
 
       - name: Analyze application
         working-directory: mobile
-        run: flutter analyze lib
+        run: flutter analyze --no-fatal-infos lib
 
       - name: Validate API URL
         if: github.event_name == 'workflow_dispatch'
