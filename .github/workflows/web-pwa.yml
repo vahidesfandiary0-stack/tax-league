@@ -41,7 +41,7 @@ jobs:
       - name: Validate API URL
         if: github.event_name == 'workflow_dispatch'
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ github.event.inputs.api_base_url }}
         run: |
           set -euo pipefail
           case "$API_BASE_URL" in
@@ -52,7 +52,7 @@ jobs:
       - name: Build production web PWA
         working-directory: mobile
         env:
-          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
+          API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
         run: |
           set -euo pipefail
           flutter build web --release --pwa-strategy=offline-first --dart-define=API_BASE_URL="$API_BASE_URL"
