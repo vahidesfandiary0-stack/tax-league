@@ -30,6 +30,12 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=web --org ir.raqtiva --project-name tax_league .
 
+      - name: Prepare RAQTIVA web branding
+        working-directory: mobile
+        run: |
+          python -m pip install --disable-pip-version-check Pillow
+          python tool/prepare_web_pwa.py
+
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
@@ -55,10 +61,13 @@ jobs:
           API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
         run: |
           set -euo pipefail
-          flutter build web --release --pwa-strategy=offline-first --dart-define=API_BASE_URL="$API_BASE_URL"
+          # Build for the isolated /app/ mount; do not publish this artifact at the domain root.
+          # Flutter 3.50 removed --pwa-strategy; offline caching needs a separately tested worker.
+          flutter build web --release --base-href /app/ --web-content-hash --dart-define=API_BASE_URL="$API_BASE_URL"
           test -s build/web/index.html
+          grep -Fq '<base href="/app/">' build/web/index.html
           test -s build/web/manifest.json
-          test -s build/web/flutter_service_worker.js
+          test -s build/web/precache_manifest.json
 
       - name: Upload web PWA artifact
         uses: actions/upload-artifact@v4
