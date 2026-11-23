@@ -61,10 +61,11 @@ jobs:
           API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
         run: |
           set -euo pipefail
-          # Flutter 3.50 removed --pwa-strategy and its managed offline cache worker.
-          # Content hashes provide safe cache-busting; offline caching needs a separately tested worker.
-          flutter build web --release --web-content-hash --dart-define=API_BASE_URL="$API_BASE_URL"
+          # Build for the isolated /app/ mount; do not publish this artifact at the domain root.
+          # Flutter 3.50 removed --pwa-strategy; offline caching needs a separately tested worker.
+          flutter build web --release --base-href /app/ --web-content-hash --dart-define=API_BASE_URL="$API_BASE_URL"
           test -s build/web/index.html
+          grep -Fq '<base href="/app/">' build/web/index.html
           test -s build/web/manifest.json
           test -s build/web/precache_manifest.json
 
