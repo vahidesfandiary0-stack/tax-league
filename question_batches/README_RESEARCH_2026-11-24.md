@@ -59,6 +59,21 @@ Pages 1–3 of the 1403 level-3 exam have also been OCR-reviewed. The readable i
 
 Pages 1–3 of the 1403 official tax-advisers exam part 4 identify the section as “Tax Accounting and Auditing”; the sampled pages did not yet yield readable question bodies. Further page batches are required before drawing topic conclusions for this source.
 
+## Large scanned reference PDF — initial OCR sample
+
+OCR of the first two rendered pages of the 201-page reference PDF yielded material on inheritance tax, including:
+- assets transferred by will or testamentary disposition and the distinction between heirs and non-heirs;
+- inheritance-tax exemptions for heirs of martyrs;
+- Article 26 inheritance-tax return deadline and required estate disclosures;
+- rates for second- and third-class heirs;
+- valuation date and valuation basis for estate assets and liabilities;
+- liabilities arising from lease-to-own arrangements;
+- valuation of vehicles, listed shares, commercial goodwill, and valuable jewelry;
+- treatment of estates of persons who died before the 1395 amendments;
+- deductible religious/financial obligations and funeral expenses.
+
+The source PDF appears to be a compiled question collection: the first OCR pages include question numbers in the 40s–60s and references to multiple exam years. These findings are provisional OCR indexing only; article references, dates, amounts, and answer options must be checked against the original page image and current authoritative law before any question is drafted.
+
 ## Authoring and quality rules
 
 - Use source exams only to identify tested competencies, topic coverage, difficulty, and exam style.
