@@ -114,3 +114,17 @@ A further OCR sample was run on pages 2–4 of `آزمون تعیین سطح 140
 - withholding obligations on payments to a foreign company resident outside Iran for services performed in Iran, where the tax-law coefficient is relevant.
 
 This is a limited OCR sample, not a complete extraction. OCR corrupted several dates, amounts, and legal terms; the source images and applicable law must be checked before using any detail in an authored question. No answer key or legal conclusion is inferred from this sample.
+
+
+## Target-branch integration reconnaissance (main, 2026-11-24)
+
+The current `backend/apps/questions` implementation was inspected on `main` (models, serializers, views, services, admin, URLs). Findings:
+
+- `Question` supports subjects `direct_tax`, `vat`, `taxpayer_system`, `disputes`, `audit`, and `other_laws`; provenance includes `authored`; statuses include draft, pending_review, approved, rejected, and published.
+- The difficulty enum currently contains only `easy`, `medium`, and `hard`. The project's hard / very-hard / specialized taxonomy is therefore not fully represented. Do not silently map distinct levels to `hard`; assess a controlled schema change separately before importing a graded batch.
+- `QuestionOption` enforces option positions 1–4. Review service checks exactly four options and exactly one correct answer; author cannot review their own question. Publishing requires prior approval by another reviewer.
+- The public serializer currently exposes question id, subject, difficulty, prompt, options (without correctness), and version only. It does not expose explanation or source reference. The public list/detail views filter to published questions and require authentication.
+- The inspected `backend/apps` directory has no dedicated `academy` app. No subscriber-only trap/tactic model or access-control endpoint was found in the questions app. Paid academy analysis must therefore remain out of question payloads until a separately authorized, subscription-gated design is implemented and tested.
+- No importer or batch validator file was present in `backend/apps/questions` on `main`; earlier server-side tooling mentioned in project history must not be assumed to exist in this repository branch.
+
+These are code-inspection findings, not production-server verification. No schema, API, database, deployment, or mobile files were changed. The research branch remains documentation-only.
