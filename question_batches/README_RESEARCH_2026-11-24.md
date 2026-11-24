@@ -51,6 +51,14 @@ OCR has been run on pages 1–3 of both عمومی۱.pdf and عمومی ۲.pdf. 
 
 OCR text is being used only to identify competencies and topic coverage. The scans contain recognition errors in dates, numbers, and legal references; none of those OCR fragments is treated as verified legal authority or a reliable answer key.
 
+## Additional OCR observations
+
+Pages 1–3 of the 1403 level-3 exam have also been OCR-reviewed. The readable items indicate competencies around:
+- employment-income relief for staff at a sales office in a less-developed region when the company's head office and main residence are elsewhere;
+- statutory filing duties and deadlines of the last managers of merging / consolidating companies, including supporting financial statements and valuation reporting.
+
+Pages 1–3 of the 1403 official tax-advisers exam part 4 identify the section as “Tax Accounting and Auditing”; the sampled pages did not yet yield readable question bodies. Further page batches are required before drawing topic conclusions for this source.
+
 ## Authoring and quality rules
 
 - Use source exams only to identify tested competencies, topic coverage, difficulty, and exam style.
