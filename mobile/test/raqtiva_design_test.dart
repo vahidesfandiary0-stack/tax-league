@@ -11,13 +11,13 @@ void main() {
       expect(theme.scaffoldBackgroundColor, RaqtivaColors.navy);
       expect(theme.colorScheme.primary, RaqtivaColors.gold);
       expect(theme.colorScheme.surface, RaqtivaColors.surface);
-      expect(RaqtivaColors.navy, const Color(0xFF020817));
-      expect(RaqtivaColors.navy900, const Color(0xFF061735));
-      expect(RaqtivaColors.navy850, const Color(0xFF092653));
-      expect(RaqtivaColors.navy800, const Color(0xFF0B3470));
+      expect(RaqtivaColors.navy, const Color(0xFF0B1220));
+      expect(RaqtivaColors.navy900, const Color(0xFF0B1220));
+      expect(RaqtivaColors.navy850, const Color(0xFF121F33));
+      expect(RaqtivaColors.navy800, const Color(0xFF18263B));
       expect(RaqtivaColors.blue, const Color(0xFF1268D8));
-      expect(RaqtivaColors.gold, const Color(0xFFFFC928));
-      expect(RaqtivaColors.goldLight, const Color(0xFFFFE69A));
+      expect(RaqtivaColors.gold, const Color(0xFFE5B85C));
+      expect(RaqtivaColors.goldLight, const Color(0xFFF4D58A));
       expect(RaqtivaColors.goldDeep, const Color(0xFF9A6500));
     });
 

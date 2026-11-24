@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 
 abstract final class RaqtivaColors {
-  // Canonical palette from docs/MOBILE_UI_MASTER_SPEC.md.
-  static const navy = Color(0xFF020817); // Deep stadium navy
-  static const navy900 = Color(0xFF061735);
-  static const navy850 = Color(0xFF092653);
-  static const navy800 = Color(0xFF0B3470);
-  static const navyLight = navy800;
-  static const surface = navy850;
-  static const surfaceSoft = Color(0xFF1A304D); // Raised input surface
-  static const blue = Color(0xFF1268D8); // Champions electric blue
-  static const gold = Color(0xFFFFC928); // Bright championship gold
-  static const goldLight = Color(0xFFFFE69A); // Bright gold highlight
-  static const goldDeep = Color(0xFF9A6500); // Deep championship gold
-  static const text = Color(0xFFF5F5F5);
-  static const muted = Color(0xFFD9E2F2);
-  static const border = goldLight;
+  static const navy = Color(0xFF0B1220);
+  static const navy900 = Color(0xFF0B1220);
+  static const navy850 = Color(0xFF121F33);
+  static const navy800 = Color(0xFF18263B);
+  static const navyLight = navy850;
+  static const surface = navy800;
+  static const surfaceSoft = Color(0xFF202F45);
+  static const blue = Color(0xFF1268D8);
+  static const gold = Color(0xFFE5B85C);
+  static const goldLight = Color(0xFFF4D58A);
+  static const goldDeep = Color(0xFF9A6500);
+  static const text = Color(0xFFF5F3ED);
+  static const muted = Color(0xFF9EADBF);
+  static const border = Color(0xFF314158);
   static const green = Color(0xFF55C69A);
   static const red = Color(0xFFE47777);
 }
@@ -179,15 +178,14 @@ class RaqtivaPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0, -0.42),
-          radius: 1.28,
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
           colors: [
-            Color(0xFF1A3555),
-            Color(0xFF0C1D36),
-            Color(0xFF050D1D),
+            Color(0xFF17263C),
+            RaqtivaColors.navy,
+            Color(0xFF090F1A),
           ],
-          stops: [0, .48, 1],
         ),
       ),
       child: SafeArea(
