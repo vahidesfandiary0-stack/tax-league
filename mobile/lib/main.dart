@@ -1416,8 +1416,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
-                    'شناسه: ${item['id']}
-'
+                    'شناسه: ${item['id']}\n'
                     'صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
@@ -2026,8 +2025,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               contentPadding: EdgeInsets.zero,
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
-                'شناسه: ${item['id']}
-'
+                'شناسه: ${item['id']}\n'
                 'صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
@@ -2118,9 +2116,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
           children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank
-امتیاز: $score
-آزمون رسمی: $examCount'),
+            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
             tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
