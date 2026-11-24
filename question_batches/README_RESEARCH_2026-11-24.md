@@ -102,3 +102,15 @@ Before importing any batch, inspect the current question schema, serializers/API
 - [ ] Validate against actual importer schema and duplicate checks.
 - [ ] Import as drafts and verify database/API separation.
 - [ ] Independent review and owner approval before publication.
+
+
+## Continuation after security-review pause (2026-11-24)
+
+The user resumed the question-bank work after submitting the separate Google Play Protect appeal. That appeal does not change the question-bank workflow.
+
+A further OCR sample was run on pages 2–4 of `آزمون تعیین سطح 1403 - سطح 3 - قسمت 7.pdf`. The visible competencies include:
+- determining the 1403 employment-income relief applicable to employees of a sales office in a less-developed area when the company's head office / principal residence is in Tehran;
+- statutory post-decision reporting and disclosure duties of the last managers of merging / consolidating companies, including minutes, partner/shareholder lists, share ratios, and asset/liability statements;
+- withholding obligations on payments to a foreign company resident outside Iran for services performed in Iran, where the tax-law coefficient is relevant.
+
+This is a limited OCR sample, not a complete extraction. OCR corrupted several dates, amounts, and legal terms; the source images and applicable law must be checked before using any detail in an authored question. No answer key or legal conclusion is inferred from this sample.
