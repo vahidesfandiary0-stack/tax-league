@@ -30,6 +30,11 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=web --org ir.raqtiva --project-name tax_league .
 
+      - name: Set up Python for PWA branding
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
       - name: Apply RAQTIVA PWA branding
         run: |
           python3 -m venv /tmp/raqtiva-pwa-venv
