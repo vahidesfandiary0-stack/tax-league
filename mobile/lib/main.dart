@@ -4,7 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'ui/raqtiva_design.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_poolakey/flutter_poolakey.dart';
+import 'package:flutter_poolakey/flutter_poolakey.dart'
+    if (dart.library.html) 'bazaar_poolakey_stub.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -2851,7 +2852,7 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
 
   @override
   void dispose() {
-    if (connected) {
+    if (connected && !kIsWeb) {
       unawaited(FlutterPoolakey.disconnect());
     }
     super.dispose();
@@ -2887,7 +2888,7 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
   }
 
   Future<void> _connect() async {
-    if (defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw Exception('خرید اشتراک بازار فقط در نسخه اندروید قابل انجام است.');
     }
     if (connected) return;
@@ -2957,6 +2958,13 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
   }
 
   Future<void> _buy(Map<String, dynamic> plan) async {
+    if (kIsWeb) {
+      if (mounted) {
+        setState(() => message =
+            'خرید مستقیم از کافه‌بازار در نسخه وب فعال نیست؛ از اپ اندروید استفاده کنید.');
+      }
+      return;
+    }
     if (busy) return;
     final sku = products[plan['period']?.toString()];
     if (sku == null) {
@@ -2999,7 +3007,7 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
 
   Future<void> _restore() async {
     if (busy) return;
-    if (defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       setState(() => message = 'بازیابی خرید بازار فقط در نسخه اندروید قابل انجام است.');
       return;
     }
@@ -3301,9 +3309,13 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
                       ),
                       const SizedBox(height: 15),
                       FilledButton.icon(
-                        onPressed: busy || loading ? null : () => _buy(plan),
+                        onPressed: kIsWeb || busy || loading
+                            ? null
+                            : () => _buy(plan),
                         icon: const Icon(Icons.shopping_bag_outlined),
-                        label: const Text('خرید از کافه‌بازار'),
+                        label: Text(kIsWeb
+                            ? 'خرید در اپ اندروید'
+                            : 'خرید از کافه‌بازار'),
                       ),
                     ],
                   ),
@@ -3322,9 +3334,11 @@ class _BazaarSubscriptionPageState extends State<BazaarSubscriptionPage> {
 
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: busy ? null : _restore,
+          onPressed: kIsWeb || busy ? null : _restore,
           icon: const Icon(Icons.restore_rounded),
-          label: const Text('بازیابی خریدهای قبلی'),
+          label: Text(kIsWeb
+              ? 'بازیابی در اپ اندروید'
+              : 'بازیابی خریدهای قبلی'),
         ),
         TextButton.icon(
           onPressed: busy ? null : _load,
