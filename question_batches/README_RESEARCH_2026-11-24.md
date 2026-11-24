@@ -8,13 +8,13 @@
 
 ## Source set received
 
-1. `نمونه سوالات استاندارد تعیین سطح مالیاتی .pdf` — 150 pages; scanned image PDF.
+1. `نمونه سوالات استاندارد تعیین سطح مالیاتی .pdf` — 201 pages; scanned image PDF (page count verified with PDF metadata).
 2. `آزمون تعیین سطح 1403 - سطح 3 - قسمت 7.pdf` — 24 pages.
 3. `آزمون_مشاوران_رسمی_مالیاتی_1403_قسمت_4.pdf` — 21 pages.
 4. `عمومی۱.pdf` — 8 pages; scanned image PDF.
 5. `عمومی ۲.pdf` — 8 pages; scanned image PDF.
 
-Total: 211 pages. Two 1403 PDFs expose page markers in text extraction but question bodies require image/OCR review. Three PDFs are image scans.
+Total: 262 pages. Two 1403 PDFs expose page markers in text extraction but question bodies require image/OCR review. Three PDFs are image scans.
 
 ## Initial OCR/index observations (not a complete extraction)
 
@@ -30,6 +30,26 @@ Early pages expose topics including:
 - VAT exemptions and dispute-resolution deadlines.
 
 These are topic signals only. No source question text is to be copied or lightly paraphrased.
+
+## OCR progress update (2026-11-24)
+
+PDF metadata confirms 201 pages in the large scanned sample PDF, correcting the preliminary 150-page estimate. The full source set is therefore 262 pages.
+
+OCR has been run on pages 1–3 of both عمومی۱.pdf and عمومی ۲.pdf. The readable topic index now additionally includes:
+- 1404 employment/tax relief for staff in less-developed areas, free-trade zones, and science/technology parks;
+- cigarette tax increases under the Seventh Development Plan;
+- tax treatment of gratuitous residential usufruct and vacant housing;
+- restrictions on departure for persons with finalized tax debts;
+- tax treatment of Iranian suppliers to foreign contractors;
+- FX translation differences for specified export-support institutions;
+- VAT non-registration penalty base for gold/jewelry/platinum transactions;
+- VAT exemptions and scope, including health, transport, insurance, print/publication, exhibition, hotel, warehousing, and immovable-property lease services;
+- appeal periods and eligible appellants in tax-dispute proceedings;
+- foreign-source income and private-sector employment income;
+- deductible expenses attributable to exempt / zero-rated / fixed-rate income;
+- VAT import territorial scope, production-unit zero-rate conditions, installment periods, export input-tax refunds, green levy commencement, and selected 1404 budget provisions.
+
+OCR text is being used only to identify competencies and topic coverage. The scans contain recognition errors in dates, numbers, and legal references; none of those OCR fragments is treated as verified legal authority or a reliable answer key.
 
 ## Authoring and quality rules
 
