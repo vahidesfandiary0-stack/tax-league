@@ -81,6 +81,8 @@ def start_attempt(exam_id, user):
     if exam.kind == Exam.Kind.NIGHT:
         if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
             raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
+        if exam.starts_at is None or exam.ends_at is None:
+            raise ValidationError("آزمون شبانه باید زمان شروع و پایان مشترک داشته باشد.")
     elif exam.counts_for_league:
         raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     if exam.requires_purchase:
