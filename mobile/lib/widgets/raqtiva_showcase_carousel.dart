@@ -227,7 +227,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       title.isEmpty
-                          ? 'بنیانگذار لیگ : وحید اسفندیاری نژاد'
+                          ? 'بنیان‌گذار لیگ: وحید اسفندیاری'
                           : title,
                       maxLines: 1,
                       softWrap: false,
