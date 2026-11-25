@@ -30,7 +30,7 @@ def validate_receipt_content(file_obj):
                 if width < 1 or height < 1 or width * height > 40_000_000:
                     raise ValidationError("ابعاد تصویر رسید معتبر نیست یا بیش از حد بزرگ است.")
                 image.verify()
-        except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError, ValueError):
             raise ValidationError("فایل تصویر رسید خراب یا نامعتبر است.")
         finally:
             file_obj.seek(0)
