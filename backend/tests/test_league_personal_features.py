@@ -45,3 +45,68 @@ def test_detailed_performance_requires_active_subscription_and_reports_missing_d
         ends_at=now+timedelta(days=29), source_order=order)
     response=client.get("/api/v1/league/me/performance/")
     assert response.status_code==200 and response.data["data_available"] is False
+
+
+@pytest.mark.django_db
+def test_latest_night_leaderboard_ignores_a_future_published_exam():
+    user = get_user_model().objects.create_user(
+        phone_number="09120000104", display_name="شرکت‌کننده"
+    )
+    now = timezone.now()
+    season = LeagueSeason.objects.create(
+        title="فصل آزمون‌های اخیر",
+        starts_at=now - timedelta(days=2),
+        ends_at=now + timedelta(days=2),
+        status=LeagueSeason.Status.ACTIVE,
+    )
+    previous_start = now - timedelta(hours=2)
+    previous = Exam.objects.create(
+        title="آخرین آزمون شروع‌شده",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=30,
+        max_attempts=0,
+        counts_for_league=True,
+        status=Exam.Status.ARCHIVED,
+        starts_at=previous_start,
+        ends_at=previous_start + timedelta(minutes=30),
+    )
+    attempt = ExamAttempt.objects.create(
+        exam=previous,
+        user=user,
+        status=ExamAttempt.Status.SUBMITTED,
+        started_at=previous_start + timedelta(minutes=2),
+        deadline_at=previous.ends_at,
+        submitted_at=previous.ends_at,
+        score=25,
+        correct_count=3,
+        wrong_count=1,
+        blank_count=0,
+    )
+    LeagueScoreEntry.objects.create(
+        season=season,
+        attempt=attempt,
+        user=user,
+        score=25,
+        correct_count=3,
+        wrong_count=1,
+        elapsed_seconds=28 * 60,
+    )
+    future_start = now + timedelta(hours=2)
+    Exam.objects.create(
+        title="آزمون آینده",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=30,
+        max_attempts=0,
+        counts_for_league=True,
+        status=Exam.Status.PUBLISHED,
+        starts_at=future_start,
+        ends_at=future_start + timedelta(minutes=30),
+    )
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    response = client.get("/api/v1/league/latest-night/")
+
+    assert response.status_code == 200
+    assert response.data["exam"]["title"] == "آخرین آزمون شروع‌شده"
+    assert response.data["results"][0]["score"] == 25
