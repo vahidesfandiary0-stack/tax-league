@@ -38,7 +38,7 @@ class PaymentWorkflowTests(TestCase):
         order = create_subscription_order(self.user, self.plan.pk)
         order.status = PaymentOrder.Status.UNDER_REVIEW
         order.receipt = SimpleUploadedFile(
-            "receipt.png", b"\x89PNG\r\n\x1a\ncontent", content_type="image/png"
+            "receipt.pdf", b"%PDF-1.4\nreceipt\n%%EOF", content_type="application/pdf"
         )
         order.save()
         self.plan.duration_days = 90
@@ -93,7 +93,7 @@ class PaymentApiWorkflowTests(TestCase):
         self.assertEqual(created.status_code, 201)
         order_id = created.data["id"]
         receipt = SimpleUploadedFile(
-            "transfer.png", b"\x89PNG\r\n\x1a\nreceipt", content_type="image/png"
+            "transfer.pdf", b"%PDF-1.4\nreceipt\n%%EOF", content_type="application/pdf"
         )
         submitted = self.client.post(
             f"/api/v1/payments/orders/{order_id}/submit/",
@@ -107,10 +107,10 @@ class PaymentApiWorkflowTests(TestCase):
     def test_user_cannot_submit_receipt_to_another_users_order(self):
         order = create_subscription_order(self.other_user, self.plan.pk)
         receipt = SimpleUploadedFile(
-            "transfer.png", b"\x89PNG\r\n\x1a\nreceipt", content_type="image/png"
+            "transfer.pdf", b"%PDF-1.4\nreceipt\n%%EOF", content_type="application/pdf"
         )
         response = self.client.post(
             f"/api/v1/payments/orders/{order.pk}/submit/",
             {"receipt": receipt}, format="multipart",
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
