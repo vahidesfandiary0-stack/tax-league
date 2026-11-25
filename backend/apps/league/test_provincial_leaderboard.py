@@ -92,3 +92,10 @@ class ProvincialLeaderboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.data["verified"])
         self.assertEqual(response.data["results"], [])
+
+    def test_provincial_board_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get("/api/v1/league/provincial-leaderboard/")
+
+        self.assertEqual(response.status_code, 401)
