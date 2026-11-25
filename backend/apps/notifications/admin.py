@@ -36,7 +36,7 @@ class ShowcaseSlideAdmin(admin.ModelAdmin):
     ordering = ("sort_order", "pk")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("محتوا", {"fields": ("kind", "title", "body", "image_url")}),
+        ("محتوا", {"fields": ("kind", "title", "body", "image", "image_url")}),
         ("نمایش", {"fields": ("is_active", "sort_order", "duration_seconds", "starts_at", "ends_at")}),
         ("سوابق", {"fields": ("created_at", "updated_at")}),
     )
