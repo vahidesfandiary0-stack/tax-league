@@ -39,3 +39,5 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
       - name: Run backend tests
         run: pytest
+      - name: Run manual payment workflow tests explicitly
+        run: pytest tests/test_payments.py -q
