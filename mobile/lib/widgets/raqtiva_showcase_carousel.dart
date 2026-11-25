@@ -22,7 +22,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     if (index < 2 || index - 2 >= widget.dynamicSlides.length) return 5;
     final value = widget.dynamicSlides[index - 2];
     if (value is Map && value['duration_seconds'] is num) {
-      return (value['duration_seconds'] as num).toInt().clamp(3, 15);
+      return (value['duration_seconds'] as num).toInt().clamp(3, 15).toInt();
     }
     return 5;
   }
