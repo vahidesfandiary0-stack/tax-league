@@ -1,6 +1,9 @@
 name: Android signed release
 
 on:
+  push:
+    branches:
+      - "release/official-readiness-*"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -228,7 +231,7 @@ jobs:
       - name: Build signed release APK
         working-directory: mobile
         env:
-          API_BASE_URL: ${{ inputs.api_base_url }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
         run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Verify release internet permission
