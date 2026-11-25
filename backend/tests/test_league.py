@@ -27,6 +27,8 @@ def make_official_attempt(user, *, submitted_at=None, score=17):
     exam = Exam.objects.create(
         title="آزمون رسمی", kind=Exam.Kind.NIGHT,
         duration_minutes=30, max_attempts=0, counts_for_league=True, requires_purchase=False,
+        starts_at=now - timedelta(minutes=30),
+        ends_at=now + timedelta(minutes=20),
     )
     return ExamAttempt.objects.create(
         exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
