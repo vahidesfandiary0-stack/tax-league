@@ -208,3 +208,94 @@ def test_night_exam_allows_unlimited_attempts():
 
     assert len(set(attempts)) == 3
     assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 3
+
+
+
+@pytest.mark.django_db
+def test_manager_can_publish_exam_with_unreviewed_question_and_start_it_immediately():
+    from apps.exams.services import publish_exam
+
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330102", password="unused"
+    )
+    question = Question.objects.create(
+        subject=Question.Subject.VAT,
+        prompt="سؤال مدیریتی راستی‌آزمایی‌نشده",
+        explanation="توضیح آزمایشی",
+        author=manager,
+        status=Question.Status.DRAFT,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question,
+            position=position,
+            text=f"گزینه {position}",
+            is_correct=(position == 2),
+        )
+    future_start = timezone.now() + timedelta(days=30)
+    exam = Exam.objects.create(
+        title="شبانه فوری با سؤال پیش‌نویس",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=20,
+        max_attempts=0,
+        starts_at=future_start,
+        ends_at=None,
+        counts_for_league=True,
+        requires_purchase=False,
+    )
+    ExamQuestion.objects.create(exam=exam, question=question, position=1)
+
+    published = publish_exam(exam.pk)
+    attempt = start_attempt(published.pk, manager)
+
+    assert published.status == Exam.Status.PUBLISHED
+    assert question.status == Question.Status.DRAFT
+    assert attempt.started_at <= timezone.now()
+    assert attempt.deadline_at > attempt.started_at
+    assert attempt.questions.count() == 1
+
+
+@pytest.mark.django_db
+def test_manager_can_publish_non_night_exam_with_unreviewed_question_but_it_is_not_league_exam():
+    from apps.exams.services import publish_exam
+    from apps.league.services import record_attempt_score
+    from apps.league.models import LeagueScoreEntry, LeagueSeason
+
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330103", password="unused"
+    )
+    season = LeagueSeason.objects.create(
+        title="فصل آزمون مدیریتی",
+        starts_at=timezone.now() - timedelta(days=1),
+        ends_at=timezone.now() + timedelta(days=1),
+        status=LeagueSeason.Status.ACTIVE,
+    )
+    question = Question.objects.create(
+        subject=Question.Subject.DIRECT_TAX,
+        prompt="سؤال تمرینی تأییدنشده",
+        author=manager,
+        status=Question.Status.PENDING,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question,
+            position=position,
+            text=f"گزینه {position}",
+            is_correct=(position == 1),
+        )
+    exam = Exam.objects.create(
+        title="آزمون تمرینی مدیریتی",
+        kind=Exam.Kind.DAILY,
+        duration_minutes=15,
+        max_attempts=1,
+        counts_for_league=False,
+    )
+    ExamQuestion.objects.create(exam=exam, question=question, position=1)
+
+    published = publish_exam(exam.pk)
+    attempt = start_attempt(published.pk, manager)
+    result = finalize_attempt(attempt.pk, manager)
+
+    assert result.status == ExamAttempt.Status.SUBMITTED
+    assert record_attempt_score(attempt.pk) is None
+    assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
