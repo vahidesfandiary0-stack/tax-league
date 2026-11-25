@@ -6,7 +6,8 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import User
 from apps.exams.models import Exam, ExamAttempt
-from apps.league.models import LeagueSeason, LeagueScoreEntry
+from apps.league.models import LeagueSeason
+from apps.league.services import record_attempt_score
 
 
 class ProvincialLeaderboardTests(TestCase):
@@ -20,8 +21,9 @@ class ProvincialLeaderboardTests(TestCase):
         )
         self.exam = Exam.objects.create(
             title="آزمون آزمایشی",
-            kind=Exam.Kind.DAILY,
+            kind=Exam.Kind.NIGHT,
             status=Exam.Status.PUBLISHED,
+            max_attempts=0,
             counts_for_league=True,
         )
         self.user = User.objects.create_user(
@@ -44,15 +46,7 @@ class ProvincialLeaderboardTests(TestCase):
             wrong_count=0,
             blank_count=0,
         )
-        return LeagueScoreEntry.objects.create(
-            season=self.season,
-            attempt=attempt,
-            user=user,
-            score=score,
-            correct_count=score // 10,
-            wrong_count=0,
-            elapsed_seconds=300,
-        )
+        return record_attempt_score(attempt.pk)
 
     def test_provincial_board_includes_only_verified_users_in_same_province(self):
         same_province = User.objects.create_user(
