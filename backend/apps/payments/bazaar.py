@@ -50,10 +50,18 @@ def _access_token(config):
         {"grant_type": "refresh_token", "client_id": config["BAZAAR_CLIENT_ID"],
          "client_secret": config["BAZAAR_CLIENT_SECRET"], "refresh_token": config["BAZAAR_REFRESH_TOKEN"]},
     )
+    if not isinstance(result, dict):
+        raise BazaarVerificationError("پاسخ دریافت توکن کافه‌بازار ساختار معتبر ندارد.")
     token = result.get("access_token")
-    if not token:
+    if not isinstance(token, str) or not token:
         raise BazaarVerificationError("کافه‌بازار توکن دسترسی معتبر برنگرداند.")
-    cache.set("raqtiva_bazaar_access_token", token, timeout=max(60, int(result.get("expires_in", 3600)) - 60))
+    try:
+        expires_in = int(result.get("expires_in", 3600))
+    except (TypeError, ValueError) as exc:
+        raise BazaarVerificationError("مدت اعتبار توکن کافه‌بازار معتبر نیست.") from exc
+    if expires_in <= 0:
+        raise BazaarVerificationError("مدت اعتبار توکن کافه‌بازار معتبر نیست.")
+    cache.set("raqtiva_bazaar_access_token", token, timeout=max(1, expires_in - 60))
     return token
 
 
