@@ -64,23 +64,20 @@ def start_attempt(exam_id, user):
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
     now = timezone.now()
-    # NIGHT exams are manager-launched on demand: their calendar window never
-    # blocks publication or participant entry. Other kinds retain scheduling.
-    if exam.kind == Exam.Kind.NIGHT:
-        shared_deadline = None
+    # Every participant shares the same scheduled window. A late arrival
+    # receives only the remaining time; NIGHT is not a per-user timer.
+    if exam.starts_at and now < exam.starts_at:
+        raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
+    if exam.starts_at:
+        shared_deadline = exam.starts_at + timedelta(minutes=exam.duration_minutes)
+        if exam.ends_at:
+            shared_deadline = min(shared_deadline, exam.ends_at)
+        if now >= shared_deadline:
+            raise ValidationError("مهلت شرکت در این آزمون به پایان رسیده است.")
     else:
-        if exam.starts_at and now < exam.starts_at:
-            raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
-        if exam.starts_at:
-            shared_deadline = exam.starts_at + timedelta(minutes=exam.duration_minutes)
-            if exam.ends_at:
-                shared_deadline = min(shared_deadline, exam.ends_at)
-            if now >= shared_deadline:
-                raise ValidationError("مهلت شرکت در این آزمون به پایان رسیده است.")
-        else:
-            shared_deadline = None
-            if exam.ends_at and now >= exam.ends_at:
-                raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
+        shared_deadline = None
+        if exam.ends_at and now >= exam.ends_at:
+            raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
     if exam.kind == Exam.Kind.NIGHT:
         if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
             raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
@@ -105,9 +102,9 @@ def start_attempt(exam_id, user):
         return existing
     if exam.kind != Exam.Kind.NIGHT and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
-    started_at = now if exam.kind == Exam.Kind.NIGHT else (exam.starts_at if exam.starts_at else now)
+    started_at = exam.starts_at if exam.starts_at else now
     deadline_at = shared_deadline or (now + timedelta(minutes=exam.duration_minutes))
-    if exam.kind != Exam.Kind.NIGHT and not exam.starts_at and exam.ends_at:
+    if not exam.starts_at and exam.ends_at:
         deadline_at = min(deadline_at, exam.ends_at)
     attempt = ExamAttempt.objects.create(
         exam=exam, user=user, started_at=started_at, deadline_at=deadline_at,
@@ -147,7 +144,7 @@ def finalize_attempt(attempt_id, user):
     if attempt.status != ExamAttempt.Status.IN_PROGRESS:
         return attempt
     now = timezone.now()
-    if now < attempt.deadline_at and attempt.exam.starts_at and attempt.exam.kind != Exam.Kind.NIGHT:
+    if now < attempt.deadline_at and attempt.exam.starts_at:
         raise ValidationError("تحویل آزمون سراسری پیش از زمان پایان مجاز نیست.")
     # Unscheduled practice exams may be submitted early.
     score = correct = wrong = blank = 0
