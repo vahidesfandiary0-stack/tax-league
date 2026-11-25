@@ -30,6 +30,7 @@ class NotificationAdmin(admin.ModelAdmin):
 @admin.register(ShowcaseSlide)
 class ShowcaseSlideAdmin(admin.ModelAdmin):
     list_display = ("title", "kind", "is_active", "sort_order", "duration_seconds", "starts_at", "ends_at", "updated_at")
+    list_editable = ("is_active", "sort_order", "duration_seconds")
     list_filter = ("kind", "is_active")
     search_fields = ("title", "body")
     ordering = ("sort_order", "pk")
