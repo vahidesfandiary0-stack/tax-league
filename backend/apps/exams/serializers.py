@@ -8,7 +8,7 @@ class ExamListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Exam
-        fields = ["id", "title", "kind", "description", "duration_minutes", "starts_at", "ends_at", "question_count"]
+        fields = ["id", "title", "kind", "description", "duration_minutes", "starts_at", "ends_at", "question_count", "counts_for_league"]
 
 
 class AttemptOptionSerializer(serializers.Serializer):
