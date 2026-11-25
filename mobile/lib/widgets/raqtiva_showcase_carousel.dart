@@ -63,9 +63,15 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     super.initState();
     _scheduleNext();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      // Refresh even when no exam is currently scheduled, so the countdown
-      // cannot remain frozen at zero after its start time passes.
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      // If the scheduled exam starts, remove its countdown slide safely and
+      // return the carousel to a valid page index.
+      if (_index >= _count) {
+        _index = 0;
+        if (_controller.hasClients) _controller.jumpToPage(0);
+        _scheduleNext();
+      }
+      setState(() {});
     });
   }
 
