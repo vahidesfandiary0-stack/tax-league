@@ -28,12 +28,7 @@ class AcademySubscriptionAccessTests(TestCase):
         )
 
     def _activate_subscription(self):
-        plan = SubscriptionPlan.objects.create(
-            title="ماهانه",
-            period=SubscriptionPlan.Period.MONTHLY,
-            duration_days=30,
-            price_irr=1_990_000,
-        )
+        plan = SubscriptionPlan.objects.get(period=SubscriptionPlan.Period.MONTHLY)
         order = PaymentOrder.objects.create(
             user=self.user,
             product_type=PaymentOrder.ProductType.SUBSCRIPTION,
@@ -70,12 +65,7 @@ class AcademySubscriptionAccessTests(TestCase):
         self.assertEqual(response.data["source_url"], "https://regulation.tax.gov.ir/")
 
     def test_expired_subscription_does_not_unlock_exclusive_content(self):
-        plan = SubscriptionPlan.objects.create(
-            title="سه‌ماهه",
-            period=SubscriptionPlan.Period.QUARTERLY,
-            duration_days=90,
-            price_irr=4_990_000,
-        )
+        plan = SubscriptionPlan.objects.get(period=SubscriptionPlan.Period.QUARTERLY)
         order = PaymentOrder.objects.create(
             user=self.user,
             product_type=PaymentOrder.ProductType.SUBSCRIPTION,
