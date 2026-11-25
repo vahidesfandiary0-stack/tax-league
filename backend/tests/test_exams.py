@@ -16,7 +16,7 @@ from apps.questions.models import Question, QuestionOption
 
 
 @pytest.mark.django_db
-def make_published_exam(user, *, question_count=1, ends_at=None):
+def make_published_exam(user, *, question_count=1, ends_at=None, kind=Exam.Kind.DAILY, max_attempts=2, counts_for_league=False):
     questions = []
     for index in range(question_count):
         question = Question.objects.create(
@@ -36,9 +36,10 @@ def make_published_exam(user, *, question_count=1, ends_at=None):
 
     exam = Exam.objects.create(
         title="آزمون آزمایشی",
-        kind=Exam.Kind.DAILY,
+        kind=kind,
         duration_minutes=30,
-        max_attempts=2,
+        max_attempts=max_attempts,
+        counts_for_league=counts_for_league,
         ends_at=ends_at,
     )
     for position, question in enumerate(questions, start=1):
@@ -188,3 +189,22 @@ def test_finalization_after_deadline_marks_attempt_expired():
 
     assert result.status == ExamAttempt.Status.EXPIRED
     assert result.submitted_at is not None
+
+
+
+@pytest.mark.django_db
+def test_night_exam_allows_unlimited_attempts():
+    user = get_user_model().objects.create_user(phone_number="09123330101")
+    exam = make_published_exam(
+        user, kind=Exam.Kind.NIGHT, max_attempts=0, counts_for_league=True
+    )
+
+    attempts = []
+    for _ in range(3):
+        attempt = start_attempt(exam.pk, user)
+        attempts.append(attempt.pk)
+        result = finalize_attempt(attempt.pk, user)
+        assert result.status == ExamAttempt.Status.SUBMITTED
+
+    assert len(set(attempts)) == 3
+    assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 3
