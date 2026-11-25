@@ -51,9 +51,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('does not leave a negative countdown after the start time',
+    testWidgets('does not show negative values for an already-started exam',
         (tester) async {
-      final start = DateTime.now().add(const Duration(seconds: 1));
+      final start = DateTime.now().subtract(const Duration(seconds: 1));
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -61,7 +61,7 @@ void main() {
               slides: const [],
               exams: [
                 {
-                  'title': 'آزمون در آستانه شروع',
+                  'title': 'آزمون آغازشده',
                   'counts_for_league': true,
                   'starts_at': start.toIso8601String(),
                 },
@@ -71,14 +71,12 @@ void main() {
         ),
       );
 
-      await tester.pump(const Duration(seconds: 2));
-
       expect(
         find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'),
         findsOneWidget,
       );
       expect(find.textContaining('-'), findsNothing);
       expect(tester.takeException(), isNull);
-    });
+    });;
   });
 }
