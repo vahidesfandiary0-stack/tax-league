@@ -28,6 +28,23 @@ def publish_selected_exams(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} آزمون منتشر شد.")
 
 
+@admin.action(description="انتشار و شروع فوری آزمون‌های انتخاب‌شده")
+def publish_and_start_now_selected_exams(modeladmin, request, queryset):
+    count = 0
+    for exam in queryset:
+        try:
+            if exam.status != Exam.Status.DRAFT:
+                raise ValidationError("فقط آزمون پیش‌نویس قابل شروع فوری است.")
+            exam.starts_at = None
+            exam.ends_at = None
+            exam.save(update_fields=["starts_at", "ends_at"])
+            publish_exam(exam.pk)
+            count += 1
+        except (ValidationError, Exam.DoesNotExist) as exc:
+            modeladmin.message_user(request, f"{exam.title}: {exc}", level=messages.ERROR)
+    modeladmin.message_user(request, f"{count} آزمون فوراً منتشر و فعال شد.")
+
+
 class ExamQuestionInline(admin.TabularInline):
     model = ExamQuestion
     extra = 1
@@ -39,7 +56,7 @@ class ExamAdmin(admin.ModelAdmin):
     list_filter = ("kind", "status", "counts_for_league")
     search_fields = ("title",)
     inlines = [ExamQuestionInline]
-    actions = [publish_selected_exams]
+    actions = [publish_selected_exams, publish_and_start_now_selected_exams]
     readonly_fields = ("created_at", "status")
 
     def changelist_view(self, request, extra_context=None):
