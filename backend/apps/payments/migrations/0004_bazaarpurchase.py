@@ -28,4 +28,8 @@ class Migration(migrations.Migration):
                 ("user", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="bazaar_purchases", to=settings.AUTH_USER_MODEL)),
             ],
         ),
+        migrations.AddIndex(
+            model_name="bazaarpurchase",
+            index=models.Index(fields=["user", "product_id"], name="bazaar_user_product_idx"),
+        ),
     ]
