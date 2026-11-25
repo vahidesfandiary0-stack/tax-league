@@ -71,15 +71,21 @@ def verify_bazaar_subscription(product_id, purchase_token):
         f"/purchases/{quote(purchase_token, safe='')}/?{urlencode({'access_token': access_token})}"
     )
     result = _request_json(url)
+    if not isinstance(result, dict):
+        raise BazaarVerificationError("پاسخ تأیید کافه‌بازار ساختار معتبر ندارد.")
+    if result.get("error") or result.get("error_description"):
+        detail = str(result.get("error_description") or result.get("error"))[:300]
+        raise BazaarVerificationError(f"کافه‌بازار خرید را تأیید نکرد: {detail}")
     try:
-        payment_state = int(result.get("paymentState", -1))
-        expiry_ms = int(result.get("expiryTimeMillis", 0))
+        # CafeBazaar Developer API v2 returns validUntilTimestampMsec;
+        # expiryTimeMillis/paymentState belong to a different billing API.
+        expiry_ms = int(result.get("validUntilTimestampMsec", 0))
+        initiation_ms = int(result.get("initiationTimestampMsec", 0))
     except (TypeError, ValueError) as exc:
         raise BazaarVerificationError("پاسخ تأیید کافه‌بازار ساختار معتبر ندارد.") from exc
-    if payment_state not in (1, 2):
-        raise BazaarVerificationError("وضعیت پرداخت اشتراک در کافه‌بازار نهایی و معتبر نیست.")
-    if expiry_ms <= int(time.time() * 1000):
-        raise BazaarVerificationError("اعتبار اشتراک تأییدشده در کافه‌بازار پایان یافته است.")
+    now_ms = int(time.time() * 1000)
+    if initiation_ms <= 0 or expiry_ms <= now_ms or expiry_ms <= initiation_ms:
+        raise BazaarVerificationError("اشتراک در کافه‌بازار معتبر یا فعال نیست.")
     return {
         "expires_at": timezone.datetime.fromtimestamp(expiry_ms / 1000, tz=timezone.get_current_timezone()),
         "auto_renewing": bool(result.get("autoRenewing", False)),
