@@ -236,8 +236,13 @@ jobs:
             echo "=== APK SHA-256 ==="
             sha256sum "$APK"
             echo
+            echo "=== AAB SHA-256 ==="
+            sha256sum build/app/outputs/bundle/release/app-release.aab
+            echo
             echo "=== APK package and Android SDK information ==="
             "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
+            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='3'"
+            "$AAPT" dump badging "$APK" | grep -F "targetSdkVersion:'36'"
             echo
             echo "=== Resolved Flutter dependencies ==="
             flutter pub deps --style=compact
