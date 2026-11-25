@@ -299,3 +299,25 @@ def test_manager_can_publish_non_night_exam_with_unreviewed_question_but_it_is_n
     assert result.status == ExamAttempt.Status.SUBMITTED
     assert record_attempt_score(attempt.pk) is None
     assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
+
+
+
+@pytest.mark.django_db
+def test_manager_can_edit_published_exam_and_question_set_without_mutating_existing_attempt_snapshot():
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330104", password="unused"
+    )
+    exam = make_published_exam(manager)
+    attempt = start_attempt(exam.pk, manager)
+    original_snapshot_id = attempt.questions.get().source_question_id
+
+    exam.title = "عنوان اصلاح‌شده توسط مدیر"
+    exam.save(update_fields=["title"])
+    item = exam.exam_questions.get()
+    item.points_correct = 25
+    item.save(update_fields=["points_correct"])
+
+    assert Exam.objects.get(pk=exam.pk).title == "عنوان اصلاح‌شده توسط مدیر"
+    assert exam.exam_questions.get().points_correct == 25
+    assert attempt.questions.get().source_question_id == original_snapshot_id
+    assert attempt.questions.get().points_correct == 10
