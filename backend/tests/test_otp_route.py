@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.accounts.models import OTPChallenge
+from apps.accounts.models import OTPChallenge, User
 from apps.accounts.sms import SMSDeliveryFailed, SMSDeliveryNotConfigured
 
 
@@ -42,3 +42,26 @@ def test_otp_request_consumes_challenge_after_provider_failure():
     assert OTPChallenge.objects.filter(
         phone_number="09121110008", consumed_at__isnull=False
     ).exists()
+
+
+
+@pytest.mark.django_db
+def test_verify_otp_saves_selected_province_without_auto_verifying_it():
+    with patch("apps.accounts.views.verify_challenge", return_value=True):
+        response = APIClient().post(
+            reverse("verify-otp"),
+            {
+                "phone_number": "09121110007",
+                "code": "123456",
+                "province": "خوزستان",
+            },
+            format="json",
+            secure=True,
+        )
+
+    assert response.status_code == 200
+    user = User.objects.get(phone_number="09121110007")
+    assert user.province == "خوزستان"
+    assert user.province_verified is False
+    assert response.data["user"]["province"] == "خوزستان"
+    assert response.data["user"]["province_verified"] is False
