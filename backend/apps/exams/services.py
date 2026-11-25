@@ -64,9 +64,10 @@ def start_attempt(exam_id, user):
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
     now = timezone.now()
+    # Every participant shares the same scheduled window. A late arrival
+    # receives only the remaining time; NIGHT is not a per-user timer.
     if exam.starts_at and now < exam.starts_at:
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
-    # Scheduled exams share one deadline across all participants.
     if exam.starts_at:
         shared_deadline = exam.starts_at + timedelta(minutes=exam.duration_minutes)
         if exam.ends_at:
@@ -77,6 +78,13 @@ def start_attempt(exam_id, user):
         shared_deadline = None
         if exam.ends_at and now >= exam.ends_at:
             raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
+    if exam.kind == Exam.Kind.NIGHT:
+        if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
+            raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
+        if exam.starts_at is None or exam.ends_at is None:
+            raise ValidationError("آزمون شبانه باید زمان شروع و پایان مشترک داشته باشد.")
+    elif exam.counts_for_league:
+        raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     if exam.requires_purchase:
         from apps.payments.models import PurchasedExamAccess
         from apps.subscriptions.models import UserSubscription
@@ -94,7 +102,7 @@ def start_attempt(exam_id, user):
     ).first()
     if existing:
         return existing
-    if ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
+    if exam.kind != Exam.Kind.NIGHT and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
     started_at = exam.starts_at if exam.starts_at else now
     deadline_at = shared_deadline or (now + timedelta(minutes=exam.duration_minutes))
@@ -185,14 +193,27 @@ def publish_exam(exam_id):
     exam = Exam.objects.select_for_update().get(pk=exam_id)
     if exam.status != Exam.Status.DRAFT:
         raise ValidationError("فقط آزمون پیش‌نویس قابل انتشار است.")
+    if exam.kind == Exam.Kind.NIGHT:
+        if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
+            raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
+        # A published night exam always has one common start and end for all users.
+        if exam.starts_at is None:
+            exam.starts_at = timezone.now()
+        if exam.ends_at is None:
+            exam.ends_at = exam.starts_at + timedelta(minutes=exam.duration_minutes)
+        if exam.ends_at <= exam.starts_at:
+            raise ValidationError("پایان آزمون شبانه باید بعد از شروع مشترک آن باشد.")
+    elif exam.counts_for_league:
+        raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
     if not items:
         raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
     for item in items:
-        if item.question.status != item.question.Status.PUBLISHED:
-            raise ValidationError("همه سؤال‌های آزمون باید منتشرشده باشند.")
+        # Publication/review status is deliberately not a launch gate for
+        # manager-created exams. Keep only the minimum answer-shape integrity
+        # required for deterministic server-side scoring.
         if item.question.options.count() != 4 or item.question.options.filter(is_correct=True).count() != 1:
             raise ValidationError("هر سؤال باید چهار گزینه و دقیقاً یک پاسخ صحیح داشته باشد.")
     exam.status = Exam.Status.PUBLISHED
-    exam.save(update_fields=["status"])
+    exam.save(update_fields=["status", "starts_at", "ends_at"])
     return exam

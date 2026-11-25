@@ -16,7 +16,7 @@ from apps.questions.models import Question, QuestionOption
 
 
 @pytest.mark.django_db
-def make_published_exam(user, *, question_count=1, ends_at=None):
+def make_published_exam(user, *, question_count=1, ends_at=None, kind=Exam.Kind.DAILY, max_attempts=2, counts_for_league=False):
     questions = []
     for index in range(question_count):
         question = Question.objects.create(
@@ -34,12 +34,16 @@ def make_published_exam(user, *, question_count=1, ends_at=None):
         question.save(update_fields=["status"])
         questions.append(question)
 
+    night_start = timezone.now() - timedelta(minutes=1) if kind == Exam.Kind.NIGHT else None
+    night_end = night_start + timedelta(minutes=30) if night_start else ends_at
     exam = Exam.objects.create(
         title="آزمون آزمایشی",
-        kind=Exam.Kind.DAILY,
+        kind=kind,
         duration_minutes=30,
-        max_attempts=2,
-        ends_at=ends_at,
+        max_attempts=max_attempts,
+        counts_for_league=counts_for_league,
+        starts_at=night_start,
+        ends_at=night_end,
     )
     for position, question in enumerate(questions, start=1):
         ExamQuestion.objects.create(
@@ -188,3 +192,180 @@ def test_finalization_after_deadline_marks_attempt_expired():
 
     assert result.status == ExamAttempt.Status.EXPIRED
     assert result.submitted_at is not None
+
+
+
+@pytest.mark.django_db
+def test_night_exam_allows_unlimited_attempts():
+    user = get_user_model().objects.create_user(phone_number="09123330101")
+    exam = make_published_exam(
+        user, kind=Exam.Kind.NIGHT, max_attempts=0, counts_for_league=True
+    )
+
+    attempts = []
+    for _ in range(3):
+        attempt = start_attempt(exam.pk, user)
+        attempts.append(attempt.pk)
+        # Simulate an attempt already closed by the common exam-window deadline;
+        # max_attempts=0 must not impose a separate per-user attempt cap.
+        ExamAttempt.objects.filter(pk=attempt.pk).update(status=ExamAttempt.Status.EXPIRED)
+
+    assert len(set(attempts)) == 3
+    assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 3
+
+
+
+@pytest.mark.django_db
+def test_manager_can_publish_exam_with_unreviewed_question_and_start_it_immediately():
+    from apps.exams.services import publish_exam
+
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330102", password="unused"
+    )
+    question = Question.objects.create(
+        subject=Question.Subject.VAT,
+        prompt="سؤال مدیریتی راستی‌آزمایی‌نشده",
+        explanation="توضیح آزمایشی",
+        author=manager,
+        status=Question.Status.DRAFT,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question,
+            position=position,
+            text=f"گزینه {position}",
+            is_correct=(position == 2),
+        )
+    future_start = timezone.now() + timedelta(days=30)
+    exam = Exam.objects.create(
+        title="شبانه فوری با سؤال پیش‌نویس",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=20,
+        max_attempts=0,
+        starts_at=future_start,
+        ends_at=None,
+        counts_for_league=True,
+        requires_purchase=False,
+    )
+    ExamQuestion.objects.create(exam=exam, question=question, position=1)
+
+    published = publish_exam(exam.pk)
+    assert published.status == Exam.Status.PUBLISHED
+    assert question.status == Question.Status.DRAFT
+    assert published.starts_at == future_start
+    assert published.ends_at == future_start + timedelta(minutes=20)
+
+    with patch("apps.exams.services.timezone.now", return_value=future_start - timedelta(minutes=1)):
+        with pytest.raises(DjangoValidationError):
+            start_attempt(published.pk, manager)
+
+    late_arrival = future_start + timedelta(minutes=12)
+    with patch("apps.exams.services.timezone.now", return_value=late_arrival):
+        attempt = start_attempt(published.pk, manager)
+
+    assert attempt.started_at == future_start
+    assert attempt.deadline_at == future_start + timedelta(minutes=20)
+    assert attempt.deadline_at - late_arrival == timedelta(minutes=8)
+    assert attempt.questions.count() == 1
+
+
+@pytest.mark.django_db
+def test_manager_can_publish_non_night_exam_with_unreviewed_question_but_it_is_not_league_exam():
+    from apps.exams.services import publish_exam
+    from apps.league.services import record_attempt_score
+    from apps.league.models import LeagueScoreEntry, LeagueSeason
+
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330103", password="unused"
+    )
+    season = LeagueSeason.objects.create(
+        title="فصل آزمون مدیریتی",
+        starts_at=timezone.now() - timedelta(days=1),
+        ends_at=timezone.now() + timedelta(days=1),
+    )
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    question = Question.objects.create(
+        subject=Question.Subject.DIRECT_TAX,
+        prompt="سؤال تمرینی تأییدنشده",
+        author=manager,
+        status=Question.Status.PENDING,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question,
+            position=position,
+            text=f"گزینه {position}",
+            is_correct=(position == 1),
+        )
+    exam = Exam.objects.create(
+        title="آزمون تمرینی مدیریتی",
+        kind=Exam.Kind.DAILY,
+        duration_minutes=15,
+        max_attempts=1,
+        counts_for_league=False,
+    )
+    ExamQuestion.objects.create(exam=exam, question=question, position=1)
+
+    published = publish_exam(exam.pk)
+    attempt = start_attempt(published.pk, manager)
+    result = finalize_attempt(attempt.pk, manager)
+
+    assert result.status == ExamAttempt.Status.SUBMITTED
+    assert record_attempt_score(attempt.pk) is None
+    assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
+
+
+
+@pytest.mark.django_db
+def test_manager_can_edit_published_exam_and_question_set_without_mutating_existing_attempt_snapshot():
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330104", password="unused"
+    )
+    exam = make_published_exam(manager)
+    attempt = start_attempt(exam.pk, manager)
+    original_snapshot_id = attempt.questions.get().source_question_id
+
+    exam.title = "عنوان اصلاح‌شده توسط مدیر"
+    exam.save(update_fields=["title"])
+    item = exam.exam_questions.get()
+    item.points_correct = 25
+    item.save(update_fields=["points_correct"])
+
+    assert Exam.objects.get(pk=exam.pk).title == "عنوان اصلاح‌شده توسط مدیر"
+    assert exam.exam_questions.get().points_correct == 25
+    assert attempt.questions.get().source_question_id == original_snapshot_id
+    assert attempt.questions.get().points_correct == 10
+
+
+
+@pytest.mark.django_db
+def test_all_night_exam_participants_share_one_deadline_and_late_arrival_gets_only_remaining_time():
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330105", password="unused"
+    )
+    first_user = get_user_model().objects.create_user(phone_number="09123330106")
+    late_user = get_user_model().objects.create_user(phone_number="09123330107")
+    exam = make_published_exam(
+        manager, kind=Exam.Kind.NIGHT, max_attempts=0, counts_for_league=True
+    )
+    common_start = timezone.now() + timedelta(minutes=5)
+    common_end = common_start + timedelta(minutes=30)
+    exam.starts_at = common_start
+    exam.ends_at = common_end
+    exam.save(update_fields=["starts_at", "ends_at"])
+
+    with patch("apps.exams.services.timezone.now", return_value=common_start):
+        first_attempt = start_attempt(exam.pk, first_user)
+    late_time = common_start + timedelta(minutes=21)
+    with patch("apps.exams.services.timezone.now", return_value=late_time):
+        late_attempt = start_attempt(exam.pk, late_user)
+
+    assert first_attempt.deadline_at == common_end
+    assert late_attempt.deadline_at == common_end
+    assert late_attempt.deadline_at - late_time == timedelta(minutes=9)
+    assert first_attempt.started_at == common_start
+    assert late_attempt.started_at == common_start
+
+    with patch("apps.exams.services.timezone.now", return_value=late_time):
+        with pytest.raises(DjangoValidationError, match="پیش از زمان پایان"):
+            finalize_attempt(late_attempt.pk, late_user)

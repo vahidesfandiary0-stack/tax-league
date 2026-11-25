@@ -17,7 +17,12 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    # Official league scores are exclusive to free night exams. Never trust
+    # the generic flag alone: legacy/admin-created practice exams must not rank.
+    from apps.exams.models import Exam
+    if (attempt.exam.kind != Exam.Kind.NIGHT
+            or attempt.exam.requires_purchase
+            or not attempt.exam.counts_for_league):
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
