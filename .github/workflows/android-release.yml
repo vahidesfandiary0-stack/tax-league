@@ -81,25 +81,42 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
+
           gradle = Path("android/app/build.gradle.kts")
-          s = gradle.read_text()
-          s = s.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36", 1)
-          s = s.replace("targetSdk = flutter.targetSdkVersion", "targetSdk = 36", 1)
-          if "targetSdk = 36" not in s:
-              s, n = re.subn(r"(defaultConfig\s*\{)", r"\1\n        targetSdk = 36", s, count=1)
-              if n != 1: raise SystemExit("Could not set targetSdk")
-          if "compileSdk = 36" not in s or "targetSdk = 36" not in s:
-              raise SystemExit("API 36 configuration verification failed")
-          gradle.write_text(s)
+          source = gradle.read_text(encoding="utf-8")
+          source = source.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36", 1)
+          source = source.replace("targetSdk = flutter.targetSdkVersion", "targetSdk = 36", 1)
+          if "targetSdk = 36" not in source:
+              source, count = re.subn(r"(defaultConfig\s*\{)", r"\1\n        targetSdk = 36", source, count=1)
+              if count != 1:
+                  raise SystemExit("Could not safely set targetSdk to 36")
+          if "compileSdk = 36" not in source or "targetSdk = 36" not in source:
+              raise SystemExit("Android API 36 configuration verification failed")
+          gradle.write_text(source, encoding="utf-8")
+
           manifest = Path("android/app/src/main/AndroidManifest.xml")
-          x = manifest.read_text()
-          x, n = re.subn(r"(<application\b[^>]*)(>)",
-              r'\1 android:allowBackup="false" android:usesCleartextTraffic="false"\2',
-              x, count=1)
-          if n != 1: raise SystemExit("Could not secure application manifest")
-          if "android.permission.INTERNET" not in x:
-              x = x.replace("<application", '<uses-permission android:name="android.permission.INTERNET" />\n    <application', 1)
-          manifest.write_text(x)
+          xml = manifest.read_text(encoding="utf-8")
+          if not re.search(r'<uses-permission\b[^>]*android:name=["\']android.permission.INTERNET["\']', xml):
+              xml, count = re.subn(r"(?m)^\s*<application\b",
+                  '    <uses-permission android:name="android.permission.INTERNET" />\n\n    <application',
+                  xml, count=1)
+              if count != 1:
+                  raise SystemExit("Could not add required INTERNET permission")
+          match = re.search(r"<application\b[^>]*>", xml, re.S)
+          if not match:
+              raise SystemExit("Android application element not found")
+          tag = match.group(0)
+          for name, value in (("android:allowBackup", "false"), ("android:usesCleartextTraffic", "false")):
+              pattern = re.escape(name) + r'="[^"]*"'
+              if re.search(pattern, tag):
+                  tag = re.sub(pattern, name + '="' + value + '"', tag, count=1)
+              else:
+                  tag = tag[:-1] + " " + name + '="' + value + '">'
+          xml = xml[:match.start()] + tag + xml[match.end():]
+          if 'android:allowBackup="false"' not in xml or 'android:usesCleartextTraffic="false"' not in xml:
+              raise SystemExit("Secure Android manifest defaults not verified")
+          manifest.write_text(xml, encoding="utf-8")
+          print("PASS: API 36, backup disabled, cleartext disabled, and INTERNET permission only added.")
           PY
 
       - name: Verify permanent Android application identity
