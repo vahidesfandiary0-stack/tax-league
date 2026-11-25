@@ -34,13 +34,16 @@ def make_published_exam(user, *, question_count=1, ends_at=None, kind=Exam.Kind.
         question.save(update_fields=["status"])
         questions.append(question)
 
+    night_start = timezone.now() - timedelta(minutes=1) if kind == Exam.Kind.NIGHT else None
+    night_end = night_start + timedelta(minutes=30) if night_start else ends_at
     exam = Exam.objects.create(
         title="آزمون آزمایشی",
         kind=kind,
         duration_minutes=30,
         max_attempts=max_attempts,
         counts_for_league=counts_for_league,
-        ends_at=ends_at,
+        starts_at=night_start,
+        ends_at=night_end,
     )
     for position, question in enumerate(questions, start=1):
         ExamQuestion.objects.create(
@@ -203,8 +206,9 @@ def test_night_exam_allows_unlimited_attempts():
     for _ in range(3):
         attempt = start_attempt(exam.pk, user)
         attempts.append(attempt.pk)
-        result = finalize_attempt(attempt.pk, user)
-        assert result.status == ExamAttempt.Status.SUBMITTED
+        # Simulate an attempt already closed by the common exam-window deadline;
+        # max_attempts=0 must not impose a separate per-user attempt cap.
+        ExamAttempt.objects.filter(pk=attempt.pk).update(status=ExamAttempt.Status.EXPIRED)
 
     assert len(set(attempts)) == 3
     assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 3
