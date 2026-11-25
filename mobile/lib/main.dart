@@ -452,13 +452,46 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     if (await api.token != null) await loadDashboard();
   }
 
+  List<dynamic> _ensureRequiredBrandSlides(List<dynamic> remoteSlides) {
+    // Founder and official logo are required home-showcase slides. Keep them
+    // available when an older backend has not deployed the showcase endpoint
+    // or its data migration yet; management messages/ads remain server-driven.
+    final founder = remoteSlides.whereType<Map>().where(
+      (slide) => slide['kind'] == 'founder',
+    ).cast<dynamic>().firstOrNull ??
+        const <String, dynamic>{
+          'id': 'builtin-founder',
+          'kind': 'founder',
+          'title': '',
+          'body': '',
+          'duration_seconds': 5,
+        };
+    final logo = remoteSlides.whereType<Map>().where(
+      (slide) => slide['kind'] == 'logo',
+    ).cast<dynamic>().firstOrNull ??
+        const <String, dynamic>{
+          'id': 'builtin-logo',
+          'kind': 'logo',
+          'title': '',
+          'body': '',
+          'duration_seconds': 5,
+        };
+    final managedSlides = remoteSlides.where((slide) =>
+        slide is! Map || (slide['kind'] != 'founder' && slide['kind'] != 'logo'));
+    return <dynamic>[founder, logo, ...managedSlides];
+  }
+
   Future<void> _loadShowcaseSlides() async {
     try {
       final data = await api.request('notifications/showcase/');
       if (!mounted || data is! List) return;
-      setState(() => showcaseSlides = List<dynamic>.from(data));
+      final slides = _ensureRequiredBrandSlides(List<dynamic>.from(data));
+      setState(() => showcaseSlides = slides);
     } catch (_) {
-      // The optional carousel must never block the dashboard.
+      // An unavailable optional endpoint must not hide the required brand
+      // slides or block the dashboard.
+      if (!mounted || showcaseSlides.isNotEmpty) return;
+      setState(() => showcaseSlides = _ensureRequiredBrandSlides(const []));
     }
   }
 
