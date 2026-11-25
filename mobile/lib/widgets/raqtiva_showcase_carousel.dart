@@ -167,7 +167,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
