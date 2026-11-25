@@ -29,17 +29,25 @@ def record_attempt_score(attempt_id):
     if existing:
         return existing
 
+    # League eligibility is determined by the shared NIGHT exam window, not
+    # each participant's join or delayed finalize time. This keeps every user
+    # in the same exam under the same season boundary.
+    if attempt.exam.starts_at is None or attempt.exam.ends_at is None:
+        return None
     season = LeagueSeason.objects.select_for_update().filter(
         status=LeagueSeason.Status.ACTIVE,
-        starts_at__lte=attempt.started_at,
-        ends_at__gte=attempt.submitted_at,
+        starts_at__lte=attempt.exam.starts_at,
+        ends_at__gte=attempt.exam.ends_at,
     ).first()
     if season is None:
         # A completed exam must remain finalized even if no eligible season is active.
         # It simply does not contribute to an official season leaderboard.
         return None
 
-    elapsed = max(0, int((attempt.submitted_at - attempt.started_at).total_seconds()))
+    # A client may finalize after losing connectivity at the common deadline.
+    # Waiting to send the result must not increase the measured response time.
+    elapsed_end = min(attempt.submitted_at, attempt.deadline_at)
+    elapsed = max(0, int((elapsed_end - attempt.started_at).total_seconds()))
     return LeagueScoreEntry.objects.create(
         season=season,
         attempt=attempt,
