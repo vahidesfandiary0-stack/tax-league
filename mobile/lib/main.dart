@@ -1343,23 +1343,21 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 10) {
-      // Performance metrics on this page are restricted to official league
-      // exams; practice and other exam types must never inflate league stats.
-      final officialResults = results
-          .where((item) => item is Map && item['counts_for_league'] == true)
-          .toList();
-      final scores = officialResults
+      // League rank/score/count come only from the official league ledger.
+      // Activity metrics below are explicitly labelled as all exam attempts.
+      final allResults = results;
+      final scores = allResults
           .map((item) => num.tryParse(item['score']?.toString() ?? ''))
           .whereType<num>()
           .toList();
       final averageScore = scores.isEmpty
           ? '—'
           : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
-      final correctTotal = officialResults.fold<int>(
+      final correctTotal = allResults.fold<int>(
         0,
         (sum, item) => sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
       );
-      final wrongTotal = officialResults.fold<int>(
+      final wrongTotal = allResults.fold<int>(
         0,
         (sum, item) => sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
       );
@@ -1386,9 +1384,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                       _RaqtivaPerformanceMetric(label: 'رتبه لیگ', value: stats?['rank']?.toString() ?? '—', icon: Icons.emoji_events_rounded),
                       _RaqtivaPerformanceMetric(label: 'امتیاز کل لیگ', value: stats?['total_score']?.toString() ?? '۰', icon: Icons.stars_rounded),
                       _RaqtivaPerformanceMetric(label: 'آزمون‌های مؤثر در لیگ', value: stats?['exams_count']?.toString() ?? '۰', icon: Icons.assignment_turned_in_rounded),
-                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز آزمون رسمی', value: averageScore, icon: Icons.insights_rounded),
-                      _RaqtivaPerformanceMetric(label: 'پاسخ صحیح رسمی', value: correctTotal.toString(), icon: Icons.check_circle_rounded),
-                      _RaqtivaPerformanceMetric(label: 'پاسخ غلط رسمی', value: wrongTotal.toString(), icon: Icons.cancel_rounded),
+                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز همه آزمون‌ها', value: averageScore, icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ صحیح همه آزمون‌ها', value: correctTotal.toString(), icon: Icons.check_circle_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ غلط همه آزمون‌ها', value: wrongTotal.toString(), icon: Icons.cancel_rounded),
                     ],
                   ),
                 ],
@@ -1401,11 +1399,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('آخرین نتایج آزمون‌های رسمی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const Text('آخرین نتایج آزمون‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
-                  if (officialResults.isEmpty)
-                    const Text('هنوز نتیجه‌ای از آزمون رسمیِ مؤثر بر لیگ برای شما ثبت نشده است.'),
-                  for (final item in officialResults.take(5))
+                  if (allResults.isEmpty)
+                    const Text('پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
+                  for (final item in allResults.take(5))
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text((item['exam_title'] ?? 'آزمون').toString()),
