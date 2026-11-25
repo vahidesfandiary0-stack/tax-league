@@ -39,6 +39,12 @@ class ShowcaseSlideApiTests(APITestCase):
             body="متن تبلیغ دوم",
             sort_order=0,
         )
+        founder = ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.Kind.FOUNDER,
+            title="اطلاعات بنیان‌گذار",
+            body="فقط در صفحه معرفی بنیان‌گذار",
+            sort_order=2,
+        )
         first = ShowcaseSlide.objects.create(
             kind=ShowcaseSlide.Kind.MESSAGE,
             title="پیام اول",
@@ -54,3 +60,4 @@ class ShowcaseSlideApiTests(APITestCase):
         self.assertEqual(response.data[0]["kind"], ShowcaseSlide.Kind.ADVERTISEMENT)
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
+        self.assertNotIn(founder.pk, [item["id"] for item in response.data])
