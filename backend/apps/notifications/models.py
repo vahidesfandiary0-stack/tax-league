@@ -29,6 +29,8 @@ class Notification(models.Model):
 
 class ShowcaseSlide(models.Model):
     class Kind(models.TextChoices):
+        FOUNDER = "founder", "بنیان‌گذار"
+        LOGO = "logo", "لوگوی لیگ"
         MESSAGE = "message", "پیام مدیریتی"
         ADVERTISEMENT = "advertisement", "تبلیغات"
 
