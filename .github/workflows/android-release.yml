@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "release/googleplay-slider-*"
+  pull_request:
+    branches:
+      - "release/googleplay-slider-*"
   workflow_dispatch:
     inputs:
       api_base_url:
