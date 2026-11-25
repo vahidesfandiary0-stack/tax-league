@@ -12,6 +12,7 @@ from apps.exams.models import (
 from apps.exams.services import finalize_attempt, save_answer, start_attempt
 from apps.exams.serializers import AttemptSerializer
 from apps.notifications.models import Notification
+from apps.league.models import LeagueScoreEntry, LeagueSeason
 from apps.questions.models import Question, QuestionOption
 
 
@@ -364,8 +365,20 @@ def test_all_night_exam_participants_share_one_deadline_and_late_arrival_gets_on
     assert late_attempt.deadline_at == common_end
     assert late_attempt.deadline_at - late_time == timedelta(minutes=9)
     assert first_attempt.started_at == common_start
-    assert late_attempt.started_at == common_start
+    assert late_attempt.started_at == late_time
 
     with patch("apps.exams.services.timezone.now", return_value=late_time):
         with pytest.raises(DjangoValidationError, match="پیش از زمان پایان"):
             finalize_attempt(late_attempt.pk, late_user)
+
+    season = LeagueSeason.objects.create(
+        title="فصل سنجش زمان ورود دیرهنگام",
+        starts_at=common_start - timedelta(days=1),
+        ends_at=common_end + timedelta(days=1),
+    )
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    with patch("apps.exams.services.timezone.now", return_value=common_end):
+        finalized = finalize_attempt(late_attempt.pk, late_user)
+    entry = LeagueScoreEntry.objects.get(attempt=finalized)
+    assert finalized.status == ExamAttempt.Status.EXPIRED
+    assert entry.elapsed_seconds == 9 * 60
