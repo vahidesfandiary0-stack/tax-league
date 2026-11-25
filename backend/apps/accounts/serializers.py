@@ -1,5 +1,6 @@
 import re
 from rest_framework import serializers
+from .models import User
 
 
 class RequestOTPSerializer(serializers.Serializer):
@@ -15,3 +16,4 @@ class RequestOTPSerializer(serializers.Serializer):
 class VerifyOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20)
     code = serializers.RegexField(r"^[0-9]{6}$")
+    province = serializers.ChoiceField(choices=[value for value, _ in User.PROVINCE_CHOICES], required=False)
