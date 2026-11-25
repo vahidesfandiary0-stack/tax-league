@@ -36,7 +36,7 @@ class ShowcaseSlideApiTests(APITestCase):
             kind=ShowcaseSlide.Kind.ADVERTISEMENT,
             title="تبلیغ دوم",
             body="متن تبلیغ دوم",
-            sort_order=20,
+            sort_order=0,
         )
         first = ShowcaseSlide.objects.create(
             kind=ShowcaseSlide.Kind.MESSAGE,
