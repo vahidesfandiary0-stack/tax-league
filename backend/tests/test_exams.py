@@ -246,12 +246,22 @@ def test_manager_can_publish_exam_with_unreviewed_question_and_start_it_immediat
     ExamQuestion.objects.create(exam=exam, question=question, position=1)
 
     published = publish_exam(exam.pk)
-    attempt = start_attempt(published.pk, manager)
-
     assert published.status == Exam.Status.PUBLISHED
     assert question.status == Question.Status.DRAFT
-    assert attempt.started_at <= timezone.now()
-    assert attempt.deadline_at > attempt.started_at
+    assert published.starts_at == future_start
+    assert published.ends_at == future_start + timedelta(minutes=20)
+
+    with patch("apps.exams.services.timezone.now", return_value=future_start - timedelta(minutes=1)):
+        with pytest.raises(DjangoValidationError):
+            start_attempt(published.pk, manager)
+
+    late_arrival = future_start + timedelta(minutes=12)
+    with patch("apps.exams.services.timezone.now", return_value=late_arrival):
+        attempt = start_attempt(published.pk, manager)
+
+    assert attempt.started_at == future_start
+    assert attempt.deadline_at == future_start + timedelta(minutes=20)
+    assert attempt.deadline_at - late_arrival == timedelta(minutes=8)
     assert attempt.questions.count() == 1
 
 
@@ -321,3 +331,37 @@ def test_manager_can_edit_published_exam_and_question_set_without_mutating_exist
     assert exam.exam_questions.get().points_correct == 25
     assert attempt.questions.get().source_question_id == original_snapshot_id
     assert attempt.questions.get().points_correct == 10
+
+
+
+@pytest.mark.django_db
+def test_all_night_exam_participants_share_one_deadline_and_late_arrival_gets_only_remaining_time():
+    manager = get_user_model().objects.create_superuser(
+        phone_number="09123330105", password="unused"
+    )
+    first_user = get_user_model().objects.create_user(phone_number="09123330106")
+    late_user = get_user_model().objects.create_user(phone_number="09123330107")
+    exam = make_published_exam(
+        manager, kind=Exam.Kind.NIGHT, max_attempts=0, counts_for_league=True
+    )
+    common_start = timezone.now() + timedelta(minutes=5)
+    common_end = common_start + timedelta(minutes=30)
+    exam.starts_at = common_start
+    exam.ends_at = common_end
+    exam.save(update_fields=["starts_at", "ends_at"])
+
+    with patch("apps.exams.services.timezone.now", return_value=common_start):
+        first_attempt = start_attempt(exam.pk, first_user)
+    late_time = common_start + timedelta(minutes=21)
+    with patch("apps.exams.services.timezone.now", return_value=late_time):
+        late_attempt = start_attempt(exam.pk, late_user)
+
+    assert first_attempt.deadline_at == common_end
+    assert late_attempt.deadline_at == common_end
+    assert late_attempt.deadline_at - late_time == timedelta(minutes=9)
+    assert first_attempt.started_at == common_start
+    assert late_attempt.started_at == common_start
+
+    with patch("apps.exams.services.timezone.now", return_value=late_time):
+        with pytest.raises(DjangoValidationError, match="پیش از زمان پایان"):
+            finalize_attempt(late_attempt.pk, late_user)
