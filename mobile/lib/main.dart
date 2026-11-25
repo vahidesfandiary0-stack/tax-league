@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'ui/raqtiva_design.dart';
+import 'widgets/raqtiva_showcase_carousel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_poolakey/flutter_poolakey.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -395,6 +396,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   String? error;
   Map<String, dynamic>? stats;
   List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [];
+  List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
 
@@ -439,6 +441,16 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Future<void> _loadIfSignedIn() async {
     if (await api.token != null) await loadDashboard();
+  }
+
+  Future<void> _loadShowcaseSlides() async {
+    try {
+      final data = await api.request('notifications/showcase/');
+      if (!mounted || data is! List) return;
+      setState(() => showcaseSlides = List<dynamic>.from(data));
+    } catch (_) {
+      // The showcase is optional; a temporary API failure must not affect the dashboard.
+    }
   }
 
   Future<void> requestCode() async {
@@ -521,7 +533,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> logout() async {
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
+    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; showcaseSlides = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
   }
 
   Future<void> loadDashboard() async {
@@ -580,6 +592,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
+    if (mounted && !focusMode && stats != null) _loadShowcaseSlides();
   }
 
   @override
@@ -2126,6 +2139,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
                 ],
         ),
+        const SizedBox(height: 22),
+        RaqtivaShowcaseCarousel(dynamicSlides: showcaseSlides),
       ];
     }
     return [
