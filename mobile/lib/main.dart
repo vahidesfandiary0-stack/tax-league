@@ -1385,67 +1385,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
 
     if (accountPage == 5) {
-      Widget academyItem(IconData icon, String title, String description) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 11),
-          child: RaqtivaFeatureCard(
-            title: title,
-            description: description,
-            icon: icon,
-            trailing: const RaqtivaGoldBadge('در حال آماده‌سازی'),
-          ),
-        );
-      }
-
-      return Column(
-        children: [
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  Icon(Icons.school_rounded, size: 48, color: RaqtivaColors.gold),
-                  SizedBox(height: 12),
-                  Text(
-                    'آکادمی لیگ نخبگان مالیاتی',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'مسیرهای آموزشی در این بخش متمرکز می‌شوند؛ فعال‌سازی هر مسیر پس از تکمیل محتوای معتبر و آزمون فنی انجام خواهد شد.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(height: 1.8),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          academyItem(
-            Icons.library_books_rounded,
-            'بانک سؤالات تخصصی',
-            'دسته‌بندی موضوعی، سطح دشواری، منبع رسمی و تاریخ اعتبار حکم',
-          ),
-          academyItem(
-            Icons.visibility_rounded,
-            'آکادمی تله‌شناسی',
-            'تحلیل گزینه‌های انحرافی و روش حل حرفه‌ای سؤال',
-          ),
-          academyItem(
-            Icons.psychology_alt_rounded,
-            'مربی هوشمند مستند',
-            'پاسخ مبتنی بر منابع رسمی، میزان اطمینان و ارجاع موارد مبهم',
-          ),
-          academyItem(
-            Icons.analytics_rounded,
-            'آزمون تشخیصی و تطبیقی',
-            'شناخت نقاط قوت و ضعف و تعیین مسیر یادگیری',
-          ),
-          academyItem(
-            Icons.event_note_rounded,
-            'برنامه یادگیری و فلش‌کارت',
-            'مرور زمان‌بندی‌شده و پیگیری پیشرفت آموزشی',
-          ),
-        ],
+      return AcademyPage(
+        api: api,
+        onSubscribe: () => setState(() => accountPage = 4),
       );
     }
     if (accountPage == 9) return DesignerClubPage(api: api);
@@ -3671,4 +3613,198 @@ class _RaqtivaTileLinesPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(covariant _RaqtivaTileLinesPainter oldDelegate) => false;
+}
+
+
+class AcademyPage extends StatefulWidget {
+  const AcademyPage({
+    super.key,
+    required this.api,
+    required this.onSubscribe,
+  });
+
+  final LeagueApi api;
+  final VoidCallback onSubscribe;
+
+  @override
+  State<AcademyPage> createState() => _AcademyPageState();
+}
+
+class _AcademyPageState extends State<AcademyPage> {
+  List<dynamic> items = [];
+  bool loading = true;
+  bool hasActiveSubscription = false;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final response = await widget.api.request('academy/content/');
+      if (!mounted) return;
+      final data = Map<String, dynamic>.from(response as Map);
+      setState(() {
+        items = List<dynamic>.from(data['results'] ?? []);
+        hasActiveSubscription = data['has_active_subscription'] == true;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _openContent(Map<String, dynamic> item) async {
+    if (item['is_locked'] == true) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('محتوای اختصاصی آکادمی'),
+          content: const Text(
+            'برای مشاهده متن کامل این آموزش، اشتراک فعال لازم است.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('بعداً'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                widget.onSubscribe();
+              },
+              child: const Text('مشاهده طرح‌های اشتراک'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    try {
+      final slug = Uri.encodeComponent(item['slug'].toString());
+      final response = await widget.api.request('academy/content/$slug/');
+      if (!mounted) return;
+      final detail = Map<String, dynamic>.from(response as Map);
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          scrollable: true,
+          title: Text(detail['title']?.toString() ?? 'آموزش آکادمی'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(detail['body']?.toString() ?? ''),
+              const SizedBox(height: 16),
+              Text(
+                'منبع: ${detail['source_title'] ?? 'ثبت نشده'}',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              SelectableText(detail['source_url']?.toString() ?? ''),
+              if (detail['legal_effective_date'] != null)
+                Text('تاریخ اعتبار: ${detail['legal_effective_date']}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('بستن'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                const Icon(Icons.school_rounded, size: 46, color: RaqtivaColors.gold),
+                const SizedBox(height: 10),
+                const Text(
+                  'آکادمی لیگ نخبگان مالیاتی',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hasActiveSubscription
+                      ? 'اشتراک فعال است؛ محتوای اختصاصی برای شما باز است.'
+                      : 'پیش‌نمایش آموزش‌ها رایگان است؛ متن کامل محتوای اختصاصی با اشتراک فعال باز می‌شود.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(height: 1.8),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (loading)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(),
+          ))
+        else if (error != null)
+          Card(child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Text(error!, textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: const Text('تلاش دوباره'),
+              ),
+            ]),
+          ))
+        else if (items.isEmpty)
+          const Card(child: Padding(
+            padding: EdgeInsets.all(18),
+            child: Text(
+              'هنوز محتوای آموزشی تأییدشده‌ای توسط مدیریت منتشر نشده است.',
+              textAlign: TextAlign.center,
+            ),
+          ))
+        else
+          for (final raw in items)
+            if (raw is Map)
+              Card(
+                child: ListTile(
+                  leading: Icon(
+                    raw['is_locked'] == true
+                        ? Icons.lock_outline_rounded
+                        : Icons.menu_book_rounded,
+                    color: RaqtivaColors.gold,
+                  ),
+                  title: Text(raw['title']?.toString() ?? ''),
+                  subtitle: Text(raw['summary']?.toString() ?? ''),
+                  trailing: const Icon(Icons.chevron_left_rounded),
+                  onTap: () => _openContent(Map<String, dynamic>.from(raw)),
+                ),
+              ),
+      ],
+    );
+  }
 }
