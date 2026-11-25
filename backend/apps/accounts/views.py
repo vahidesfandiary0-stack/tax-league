@@ -58,6 +58,7 @@ class VerifyOTPView(APIView):
         serializer.is_valid(raise_exception=True)
         phone = serializer.validated_data["phone_number"]
         code = serializer.validated_data["code"]
+        province = serializer.validated_data.get("province")
 
         with transaction.atomic():
             if not verify_challenge(phone, code):
@@ -66,6 +67,9 @@ class VerifyOTPView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             user, _ = User.objects.get_or_create(phone_number=phone)
+            if province and not user.province:
+                user.province = province
+                user.save(update_fields=["province"])
             token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
@@ -74,5 +78,7 @@ class VerifyOTPView(APIView):
                 "id": user.pk,
                 "phone_number": user.phone_number,
                 "display_name": user.display_name,
+                "province": user.province,
+                "province_verified": user.province_verified,
             },
         })
