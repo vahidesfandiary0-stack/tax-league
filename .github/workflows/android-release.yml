@@ -47,9 +47,15 @@ jobs:
         working-directory: mobile
         run: flutter pub get
 
-      - name: Verify Flutter lock file
+      - name: Verify Flutter lock file and removed payment SDK
         working-directory: mobile
-        run: test -s pubspec.lock
+        run: |
+          set -euo pipefail
+          test -s pubspec.lock
+          if grep -q '^  flutter_poolakey:' pubspec.lock; then
+            echo "CafeBazaar Poolakey must not be present in the resolved dependency graph." >&2
+            exit 1
+          fi
 
       - name: Upload resolved Flutter lock file
         uses: actions/upload-artifact@v4
