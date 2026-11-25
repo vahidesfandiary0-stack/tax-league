@@ -36,8 +36,7 @@ def test_detailed_performance_requires_active_subscription_and_reports_missing_d
     user=get_user_model().objects.create_user(phone_number="09120000103")
     client=APIClient(); client.force_authenticate(user=user)
     assert client.get("/api/v1/league/me/performance/").status_code==403
-    plan=SubscriptionPlan.objects.create(title="ماهانه", period=SubscriptionPlan.Period.MONTHLY,
-        duration_days=30, price_irr=1000)
+    plan=SubscriptionPlan.objects.get(period=SubscriptionPlan.Period.MONTHLY)
     from apps.payments.models import PaymentOrder
     order=PaymentOrder.objects.create(user=user, product_type=PaymentOrder.ProductType.SUBSCRIPTION,
         plan=plan, amount_irr=1000, status=PaymentOrder.Status.APPROVED)
