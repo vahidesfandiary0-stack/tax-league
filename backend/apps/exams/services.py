@@ -194,6 +194,13 @@ def publish_exam(exam_id):
     if exam.kind == Exam.Kind.NIGHT:
         if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
             raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
+        # A published night exam always has one common start and end for all users.
+        if exam.starts_at is None:
+            exam.starts_at = timezone.now()
+        if exam.ends_at is None:
+            exam.ends_at = exam.starts_at + timedelta(minutes=exam.duration_minutes)
+        if exam.ends_at <= exam.starts_at:
+            raise ValidationError("پایان آزمون شبانه باید بعد از شروع مشترک آن باشد.")
     elif exam.counts_for_league:
         raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
@@ -206,5 +213,5 @@ def publish_exam(exam_id):
         if item.question.options.count() != 4 or item.question.options.filter(is_correct=True).count() != 1:
             raise ValidationError("هر سؤال باید چهار گزینه و دقیقاً یک پاسخ صحیح داشته باشد.")
     exam.status = Exam.Status.PUBLISHED
-    exam.save(update_fields=["status"])
+    exam.save(update_fields=["status", "starts_at", "ends_at"])
     return exam
