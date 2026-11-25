@@ -349,3 +349,67 @@ def test_appeal_review_requires_league_permission():
     assert response.status_code == 400
     appeal.refresh_from_db()
     assert appeal.status == LeagueAppeal.Status.PENDING
+
+
+
+@pytest.mark.django_db
+def test_non_night_exam_never_records_league_score_even_if_flag_is_set():
+    user = get_user_model().objects.create_user(phone_number="09124440101")
+    season = make_season()
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    exam = Exam.objects.create(
+        title="تمرین روزانه با پرچم ناسازگار",
+        kind=Exam.Kind.DAILY,
+        duration_minutes=30,
+        max_attempts=1,
+        counts_for_league=True,
+        requires_purchase=False,
+    )
+    now = timezone.now()
+    attempt = ExamAttempt.objects.create(
+        exam=exam,
+        user=user,
+        status=ExamAttempt.Status.SUBMITTED,
+        started_at=now - timedelta(minutes=10),
+        deadline_at=now + timedelta(minutes=20),
+        submitted_at=now,
+        score=99,
+        correct_count=10,
+        wrong_count=0,
+        blank_count=0,
+    )
+
+    assert record_attempt_score(attempt.pk) is None
+    assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
+
+
+@pytest.mark.django_db
+def test_paid_night_exam_never_records_league_score():
+    user = get_user_model().objects.create_user(phone_number="09124440102")
+    season = make_season()
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    exam = Exam.objects.create(
+        title="آزمون شبانه پولی ناسازگار",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=30,
+        max_attempts=0,
+        counts_for_league=True,
+        requires_purchase=True,
+        price_irr=1000,
+    )
+    now = timezone.now()
+    attempt = ExamAttempt.objects.create(
+        exam=exam,
+        user=user,
+        status=ExamAttempt.Status.SUBMITTED,
+        started_at=now - timedelta(minutes=10),
+        deadline_at=now + timedelta(minutes=20),
+        submitted_at=now,
+        score=99,
+        correct_count=10,
+        wrong_count=0,
+        blank_count=0,
+    )
+
+    assert record_attempt_score(attempt.pk) is None
+    assert not LeagueScoreEntry.objects.filter(attempt=attempt).exists()
