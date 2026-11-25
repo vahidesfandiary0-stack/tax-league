@@ -23,7 +23,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     DateTime? nearest;
     Map<String, dynamic>? result;
     for (final raw in widget.exams) {
-      if (raw is! Map || raw['starts_at'] == null) continue;
+      if (raw is! Map || raw['counts_for_league'] != true || raw['starts_at'] == null) continue;
       final start = DateTime.tryParse(raw['starts_at'].toString())?.toLocal();
       if (start == null || !start.isAfter(now)) continue;
       if (nearest == null || start.isBefore(nearest)) {
