@@ -27,6 +27,7 @@ class Migration(migrations.Migration):
                 ("order", models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name="bazaar_purchase", to="payments.paymentorder")),
                 ("user", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="bazaar_purchases", to=settings.AUTH_USER_MODEL)),
             ],
+            options={"ordering": ["-verified_at"]},
         ),
         migrations.AddIndex(
             model_name="bazaarpurchase",
