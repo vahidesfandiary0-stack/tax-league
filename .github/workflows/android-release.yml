@@ -205,12 +205,17 @@ jobs:
           print("PASS: Android permission allowlist.")
           PY
 
-      - name: Verify APK signature
+      - name: Verify APK and Google Play App Bundle signatures
         working-directory: mobile
         run: |
+          set -euo pipefail
           APK=build/app/outputs/flutter-apk/app-release.apk
+          AAB=build/app/outputs/bundle/release/app-release.aab
           test -s "$APK"
+          test -s "$AAB"
           "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --verbose "$APK"
+          jarsigner -verify -verbose -certs "$AAB" >/dev/null
+          echo "PASS: APK and AAB signatures verified."
 
       - name: Inspect APK permissions and Android compatibility
         working-directory: mobile
