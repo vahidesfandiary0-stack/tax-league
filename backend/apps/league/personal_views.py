@@ -29,14 +29,13 @@ class LatestNightLeaderboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        latest = LeagueScoreEntry.objects.filter(
-            attempt__exam__kind=Exam.Kind.NIGHT,
-            attempt__status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
-            attempt__submitted_at__isnull=False, attempt__score__isnull=False,
-        ).select_related("attempt__exam").order_by("-attempt__submitted_at", "-recorded_at").first()
-        if latest is None:
+        exam = Exam.objects.filter(
+            kind=Exam.Kind.NIGHT,
+            status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
+            starts_at__isnull=False,
+        ).order_by("-starts_at", "-created_at").first()
+        if exam is None:
             return Response({"exam": None, "results": []})
-        exam = latest.attempt.exam
         entries = LeagueScoreEntry.objects.filter(
             attempt__exam=exam,
             attempt__status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
@@ -55,7 +54,7 @@ class LatestNightLeaderboardView(APIView):
             for index, row in enumerate(ordered, start=1)
         ]
         return Response({"exam": {"id": str(exam.pk), "title": exam.title,
-                                  "submitted_at": latest.attempt.submitted_at},
+                                  "submitted_at": exam.starts_at},
                          "results": results})
 
 
