@@ -3114,7 +3114,7 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
   String _money(dynamic value) {
     final n = int.tryParse(value?.toString() ?? '') ?? 0;
     final s = n.toString();
-    return s.replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (m) => ',');
+    return s.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
   }
 
   String _status(dynamic value) {
@@ -3259,7 +3259,7 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
                     Text('${plan['duration_days']} روز · ${_money(plan['price_irr'])} ریال', style: const TextStyle(color: Colors.white70)),
                   ])),
                   FilledButton(
-                    onPressed: sending ? null : () => createOrder(plan),
+                    onPressed: sending || instructions['configured'] != true ? null : () => createOrder(plan),
                     child: const Text('انتخاب'),
                   ),
                 ]),
