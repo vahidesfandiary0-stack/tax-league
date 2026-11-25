@@ -56,8 +56,12 @@ class ShowcaseSlideApiTests(APITestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([item["id"] for item in response.data], [second.pk, first.pk])
+        self.assertEqual(
+            [item["id"] for item in response.data],
+            [second.pk, founder.pk, first.pk],
+        )
         self.assertEqual(response.data[0]["kind"], ShowcaseSlide.Kind.ADVERTISEMENT)
+        founder_payload = next(item for item in response.data if item["id"] == founder.pk)
+        self.assertEqual(founder_payload["title"], "اطلاعات بنیان‌گذار")
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
-        self.assertNotIn(founder.pk, [item["id"] for item in response.data])
