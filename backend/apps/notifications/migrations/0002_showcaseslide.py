@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("kind", models.CharField(choices=[("founder", "بنیان‌گذار"), ("logo", "لوگوی لیگ"), ("message", "پیام مدیریتی"), ("advertisement", "تبلیغات")], max_length=20)),
                 ("title", models.CharField(blank=True, max_length=160)),
-                ("body", models.TextField(max_length=1200)),
+                ("body", models.TextField(blank=True, max_length=1200)),
                 ("image_url", models.URLField(blank=True, max_length=1000)),
                 ("sort_order", models.PositiveSmallIntegerField(default=0)),
                 ("duration_seconds", models.PositiveSmallIntegerField(default=5, validators=[MinValueValidator(3), MaxValueValidator(15)])),
