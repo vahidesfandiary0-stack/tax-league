@@ -15,13 +15,15 @@ def test_latest_night_leaderboard_and_top_five_are_free_and_use_night_ledger():
     second = User.objects.create_user(phone_number="09120000102", display_name="نفر دوم")
     season = LeagueSeason.objects.create(title="فصل تست", starts_at=timezone.now()-timedelta(days=1),
         ends_at=timezone.now()+timedelta(days=1), status=LeagueSeason.Status.ACTIVE)
+    exam_start = timezone.now() - timedelta(hours=1)
+    exam_end = timezone.now() - timedelta(minutes=30)
     exam = Exam.objects.create(title="شبانه اخیر", kind=Exam.Kind.NIGHT, duration_minutes=30,
-        max_attempts=0, counts_for_league=True, status=Exam.Status.PUBLISHED,
-        starts_at=timezone.now())
+        max_attempts=0, counts_for_league=True, status=Exam.Status.ARCHIVED,
+        starts_at=exam_start, ends_at=exam_end)
     for user, score, correct, wrong, elapsed in [(first,90,9,1,500),(second,80,8,2,400)]:
         attempt = ExamAttempt.objects.create(exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
-            started_at=timezone.now()-timedelta(minutes=10), deadline_at=timezone.now()+timedelta(minutes=20),
-            submitted_at=timezone.now(), score=score, correct_count=correct, wrong_count=wrong, blank_count=0)
+            started_at=exam_start + timedelta(minutes=1), deadline_at=exam_end,
+            submitted_at=exam_end, score=score, correct_count=correct, wrong_count=wrong, blank_count=0)
         LeagueScoreEntry.objects.create(season=season, attempt=attempt, user=user, score=score,
             correct_count=correct, wrong_count=wrong, elapsed_seconds=elapsed)
     client=APIClient(); client.force_authenticate(user=first)
