@@ -374,10 +374,10 @@ def test_all_night_exam_participants_share_one_deadline_and_late_arrival_gets_on
     season = LeagueSeason.objects.create(
         title="فصل سنجش زمان ورود دیرهنگام",
         starts_at=common_start - timedelta(days=1),
-        ends_at=common_end + timedelta(days=1),
+        ends_at=common_end,
     )
     LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
-    with patch("apps.exams.services.timezone.now", return_value=common_end):
+    with patch("apps.exams.services.timezone.now", return_value=common_end + timedelta(minutes=5)):
         finalized = finalize_attempt(late_attempt.pk, late_user)
     entry = LeagueScoreEntry.objects.get(attempt=finalized)
     assert finalized.status == ExamAttempt.Status.EXPIRED
