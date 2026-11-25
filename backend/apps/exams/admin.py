@@ -45,6 +45,12 @@ def publish_and_start_now_selected_exams(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} آزمون فوراً منتشر و فعال شد.")
 
 
+@admin.action(description="توقف/لغو آزمون‌های انتخاب‌شده")
+def archive_selected_exams(modeladmin, request, queryset):
+    count = queryset.exclude(status=Exam.Status.ARCHIVED).update(status=Exam.Status.ARCHIVED)
+    modeladmin.message_user(request, f"{count} آزمون متوقف و بایگانی شد.")
+
+
 class ExamQuestionInline(admin.TabularInline):
     model = ExamQuestion
     extra = 1
@@ -56,7 +62,7 @@ class ExamAdmin(admin.ModelAdmin):
     list_filter = ("kind", "status", "counts_for_league")
     search_fields = ("title",)
     inlines = [ExamQuestionInline]
-    actions = [publish_selected_exams, publish_and_start_now_selected_exams]
+    actions = [publish_selected_exams, publish_and_start_now_selected_exams, archive_selected_exams]
     readonly_fields = ("created_at", "status")
 
     def changelist_view(self, request, extra_context=None):
