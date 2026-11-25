@@ -537,8 +537,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         final data = await Future.wait([
           api.request('exams/'),
           api.request('exams/results/'),
-          api.request('league/latest-night/'),
-          api.request('league/me/top-records/'),
         ]);
         if (!mounted) return;
         setState(() {
@@ -556,6 +554,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           api.request('exams/'),
           api.request('exams/results/'),
         ]);
+        // Optional ranking endpoints must not break the existing dashboard
+        // while backend rollout is still in progress.
+        final latestNight = await api.request('league/latest-night/').catchError(
+          (_) => <String, dynamic>{'results': <dynamic>[]},
+        );
+        final topRecords = await api.request('league/me/top-records/').catchError(
+          (_) => <String, dynamic>{'records': <dynamic>[]},
+        );
         List<dynamic> provincialRows = [];
         String? province;
         String? provinceNotice;
@@ -581,8 +587,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           appeals = List<dynamic>.from(data[2] as List);
           exams = List<dynamic>.from(data[3] as List);
           results = List<dynamic>.from(data[4] as List);
-          latestNightData = Map<String, dynamic>.from(data[5] as Map);
-          topNightRecords = List<dynamic>.from((data[6] as Map)['records'] ?? []);
+          latestNightData = Map<String, dynamic>.from(latestNight as Map);
+          topNightRecords = List<dynamic>.from((topRecords as Map)['records'] ?? []);
         });
       }
     } catch (e) {
