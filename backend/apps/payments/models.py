@@ -66,6 +66,7 @@ class PaymentOrder(models.Model):
     plan = models.ForeignKey("subscriptions.SubscriptionPlan", null=True, blank=True, on_delete=models.PROTECT)
     exam = models.ForeignKey("exams.Exam", null=True, blank=True, on_delete=models.PROTECT)
     amount_irr = models.PositiveBigIntegerField()
+    plan_duration_days_snapshot = models.PositiveSmallIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AWAITING_PAYMENT)
     tracking_code = models.CharField(max_length=100, blank=True)
     receipt = models.FileField(
@@ -89,13 +90,15 @@ class PaymentOrder(models.Model):
             raise ValidationError({"amount_irr": "مبلغ سفارش باید بیشتر از صفر باشد."})
         if self.product_type == self.ProductType.SUBSCRIPTION and (not self.plan_id or self.exam_id):
             raise ValidationError("سفارش اشتراک باید فقط یک طرح اشتراک داشته باشد.")
+        if self.product_type == self.ProductType.SUBSCRIPTION and self.plan_duration_days_snapshot is not None and self.plan_duration_days_snapshot < 1:
+            raise ValidationError("مدت ثبت‌شده اشتراک باید بیشتر از صفر باشد.")
         if self.product_type == self.ProductType.EXAM and (not self.exam_id or self.plan_id):
             raise ValidationError("سفارش آزمون باید فقط یک آزمون داشته باشد.")
 
     def save(self, *args, **kwargs):
         if self.pk and PaymentOrder.objects.filter(pk=self.pk).exists():
             old = PaymentOrder.objects.get(pk=self.pk)
-            immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr")
+            immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr", "plan_duration_days_snapshot")
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
                 raise ValidationError("مشخصات و مبلغ سفارش پس از ایجاد قابل تغییر نیست.")
             if old.status == self.Status.APPROVED:
