@@ -104,7 +104,9 @@ def start_attempt(exam_id, user):
         return existing
     if exam.kind != Exam.Kind.NIGHT and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
-    started_at = exam.starts_at if exam.starts_at else now
+    # Keep the common deadline, but measure each participant's actual active time.
+    # Late joiners must not be charged with time elapsed before they entered.
+    started_at = now
     deadline_at = shared_deadline or (now + timedelta(minutes=exam.duration_minutes))
     if not exam.starts_at and exam.ends_at:
         deadline_at = min(deadline_at, exam.ends_at)
