@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'utils/showcase_slide_utils.dart';
-import 'dart:convert';\nimport 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'ui/raqtiva_design.dart';
