@@ -34,9 +34,9 @@ def validate_receipt_content(file_obj):
             raise ValidationError("فایل تصویر رسید خراب یا نامعتبر است.")
         finally:
             file_obj.seek(0)
-        if suffix in {".jpg", ".jpeg"} and not head.startswith(b"\\xff\\xd8\\xff"):
+        if suffix in {".jpg", ".jpeg"} and not head.startswith(b"\xff\xd8\xff"):
             raise ValidationError("محتوای فایل با پسوند تصویر مطابقت ندارد.")
-        if suffix == ".png" and not head.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        if suffix == ".png" and not head.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValidationError("محتوای فایل با پسوند تصویر مطابقت ندارد.")
         return
     if suffix == ".pdf" and head.startswith(b"%PDF-"):
