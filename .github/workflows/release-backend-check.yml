@@ -3,7 +3,7 @@ name: Release backend verification
 on:
   pull_request:
     branches:
-      - "release/googleplay-slider-20261125"
+      - "release/googleplay-slider-*"
     paths:
       - "backend/**"
       - ".github/workflows/release-backend-check.yml"
