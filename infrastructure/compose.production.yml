@@ -57,6 +57,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - private_media:/srv/media:ro
     networks: [private]
 volumes:
   postgres_data:
