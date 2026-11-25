@@ -78,8 +78,8 @@ def start_attempt(exam_id, user):
         if exam.ends_at and now >= exam.ends_at:
             raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
     if exam.kind == Exam.Kind.NIGHT:
-        if exam.requires_purchase or not exam.counts_for_league:
-            raise ValidationError("آزمون شبانه باید رایگان و مؤثر در رتبه‌بندی لیگ باشد.")
+        if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
+            raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
     elif exam.counts_for_league:
         raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     if exam.requires_purchase:
@@ -191,8 +191,8 @@ def publish_exam(exam_id):
     if exam.status != Exam.Status.DRAFT:
         raise ValidationError("فقط آزمون پیش‌نویس قابل انتشار است.")
     if exam.kind == Exam.Kind.NIGHT:
-        if exam.requires_purchase or not exam.counts_for_league:
-            raise ValidationError("آزمون شبانه باید رایگان و مؤثر در رتبه‌بندی لیگ باشد.")
+        if exam.requires_purchase or not exam.counts_for_league or exam.max_attempts != 0:
+            raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
     elif exam.counts_for_league:
         raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
