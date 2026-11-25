@@ -1562,7 +1562,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'وحید اسفندیاری',
+              'وحید اسفندیاری نژاد',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
