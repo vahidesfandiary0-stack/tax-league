@@ -185,6 +185,18 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                  if (slide['title']?.toString().isNotEmpty == true)
+                    Text(
+                      slide['title'].toString(),
+                      style: const TextStyle(color: Color(0xFFFFE4A8), fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  if (body.isNotEmpty)
+                    Text(
+                      body,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
+                    ),
                 ],
               ),
             ),
@@ -207,15 +219,28 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
             ),
             const SizedBox(width: 10),
             const Expanded(
-              child: Text(
-                'رقابت کن، رتبه بگیر، نخبه شو!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFFFE4A8),
-                  fontSize: 17,
-                  height: 1.8,
-                  fontWeight: FontWeight.w900,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'رقابت کن، رتبه بگیر، نخبه شو!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFFFE4A8),
+                      fontSize: 17,
+                      height: 1.8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  if (title.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ],
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 10, height: 1.4)),
+                  ],
+                ],
               ),
             ),
           ],
