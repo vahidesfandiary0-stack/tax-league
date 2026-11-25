@@ -38,8 +38,8 @@ class Exam(models.Model):
         if self.duration_minutes < 1 or self.max_attempts < 0:
             raise ValidationError("مدت آزمون و تعداد دفعات مجاز نامعتبر است.")
         if self.kind == self.Kind.NIGHT:
-            if self.requires_purchase or not self.counts_for_league:
-                raise ValidationError("آزمون شبانه باید رایگان و مؤثر در رتبه‌بندی لیگ باشد.")
+            if self.requires_purchase or not self.counts_for_league or self.max_attempts != 0:
+                raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
         elif self.max_attempts < 1:
             raise ValidationError("تعداد دفعات مجاز آزمون باید حداقل یک باشد.")
         elif self.counts_for_league:
