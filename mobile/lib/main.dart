@@ -456,7 +456,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> _loadShowcaseSlides() async {
     try {
       final data = await api.request('notifications/showcase/');
-      if (!mounted || data is! List) return;
+      if (!mounted) return;
+      if (data is! List) {
+        throw const FormatException('پاسخ اسلایدر ساختار معتبری ندارد.');
+      }
       // Successful server data is authoritative, including an empty list:
       // managers control ordering and whether each slide is active.
       setState(() => showcaseSlides = List<dynamic>.from(data));
