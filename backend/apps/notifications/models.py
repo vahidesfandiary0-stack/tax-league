@@ -36,7 +36,7 @@ class ShowcaseSlide(models.Model):
 
     kind = models.CharField(max_length=20, choices=Kind.choices)
     title = models.CharField(max_length=160, blank=True)
-    body = models.TextField(max_length=1200)
+    body = models.TextField(max_length=1200, blank=True)
     image_url = models.URLField(max_length=1000, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     duration_seconds = models.PositiveSmallIntegerField(
