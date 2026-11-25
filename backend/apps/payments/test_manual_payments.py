@@ -6,9 +6,10 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
+from PIL import Image
 
 from apps.exams.models import Exam
-from apps.payments.models import PaymentOrder, PaymentSettings
+from apps.payments.models import PaymentOrder, PaymentSettings, validate_receipt_content
 from apps.payments.services import approve_order, create_subscription_order
 from apps.subscriptions.models import SubscriptionPlan, UserSubscription
 
@@ -33,6 +34,17 @@ class PaymentWorkflowTests(TestCase):
         order.amount_irr = 1
         with self.assertRaises(ValidationError):
             order.save()
+
+    def test_valid_jpeg_and_png_receipts_are_accepted(self):
+        for image_format, extension in (("JPEG", "jpg"), ("PNG", "png")):
+            with self.subTest(extension=extension):
+                image_bytes = BytesIO()
+                Image.new("RGB", (2, 2), color="white").save(image_bytes, format=image_format)
+                receipt = SimpleUploadedFile(
+                    f"receipt.{extension}", image_bytes.getvalue(),
+                    content_type=f"image/{'jpeg' if extension == 'jpg' else 'png'}",
+                )
+                validate_receipt_content(receipt)
 
     def test_repeated_plan_selection_reuses_open_order(self):
         first = create_subscription_order(self.user, self.plan.pk)
