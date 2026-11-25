@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
+from apps.academy.models import AcademyContent
 from apps.payments.models import BazaarPurchase, PaymentOrder
 from apps.subscriptions.models import SubscriptionPlan, UserSubscription
 
@@ -63,6 +64,24 @@ class BazaarSubscriptionAPITests(TestCase):
         )
         self.assertNotEqual(purchase.purchase_token_hash, purchase_token)
         self.assertTrue(UserSubscription.objects.filter(source_order=order, user=self.user).exists())
+        academy_item = AcademyContent.objects.create(
+            slug="bazaar-unlocks-academy",
+            title="محتوای آزمایشی اختصاصی",
+            summary="کنترل دسترسی پس از خرید",
+            category=AcademyContent.Category.TRAPOLOGY,
+            body="متن محتوای اختصاصی",
+            source_title="منبع رسمی آزمایشی",
+            source_url="https://regulation.tax.gov.ir/",
+            is_exclusive=True,
+            is_active=True,
+        )
+        academy_list = self.client.get("/api/v1/academy/content/")
+        self.assertTrue(academy_list.data["has_active_subscription"])
+        self.assertFalse(academy_list.data["results"][0]["is_locked"])
+        academy_detail = self.client.get(
+            f"/api/v1/academy/content/{academy_item.slug}/"
+        )
+        self.assertEqual(academy_detail.status_code, 200)
         order.refresh_from_db()
         self.assertEqual(order.status, PaymentOrder.Status.APPROVED)
 
