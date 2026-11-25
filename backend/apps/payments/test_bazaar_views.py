@@ -15,12 +15,7 @@ class BazaarSubscriptionAPITests(TestCase):
         self.user = User.objects.create_user("09121110001")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.plan = SubscriptionPlan.objects.create(
-            title="اشتراک ماهانه",
-            period=SubscriptionPlan.Period.MONTHLY,
-            duration_days=30,
-            price_irr=1_990_000,
-        )
+        self.plan = SubscriptionPlan.objects.get(period=SubscriptionPlan.Period.MONTHLY)
 
     @patch("apps.payments.bazaar_views.ensure_bazaar_ready")
     def test_create_order_returns_server_owned_order(self, ensure_ready):
