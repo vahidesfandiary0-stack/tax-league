@@ -33,6 +33,7 @@ class LatestNightLeaderboardView(APIView):
             kind=Exam.Kind.NIGHT,
             status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
             starts_at__isnull=False,
+            starts_at__lte=timezone.now(),
         ).order_by("-starts_at", "-created_at").first()
         if exam is None:
             return Response({"exam": None, "results": []})
