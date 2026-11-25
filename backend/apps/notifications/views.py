@@ -41,10 +41,7 @@ class ShowcaseSlideListView(APIView):
         slides = ShowcaseSlide.objects.filter(is_active=True).filter(
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gt=now),
-        ).order_by("sort_order", "pk"),
-            "sort_order",
-            "pk",
-        )
+        ).order_by("sort_order", "pk")
         return Response([
             {
                 "id": slide.pk,
