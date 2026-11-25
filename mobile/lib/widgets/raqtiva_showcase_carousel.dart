@@ -152,6 +152,50 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     final body = slide['body']?.toString() ?? '';
     final imageUrl = slide['image_url']?.toString() ?? '';
 
+    if (kind == 'founder') {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 29),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/brand/founder_vahid_esfandiary.jpg',
+                width: 112,
+                height: 158,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(
+                  width: 112,
+                  height: 158,
+                  child: Icon(Icons.person_rounded,
+                      color: Color(0xFFFFD76A), size: 58),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.isEmpty ? 'بنیانگذار لیگ : وحید اسفندیاری' : title,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Color(0xFFFFE4A8),
+                      fontSize: 17,
+                      height: 1.8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (kind == 'logo') {
       return Padding(
         padding: const EdgeInsets.fromLTRB(17, 8, 17, 27),
