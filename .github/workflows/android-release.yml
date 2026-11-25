@@ -74,26 +74,33 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
-      - name: Ensure Android internet permission
+      - name: Set Android API 36 and secure manifest defaults
         working-directory: mobile
         run: |
           set -euo pipefail
-          python - <<'INNER'
+          python - <<'PY'
           from pathlib import Path
           import re
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          s = p.read_text(encoding="utf-8")
-          permission = "android.permission.INTERNET"
-          pattern = r'<uses-permission\b[^>]*android:name=["\']' + permission + r'["\']'
-          if not re.search(pattern, s):
-              s, n = re.subn(r'(?m)^\s*<application\b',
-                  '    <uses-permission android:name="' + permission + '" />\n\n    <application',
-                  s, count=1)
-              if n != 1:
-                  raise SystemExit("Manifest application tag not found")
-              p.write_text(s, encoding="utf-8")
-          print("INTERNET permission configured.")
-          INNER
+          gradle = Path("android/app/build.gradle.kts")
+          s = gradle.read_text()
+          s = s.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36", 1)
+          s = s.replace("targetSdk = flutter.targetSdkVersion", "targetSdk = 36", 1)
+          if "targetSdk = 36" not in s:
+              s, n = re.subn(r"(defaultConfig\\s*\\{)", r"\\1\\n        targetSdk = 36", s, count=1)
+              if n != 1: raise SystemExit("Could not set targetSdk")
+          if "compileSdk = 36" not in s or "targetSdk = 36" not in s:
+              raise SystemExit("API 36 configuration verification failed")
+          gradle.write_text(s)
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          x = manifest.read_text()
+          x, n = re.subn(r"(<application\\b[^>]*)(>)",
+              r'\\1 android:allowBackup="false" android:usesCleartextTraffic="false"\\2',
+              x, count=1)
+          if n != 1: raise SystemExit("Could not secure application manifest")
+          if "android.permission.INTERNET" not in x:
+              x = x.replace("<application", '<uses-permission android:name="android.permission.INTERNET" />\\n    <application', 1)
+          manifest.write_text(x)
+          PY
 
       - name: Verify permanent Android application identity
         working-directory: mobile
