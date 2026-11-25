@@ -168,7 +168,9 @@ jobs:
         working-directory: mobile
         env:
           API_BASE_URL: ${{ inputs.api_base_url || 'https://raqtiva.ir' }}
-        run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
+        run: |
+          flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
+          flutter build appbundle --release --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Verify release internet permission
         working-directory: mobile
