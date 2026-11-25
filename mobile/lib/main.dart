@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'ui/raqtiva_design.dart';
 import 'widgets/raqtiva_showcase_carousel.dart';
+import 'utils/showcase_slide_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_poolakey/flutter_poolakey.dart'
     if (dart.library.html) 'bazaar_poolakey_stub.dart';
@@ -452,48 +453,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     if (await api.token != null) await loadDashboard();
   }
 
-  List<dynamic> _ensureRequiredBrandSlides(List<dynamic> remoteSlides) {
-    // Founder and official logo are required home-showcase slides. Keep them
-    // available when an older backend has not deployed the showcase endpoint
-    // or its data migration yet; management messages/ads remain server-driven.
-    final founderSlides = remoteSlides.whereType<Map>()
-        .where((slide) => slide['kind'] == 'founder').toList();
-    final logoSlides = remoteSlides.whereType<Map>()
-        .where((slide) => slide['kind'] == 'logo').toList();
-    final founder = founderSlides.isNotEmpty
-        ? founderSlides.first
-        : const <String, dynamic>{
-            'id': 'builtin-founder',
-            'kind': 'founder',
-            'title': '',
-            'body': '',
-            'duration_seconds': 5,
-          };
-    final logo = logoSlides.isNotEmpty
-        ? logoSlides.first
-        : const <String, dynamic>{
-            'id': 'builtin-logo',
-            'kind': 'logo',
-            'title': '',
-            'body': '',
-            'duration_seconds': 5,
-          };
-    final managedSlides = remoteSlides.where((slide) =>
-        slide is! Map || (slide['kind'] != 'founder' && slide['kind'] != 'logo'));
-    return <dynamic>[founder, logo, ...managedSlides];
-  }
-
   Future<void> _loadShowcaseSlides() async {
     try {
       final data = await api.request('notifications/showcase/');
       if (!mounted || data is! List) return;
-      final slides = _ensureRequiredBrandSlides(List<dynamic>.from(data));
+      final slides = ensureRequiredBrandSlides(List<dynamic>.from(data));
       setState(() => showcaseSlides = slides);
     } catch (_) {
       // An unavailable optional endpoint must not hide the required brand
       // slides or block the dashboard.
       if (!mounted || showcaseSlides.isNotEmpty) return;
-      setState(() => showcaseSlides = _ensureRequiredBrandSlides(const []));
+      setState(() => showcaseSlides = ensureRequiredBrandSlides(const []));
     }
   }
 
