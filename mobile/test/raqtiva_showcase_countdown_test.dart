@@ -4,8 +4,7 @@ import 'package:tax_league/widgets/raqtiva_showcase_carousel.dart';
 
 void main() {
   group('Official exam countdown', () {
-    testWidgets('selects the nearest future exam that counts for the league',
-        (tester) async {
+    testWidgets('selects the nearest future official league exam', (tester) async {
       final now = DateTime.now();
       await tester.pumpWidget(
         MaterialApp(
@@ -28,55 +27,53 @@ void main() {
           ),
         ),
       );
-
+      expect(find.text('شمارش معکوس آزمون بعدی'), findsOneWidget);
       expect(find.text('آزمون رسمی لیگ'), findsOneWidget);
       expect(find.text('آزمون تمرینی'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows an explicit message when no official exam is scheduled',
-        (tester) async {
+    testWidgets('hides countdown and preserves other slides when no exam exists', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: RaqtivaShowcaseCarousel(slides: [], exams: []),
+            body: RaqtivaShowcaseCarousel(
+              slides: [
+                {'kind': 'message', 'title': 'پیام مدیریت', 'body': 'متن پیام'},
+              ],
+              exams: [],
+            ),
           ),
         ),
       );
-
-      expect(
-        find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'),
-        findsOneWidget,
-      );
+      expect(find.text('شمارش معکوس آزمون بعدی'), findsNothing);
+      expect(find.text('پیام مدیریت'), findsOneWidget);
+      expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('does not show negative values for an already-started exam',
-        (tester) async {
-      final start = DateTime.now().subtract(const Duration(seconds: 1));
+    testWidgets('hides countdown for an exam that has already started', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
-              slides: const [],
+              slides: [
+                {'kind': 'message', 'title': 'پیام باقی می‌ماند', 'body': 'متن'},
+              ],
               exams: [
                 {
                   'title': 'آزمون آغازشده',
                   'counts_for_league': true,
-                  'starts_at': start.toIso8601String(),
+                  'starts_at': '2026-01-01T00:00:00Z',
                 },
               ],
             ),
           ),
         ),
       );
-
-      expect(
-        find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('-'), findsNothing);
+      expect(find.text('شمارش معکوس آزمون بعدی'), findsNothing);
+      expect(find.text('پیام باقی می‌ماند'), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });;
+    });
   });
 }
