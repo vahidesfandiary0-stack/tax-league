@@ -95,6 +95,7 @@ class BazaarSubscriptionAPITests(TestCase):
             plan=self.plan,
             starts_at=timezone.now(),
             ends_at=old_expiry,
+            status=UserSubscription.Status.EXPIRED,
             source_order=order,
         )
         verify.return_value = {
@@ -111,7 +112,6 @@ class BazaarSubscriptionAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["restored"])
-        self.assertEqual(
-            UserSubscription.objects.get(source_order=order).ends_at,
-            new_expiry,
-        )
+        restored_subscription = UserSubscription.objects.get(source_order=order)
+        self.assertEqual(restored_subscription.ends_at, new_expiry)
+        self.assertEqual(restored_subscription.status, UserSubscription.Status.ACTIVE)
