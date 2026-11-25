@@ -401,6 +401,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   String? provincialMessage;
 
   Timer? focusPoller;
+  Timer? showcasePoller;
   bool focusMode = false;
   String? focusEndsAt;
 
@@ -409,10 +410,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     super.initState();
     _loadIfSignedIn();
     focusPoller = Timer.periodic(const Duration(seconds: 10), (_) => _refreshFocusMode());
+    showcasePoller = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && stats != null && !focusMode) _loadShowcaseSlides();
+    });
   }
   @override
   void dispose() {
     focusPoller?.cancel();
+    showcasePoller?.cancel();
     otpResendTimer?.cancel();
     phone.dispose();
     code.dispose();
