@@ -1883,7 +1883,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          'مشاهده طرح‌ها، خرید و بازیابی اشتراک',
+                          'مشاهده طرح‌ها، پرداخت کارت‌به‌کارت و پیگیری سفارش',
                           style: TextStyle(
                             color: Color(0xFFBCC9D9),
                             fontSize: 11,
