@@ -38,7 +38,7 @@ class ShowcaseSlideListView(APIView):
 
     def get(self, request):
         now = timezone.now()
-        slides = ShowcaseSlide.objects.filter(is_active=True).filter(
+        slides = ShowcaseSlide.objects.filter(is_active=True).exclude(kind=ShowcaseSlide.Kind.FOUNDER).filter(
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gt=now),
         ).order_by("sort_order", "pk")
