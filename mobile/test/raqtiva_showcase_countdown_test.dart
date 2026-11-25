@@ -10,8 +10,34 @@ void main() {
       expect(slides, hasLength(2));
       expect(slides[0]['kind'], 'founder');
       expect(slides[0]['title'], 'بنیان‌گذار لیگ: وحید اسفندیاری');
-      expect(slides[0]['body'], isEmpty);
+      expect(
+        slides[0]['body'],
+        'حسابرس ارشد اداره کل امورمالیاتی خوزستان',
+      );
       expect(slides[1]['kind'], 'logo');
+    });
+
+    testWidgets('keeps founder name and job title on one unbroken line', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(slides: fallbackBrandSlides()),
+          ),
+        ),
+      );
+
+      final title = tester.widget<Text>(
+        find.text('بنیان‌گذار لیگ: وحید اسفندیاری'),
+      );
+      final jobTitle = tester.widget<Text>(
+        find.text('حسابرس ارشد اداره کل امورمالیاتی خوزستان'),
+      );
+
+      expect(title.maxLines, 1);
+      expect(title.softWrap, isFalse);
+      expect(jobTitle.maxLines, 1);
+      expect(jobTitle.softWrap, isFalse);
+      expect(tester.takeException(), isNull);
     });
   });
 
