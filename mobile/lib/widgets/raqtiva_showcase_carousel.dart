@@ -36,14 +36,15 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
 
   List<dynamic> get _allSlides => [
     ...widget.slides,
-    <String, dynamic>{
-      'id': 'builtin-exam-countdown',
-      'kind': 'exam_countdown',
-      'title': 'آزمون بعدی',
-      'starts_at': _nextExam?['starts_at'],
-      'exam_title': _nextExam?['title'],
-      'duration_seconds': 8,
-    },
+    if (_nextExam != null)
+      <String, dynamic>{
+        'id': 'builtin-exam-countdown',
+        'kind': 'exam_countdown',
+        'title': 'آزمون بعدی',
+        'starts_at': _nextExam!['starts_at'],
+        'exam_title': _nextExam!['title'],
+        'duration_seconds': 8,
+      },
   ];
 
   int get _count => _allSlides.length;
