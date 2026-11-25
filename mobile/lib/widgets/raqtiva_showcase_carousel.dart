@@ -152,59 +152,6 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     final body = slide['body']?.toString() ?? '';
     final imageUrl = slide['image_url']?.toString() ?? '';
 
-    if (kind == 'founder') {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(17, 12, 17, 27),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 112,
-                height: 155,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.workspace_premium_rounded,
-                      color: Color(0xFFFFD76A), size: 29),
-                  SizedBox(height: 10),
-                  Text(
-                    'بنیانگذار لیگ : وحید اسفندیاری نژاد',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      height: 1.8,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  if (slide['title']?.toString().isNotEmpty == true)
-                    Text(
-                      slide['title'].toString(),
-                      style: const TextStyle(color: Color(0xFFFFE4A8), fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
-                  if (body.isNotEmpty)
-                    Text(
-                      body,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     if (kind == 'logo') {
       return Padding(
         padding: const EdgeInsets.fromLTRB(17, 8, 17, 27),
