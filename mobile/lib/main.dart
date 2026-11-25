@@ -426,12 +426,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (data is! List) {
         throw const FormatException('پاسخ اسلایدر ساختار معتبری ندارد.');
       }
-      // Successful server data is authoritative, including an empty list:
-      // managers control ordering and whether each slide is active.
-      // Founder identity and photo are intentionally confined to the account/about/founder page.
-      setState(() => showcaseSlides = List<dynamic>.from(data).where((slide) =>
-        slide is! Map || slide['kind']?.toString() != 'founder'
-      ).toList());
+      // Successful server data is authoritative, including an empty list.
+      // Managers control ordering and activation; the founder slide is shown
+      // only in this authenticated home carousel, never on public entry screens.
+      setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
       if (!mounted || showcaseSlides.isNotEmpty) return;
       setState(() => showcaseSlides = fallbackBrandSlides());
