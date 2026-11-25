@@ -2130,6 +2130,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
+        // Keep the existing dashboard structure; rotate the managed slides
+        // in the current top branding area, visible immediately after sign-in.
+        RaqtivaShowcaseCarousel(dynamicSlides: showcaseSlides),
+        const SizedBox(height: 14),
         accountStrip(),
         GridView.count(
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -2144,8 +2148,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
                 ],
         ),
-        const SizedBox(height: 22),
-        RaqtivaShowcaseCarousel(dynamicSlides: showcaseSlides),
       ];
     }
     return [
