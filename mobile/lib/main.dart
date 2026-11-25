@@ -456,26 +456,28 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     // Founder and official logo are required home-showcase slides. Keep them
     // available when an older backend has not deployed the showcase endpoint
     // or its data migration yet; management messages/ads remain server-driven.
-    final founder = remoteSlides.whereType<Map>().where(
-      (slide) => slide['kind'] == 'founder',
-    ).cast<dynamic>().firstOrNull ??
-        const <String, dynamic>{
-          'id': 'builtin-founder',
-          'kind': 'founder',
-          'title': '',
-          'body': '',
-          'duration_seconds': 5,
-        };
-    final logo = remoteSlides.whereType<Map>().where(
-      (slide) => slide['kind'] == 'logo',
-    ).cast<dynamic>().firstOrNull ??
-        const <String, dynamic>{
-          'id': 'builtin-logo',
-          'kind': 'logo',
-          'title': '',
-          'body': '',
-          'duration_seconds': 5,
-        };
+    final founderSlides = remoteSlides.whereType<Map>()
+        .where((slide) => slide['kind'] == 'founder').toList();
+    final logoSlides = remoteSlides.whereType<Map>()
+        .where((slide) => slide['kind'] == 'logo').toList();
+    final founder = founderSlides.isNotEmpty
+        ? founderSlides.first
+        : const <String, dynamic>{
+            'id': 'builtin-founder',
+            'kind': 'founder',
+            'title': '',
+            'body': '',
+            'duration_seconds': 5,
+          };
+    final logo = logoSlides.isNotEmpty
+        ? logoSlides.first
+        : const <String, dynamic>{
+            'id': 'builtin-logo',
+            'kind': 'logo',
+            'title': '',
+            'body': '',
+            'duration_seconds': 5,
+          };
     final managedSlides = remoteSlides.where((slide) =>
         slide is! Map || (slide['kind'] != 'founder' && slide['kind'] != 'logo'));
     return <dynamic>[founder, logo, ...managedSlides];
