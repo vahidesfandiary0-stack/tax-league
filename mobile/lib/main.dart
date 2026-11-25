@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'utils/showcase_slide_utils.dart';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -456,9 +457,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     try {
       final data = await api.request('notifications/showcase/');
       if (!mounted || data is! List) return;
+      // Successful server data is authoritative, including an empty list:
+      // managers control ordering and whether each slide is active.
       setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
-      // The optional carousel must never block the dashboard.
+      if (!mounted || showcaseSlides.isNotEmpty) return;
+      setState(() => showcaseSlides = fallbackBrandSlides());
     }
   }
 
