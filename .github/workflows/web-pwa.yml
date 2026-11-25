@@ -1,6 +1,9 @@
 name: Web PWA build
 
 on:
+  push:
+    branches:
+      - "release/official-readiness-*"
   pull_request:
     paths:
       - "mobile/**"
