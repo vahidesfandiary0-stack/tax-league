@@ -228,7 +228,7 @@ jobs:
           import re
           report = Path("build/reports/android-permissions.txt").read_text()
           permissions = set(re.findall(r"uses-permission(?:-sdk-\d+)?[^\n]*name='([^']+)'", report))
-          allowed = {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.USE_BIOMETRIC"}
+          allowed = {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.USE_BIOMETRIC", "ir.raqtiva.tax_league.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"}
           sensitive = {
               "android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "android.permission.SEND_SMS",
               "android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS",
