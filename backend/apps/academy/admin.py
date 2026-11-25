@@ -9,7 +9,6 @@ class AcademyContentAdmin(admin.ModelAdmin):
     list_editable = ("is_exclusive", "is_active", "sort_order")
     list_filter = ("category", "is_exclusive", "is_active")
     search_fields = ("title", "summary", "body", "source_title")
-    prepopulated_fields = {"slug": ("title",)}
     ordering = ("sort_order", "-updated_at")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
