@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -41,7 +41,15 @@ class ShowcaseSlideListView(APIView):
         slides = ShowcaseSlide.objects.filter(is_active=True).filter(
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gt=now),
-        ).order_by("sort_order", "pk")
+        ).order_by(
+            Case(
+                When(kind=ShowcaseSlide.Kind.MESSAGE, then=Value(0)),
+                When(kind=ShowcaseSlide.Kind.ADVERTISEMENT, then=Value(1)),
+                output_field=IntegerField(),
+            ),
+            "sort_order",
+            "pk",
+        )
         return Response([
             {
                 "id": slide.pk,
