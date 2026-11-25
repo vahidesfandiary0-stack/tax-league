@@ -45,7 +45,7 @@ class ShowcaseSlideApiTests(APITestCase):
         founder = ShowcaseSlide.objects.create(
             kind=ShowcaseSlide.Kind.FOUNDER,
             title="بنیان‌گذار لیگ: وحید اسفندیاری",
-            body="",
+            body="حسابرس ارشد اداره کل امورمالیاتی خوزستان",
             duration_seconds=6,
             sort_order=1,
         )
@@ -67,7 +67,10 @@ class ShowcaseSlideApiTests(APITestCase):
         self.assertEqual(response.data[0]["duration_seconds"], 7)
         self.assertEqual(response.data[1]["duration_seconds"], 6)
         self.assertEqual(response.data[1]["title"], "بنیان‌گذار لیگ: وحید اسفندیاری")
-        self.assertEqual(response.data[1]["body"], "")
+        self.assertEqual(
+            response.data[1]["body"],
+            "حسابرس ارشد اداره کل امورمالیاتی خوزستان",
+        )
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
 
