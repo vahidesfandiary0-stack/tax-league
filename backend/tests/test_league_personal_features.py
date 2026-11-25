@@ -16,7 +16,8 @@ def test_latest_night_leaderboard_and_top_five_are_free_and_use_night_ledger():
     season = LeagueSeason.objects.create(title="فصل تست", starts_at=timezone.now()-timedelta(days=1),
         ends_at=timezone.now()+timedelta(days=1), status=LeagueSeason.Status.ACTIVE)
     exam = Exam.objects.create(title="شبانه اخیر", kind=Exam.Kind.NIGHT, duration_minutes=30,
-        max_attempts=0, counts_for_league=True)
+        max_attempts=0, counts_for_league=True, status=Exam.Status.PUBLISHED,
+        starts_at=timezone.now())
     for user, score, correct, wrong, elapsed in [(first,90,9,1,500),(second,80,8,2,400)]:
         attempt = ExamAttempt.objects.create(exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
             started_at=timezone.now()-timedelta(minutes=10), deadline_at=timezone.now()+timedelta(minutes=20),
