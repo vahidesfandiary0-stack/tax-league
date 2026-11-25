@@ -260,3 +260,11 @@ jobs:
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Google Play App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-league-google-play-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
