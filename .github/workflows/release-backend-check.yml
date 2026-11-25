@@ -40,4 +40,4 @@ jobs:
       - name: Run backend tests
         run: pytest
       - name: Run manual payment workflow tests explicitly
-        run: pytest tests/test_payments.py -q
+        run: pytest apps/payments/test_manual_payments.py -q
