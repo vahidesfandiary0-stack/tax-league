@@ -262,6 +262,9 @@ jobs:
             echo "=== APK permissions ==="
             "$AAPT" dump permissions "$APK"
             echo
+            echo "=== APK SHA-256 ==="
+            sha256sum "$APK"
+            echo
             echo "=== APK package and Android SDK information ==="
             "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
             echo
