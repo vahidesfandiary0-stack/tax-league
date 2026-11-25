@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 class RaqtivaShowcaseCarousel extends StatefulWidget {
   const RaqtivaShowcaseCarousel({super.key, required this.dynamicSlides});
 
+  // The authenticated API returns every slide, including founder and logo,
+  // in the exact order configured by the administrator.
   final List<dynamic> dynamicSlides;
 
   @override
@@ -16,11 +18,11 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   Timer? _timer;
   int _index = 0;
 
-  int get _count => 2 + widget.dynamicSlides.length;
+  int get _count => widget.dynamicSlides.length;
 
   int _durationFor(int index) {
-    if (index < 2 || index - 2 >= widget.dynamicSlides.length) return 5;
-    final value = widget.dynamicSlides[index - 2];
+    if (index < 0 || index >= _count) return 5;
+    final value = widget.dynamicSlides[index];
     if (value is Map && value['duration_seconds'] is num) {
       return (value['duration_seconds'] as num).toInt().clamp(3, 15).toInt();
     }
@@ -36,7 +38,8 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   @override
   void didUpdateWidget(covariant RaqtivaShowcaseCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.dynamicSlides.length != widget.dynamicSlides.length) {
+    if (oldWidget.dynamicSlides.length != widget.dynamicSlides.length ||
+        oldWidget.dynamicSlides.toString() != widget.dynamicSlides.toString()) {
       if (_index >= _count) {
         _index = 0;
         if (_controller.hasClients) _controller.jumpToPage(0);
@@ -73,6 +76,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    if (_count == 0) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -108,7 +112,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 controller: _controller,
                 itemCount: _count,
                 onPageChanged: _onPageChanged,
-                itemBuilder: (context, index) => _buildSlide(index),
+                itemBuilder: (context, index) => _buildSlide(widget.dynamicSlides[index]),
               ),
               Positioned(
                 bottom: 10,
@@ -135,8 +139,14 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     );
   }
 
-  Widget _buildSlide(int index) {
-    if (index == 0) {
+  Widget _buildSlide(dynamic raw) {
+    final slide = raw is Map ? raw : <String, dynamic>{};
+    final kind = slide['kind']?.toString() ?? 'message';
+    final title = slide['title']?.toString() ?? '';
+    final body = slide['body']?.toString() ?? '';
+    final imageUrl = slide['image_url']?.toString() ?? '';
+
+    if (kind == 'founder') {
       return Padding(
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
         child: Row(
@@ -145,9 +155,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               borderRadius: BorderRadius.circular(16),
               child: Image.asset(
                 'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 116,
-                height: 158,
-                fit: BoxFit.cover,
+                width: 116, height: 158, fit: BoxFit.cover,
               ),
             ),
             const SizedBox(width: 16),
@@ -170,14 +178,13 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
         ),
       );
     }
-    if (index == 1) {
+
+    if (kind == 'logo') {
       return Padding(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
         child: Row(
           children: [
-            Expanded(
-              child: Image.asset('assets/brand/logo_full.png', fit: BoxFit.contain, height: 170),
-            ),
+            Expanded(child: Image.asset('assets/brand/logo_full.png', fit: BoxFit.contain, height: 170)),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
@@ -191,12 +198,6 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
       );
     }
 
-    final raw = widget.dynamicSlides[index - 2];
-    final slide = raw is Map ? raw : <String, dynamic>{};
-    final kind = slide['kind']?.toString() ?? 'message';
-    final title = slide['title']?.toString() ?? '';
-    final body = slide['body']?.toString() ?? '';
-    final imageUrl = slide['image_url']?.toString() ?? '';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
       child: Row(
@@ -205,10 +206,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: Image.network(
-                imageUrl,
-                width: 100,
-                height: 145,
-                fit: BoxFit.cover,
+                imageUrl, width: 100, height: 145, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const Icon(Icons.campaign_rounded, color: Color(0xFFFFD76A), size: 48),
               ),
             ),
@@ -216,8 +214,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
           ] else
             Icon(
               kind == 'advertisement' ? Icons.campaign_rounded : Icons.mark_chat_unread_rounded,
-              color: const Color(0xFFFFD76A),
-              size: 44,
+              color: const Color(0xFFFFD76A), size: 44,
             ),
           Expanded(
             child: Column(
@@ -229,7 +226,10 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 if (title.isNotEmpty) const SizedBox(height: 8),
                 Text(body, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.8)),
                 const SizedBox(height: 5),
-                Text(kind == 'advertisement' ? 'تبلیغات' : 'پیام مدیریت', style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10)),
+                Text(
+                  kind == 'advertisement' ? 'تبلیغات' : 'پیام مدیریت',
+                  style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10),
+                ),
               ],
             ),
           ),
