@@ -50,8 +50,8 @@ class Exam(models.Model):
             raise ValidationError({"ends_at": "پایان آزمون باید بعد از شروع آن باشد."})
 
     def save(self, *args, **kwargs):
-        if self.pk and Exam.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
-            raise ValidationError("آزمون منتشرشده قابل ویرایش نیست؛ برای تغییر، آزمون جدید بسازید.")
+        # Published exams remain editable by authorized staff in Django admin.
+        # Participant attempts use immutable question/option snapshots.
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -73,16 +73,9 @@ class ExamQuestion(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
-            raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
-        # Question review status is not a launch prerequisite for manager-built
-        # exams. Only staff/admin workflows expose exam-question authoring.
+        # Staff may maintain a published exam; existing attempts are snapshots.
+        # Question review status is not a launch prerequisite for manager-built exams.
         super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
-            raise ValidationError("سؤال‌های آزمون منتشرشده قابل حذف نیستند.")
-        return super().delete(*args, **kwargs)
 
 
 class ExamAttempt(models.Model):
