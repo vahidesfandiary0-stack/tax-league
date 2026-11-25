@@ -49,7 +49,7 @@ class ShowcaseSlideApiTests(APITestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([item["id"] for item in response.data], [first.pk, second.pk])
-        self.assertEqual(response.data[0]["kind"], ShowcaseSlide.Kind.MESSAGE)
+        self.assertEqual([item["id"] for item in response.data], [second.pk, first.pk])
+        self.assertEqual(response.data[0]["kind"], ShowcaseSlide.Kind.ADVERTISEMENT)
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
