@@ -47,7 +47,7 @@ void main() {
         ),
       );
       expect(find.text('شمارش معکوس آزمون بعدی'), findsNothing);
-      expect(find.text('پیام مدیریت'), findsOneWidget);
+      expect(find.text('پیام مدیریت'), findsNWidgets(2));
       expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
