@@ -58,7 +58,9 @@ def _verify_and_activate(order, user, product_id, purchase_token):
             purchase.auto_renewing = verified["auto_renewing"]
             purchase.bazaar_order_id = verified["bazaar_order_id"]
             purchase.save(update_fields=["expires_at", "auto_renewing", "bazaar_order_id", "verified_at"])
-            subscription = UserSubscription.objects.select_for_update().get(source_order=locked)
+            subscription = UserSubscription.objects.select_for_update().filter(source_order=locked).first()
+            if subscription is None:
+                raise ValidationError("سابقه فعال‌سازی اشتراک برای این خرید پیدا نشد؛ بازیابی متوقف شد.")
             if subscription.status == UserSubscription.Status.REVOKED:
                 raise ValidationError("این اشتراک توسط مدیر لغو شده و از طریق بازیابی بازار فعال نمی‌شود.")
             subscription.ends_at = verified["expires_at"]
