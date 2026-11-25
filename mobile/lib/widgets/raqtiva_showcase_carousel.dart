@@ -50,7 +50,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
 
   int _durationFor(int index) {
     if (index < 0 || index >= _count) return 5;
-    final slide = widget.slides[index];
+    final slide = _allSlides[index];
     if (slide is Map && slide['duration_seconds'] is num) {
       return (slide['duration_seconds'] as num).toInt().clamp(3, 15).toInt();
     }
