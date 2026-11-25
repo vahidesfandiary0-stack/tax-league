@@ -3,9 +3,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "mobile/ui-redesign-20261119"]
+    branches: ["main", "mobile/ui-redesign-20261119", "release/official-readiness-*"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/official-readiness-*"]
 
 jobs:
   backend:
