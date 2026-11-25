@@ -62,14 +62,17 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     super.initState();
     _scheduleNext();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && _nextExam != null) setState(() {});
+      // Refresh even when no exam is currently scheduled, so the countdown
+      // cannot remain frozen at zero after its start time passes.
+      if (mounted) setState(() {});
     });
   }
 
   @override
   void didUpdateWidget(covariant RaqtivaShowcaseCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.slides.toString() != widget.slides.toString()) {
+    if (oldWidget.slides.toString() != widget.slides.toString() ||
+        oldWidget.exams.toString() != widget.exams.toString()) {
       if (_index >= _count) {
         _index = 0;
         if (_controller.hasClients) _controller.jumpToPage(0);
@@ -282,7 +285,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
             const SizedBox(height: 12),
             if (startsAt == null)
               const Text(
-                'زمان برگزاری آزمون بعدی هنوز اعلام نشده است.',
+                'زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
               )
