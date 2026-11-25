@@ -4,7 +4,15 @@
 
 raqtiva.ir, www.raqtiva.ir {
         encode zstd gzip
-        reverse_proxy 127.0.0.1:8000 {
-                header_up -X-Forwarded-Host
+
+        handle_path /media/showcase/* {
+                root * /srv/media/showcase
+                file_server
+        }
+
+        handle {
+                reverse_proxy 127.0.0.1:8000 {
+                        header_up -X-Forwarded-Host
+                }
         }
 }

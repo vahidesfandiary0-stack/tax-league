@@ -7,8 +7,8 @@ def ensure_founder_first(apps, schema_editor):
     Slide.objects.using(db_alias).update_or_create(
         kind="founder",
         defaults={
-            "title": "بنیانگذار لیگ : وحید اسفندیاری",
-            "body": "",
+            "title": "بنیانگذار لیگ : وحید اسفندیاری نژاد",
+            "body": "حسابرس ارشد اداره کل امورمالیاتی خوزستان",
             "image_url": "",
             "sort_order": 0,
             "duration_seconds": 5,

@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "release/googleplay-slider-*"
+  pull_request:
+    branches:
+      - "release/googleplay-slider-*"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -290,7 +293,7 @@ jobs:
             echo
             echo "=== APK package and Android SDK information ==="
             "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
-            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='3'"
+            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='5'"
             "$AAPT" dump badging "$APK" | grep -F "targetSdkVersion:'36'"
             echo
             echo "=== Resolved Flutter dependencies ==="

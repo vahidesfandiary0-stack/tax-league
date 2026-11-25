@@ -589,7 +589,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'عملکرد من' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -600,7 +600,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           child: RefreshIndicator(
           onRefresh: loadDashboard,
           child: ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 20), children: [
-          if (stats == null || (accountPage == 0 && selectedHomeSection == null))
+          if (stats == null)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
@@ -1338,6 +1338,81 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             Icons.event_note_rounded,
             'برنامه یادگیری و فلش‌کارت',
             'مرور زمان‌بندی‌شده و پیگیری پیشرفت آموزشی',
+          ),
+        ],
+      );
+    }
+    if (accountPage == 10) {
+      // League rank/score/count come only from the official league ledger.
+      // Activity metrics below are explicitly labelled as all exam attempts.
+      final allResults = results;
+      final scores = allResults
+          .map((item) => num.tryParse(item['score']?.toString() ?? ''))
+          .whereType<num>()
+          .toList();
+      final averageScore = scores.isEmpty
+          ? '—'
+          : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
+      final correctTotal = allResults.fold<int>(
+        0,
+        (sum, item) => sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
+      );
+      final wrongTotal = allResults.fold<int>(
+        0,
+        (sum, item) => sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('عملکرد رسمی من در لیگ', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
+                    style: TextStyle(color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _RaqtivaPerformanceMetric(label: 'رتبه لیگ', value: stats?['rank']?.toString() ?? '—', icon: Icons.emoji_events_rounded),
+                      _RaqtivaPerformanceMetric(label: 'امتیاز کل لیگ', value: stats?['total_score']?.toString() ?? '۰', icon: Icons.stars_rounded),
+                      _RaqtivaPerformanceMetric(label: 'آزمون‌های مؤثر در لیگ', value: stats?['exams_count']?.toString() ?? '۰', icon: Icons.assignment_turned_in_rounded),
+                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز همه آزمون‌ها', value: averageScore, icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ صحیح همه آزمون‌ها', value: correctTotal.toString(), icon: Icons.check_circle_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ غلط همه آزمون‌ها', value: wrongTotal.toString(), icon: Icons.cancel_rounded),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('آخرین نتایج آزمون‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  if (allResults.isEmpty)
+                    const Text('پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
+                  for (final item in allResults.take(5))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((item['exam_title'] ?? 'آزمون').toString()),
+                      subtitle: Text('صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
+                      trailing: Text('${item['score'] ?? 0} امتیاز', style: const TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       );
@@ -2115,7 +2190,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         icon: icon, title: title, subtitle: subtitle,
         onTap: () => setState(() {
           if (section == 5) {
-            accountPage = 9;
+            accountPage = 10;
             selectedHomeSection = null;
           } else {
             selectedHomeSection = section;
@@ -2124,7 +2199,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
-        RaqtivaShowcaseCarousel(slides: showcaseSlides),
+        RaqtivaShowcaseCarousel(slides: showcaseSlides, exams: exams),
         if (showcaseSlides.isNotEmpty) const SizedBox(height: 14),
         accountStrip(),
         GridView.count(
@@ -2136,6 +2211,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
             tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
             tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
+            tile(5, Icons.insights_rounded, 'عملکرد من', results.isEmpty ? 'آمار و پیشرفت شخصی شما' : '${results.length} نتیجه و گزارش عملکرد'),
                 ],
         ),
       ];
@@ -2164,6 +2240,34 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 }
 
 
+
+class _RaqtivaPerformanceMetric extends StatelessWidget {
+  const _RaqtivaPerformanceMetric({required this.label, required this.value, required this.icon});
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 145,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    decoration: BoxDecoration(
+      color: const Color(0xFF172B46),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0x55D2B477)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: RaqtivaColors.gold, size: 21),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: RaqtivaColors.goldLight, fontSize: 19, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: RaqtivaColors.muted, fontSize: 10)),
+      ],
+    ),
+  );
+}
 
 class DesignerClubPage extends StatefulWidget {
   const DesignerClubPage({super.key, required this.api});

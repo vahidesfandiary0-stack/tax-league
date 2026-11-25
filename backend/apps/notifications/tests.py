@@ -9,6 +9,9 @@ from .models import ShowcaseSlide
 
 class ShowcaseSlideApiTests(APITestCase):
     def setUp(self):
+        # Migration 0003 seeds founder/logo defaults; clear them so each API
+        # test controls its own slide fixtures and can test the empty response.
+        ShowcaseSlide.objects.all().delete()
         self.user = get_user_model().objects.create_user(phone_number="09120000001")
         self.url = "/api/v1/notifications/showcase/"
 
@@ -36,12 +39,14 @@ class ShowcaseSlideApiTests(APITestCase):
             kind=ShowcaseSlide.Kind.ADVERTISEMENT,
             title="تبلیغ دوم",
             body="متن تبلیغ دوم",
+            duration_seconds=7,
             sort_order=0,
         )
         founder = ShowcaseSlide.objects.create(
             kind=ShowcaseSlide.Kind.FOUNDER,
-            title="بنیانگذار لیگ : وحید اسفندیاری",
-            body="",
+            title="بنیان‌گذار لیگ: وحید اسفندیاری",
+            body="حسابرس ارشد اداره کل امورمالیاتی خوزستان",
+            duration_seconds=6,
             sort_order=1,
         )
         last = ShowcaseSlide.objects.create(
@@ -59,7 +64,13 @@ class ShowcaseSlideApiTests(APITestCase):
             [item["id"] for item in response.data],
             [second.pk, founder.pk, last.pk],
         )
-        self.assertEqual(response.data[1]["title"], "بنیانگذار لیگ : وحید اسفندیاری")
+        self.assertEqual(response.data[0]["duration_seconds"], 7)
+        self.assertEqual(response.data[1]["duration_seconds"], 6)
+        self.assertEqual(response.data[1]["title"], "بنیان‌گذار لیگ: وحید اسفندیاری")
+        self.assertEqual(
+            response.data[1]["body"],
+            "حسابرس ارشد اداره کل امورمالیاتی خوزستان",
+        )
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
 
