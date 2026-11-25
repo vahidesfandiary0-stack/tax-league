@@ -395,7 +395,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   int? selectedHomeSection;
   String? error;
   Map<String, dynamic>? stats;
-  List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [];
+  List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [], topNightRecords = [];
+  Map<String, dynamic>? latestNightData, performanceData;
+  String? performanceError;
+  bool performanceBusy = false;
   String? provincialName;
   String? provincialMessage;
 
@@ -522,7 +525,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> logout() async {
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
+    setState(() { stats = null; board = []; provincialBoard = []; latestNightData = null; topNightRecords = []; performanceData = null; performanceError = null; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
   }
 
   Future<void> loadDashboard() async {
@@ -534,6 +537,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         final data = await Future.wait([
           api.request('exams/'),
           api.request('exams/results/'),
+          api.request('league/latest-night/'),
+          api.request('league/me/top-records/'),
         ]);
         if (!mounted) return;
         setState(() {
@@ -576,6 +581,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           appeals = List<dynamic>.from(data[2] as List);
           exams = List<dynamic>.from(data[3] as List);
           results = List<dynamic>.from(data[4] as List);
+          latestNightData = Map<String, dynamic>.from(data[5] as Map);
+          topNightRecords = List<dynamic>.from((data[6] as Map)['records'] ?? []);
         });
       }
     } catch (e) {
@@ -592,13 +599,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ? IconButton(
                 onPressed: () => setState(() {
                   if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
+                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 || accountPage == 10 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
                   } else { selectedHomeSection = null; }
                 }),
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : 'اطلاعات حساب'),
+        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'تحلیل عملکرد من' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -716,6 +723,25 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountPage = 4;
       }
     });
+  }
+
+  Future<void> _openPerformance() async {
+    setState(() {
+      accountPage = 10;
+      performanceBusy = true;
+      performanceError = null;
+      performanceData = null;
+    });
+    try {
+      final data = await api.request('league/me/performance/');
+      if (!mounted) return;
+      setState(() => performanceData = Map<String, dynamic>.from(data as Map));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => performanceError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => performanceBusy = false);
+    }
   }
 
   Widget _loginCard() {
@@ -1265,6 +1291,75 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     if (accountPage == 4) {
       return BazaarSubscriptionPage(api: api);
     }
+    if (accountPage == 10) {
+      if (performanceBusy) {
+        return const Center(child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ));
+      }
+      if (performanceError != null) {
+        final requiresSubscription = performanceError!.contains('اشتراک') || performanceError!.contains('403');
+        return Card(child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Icon(requiresSubscription ? Icons.lock_outline : Icons.error_outline,
+              color: RaqtivaColors.gold, size: 42),
+            const SizedBox(height: 12),
+            Text(requiresSubscription
+              ? 'تحلیل تفصیلی ویژه اشتراک فعال است.'
+              : performanceError!,
+              textAlign: TextAlign.center, style: const TextStyle(height: 1.8)),
+            if (requiresSubscription) ...[
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => setState(() => accountPage = 4),
+                child: const Text('مشاهده و خرید اشتراک'),
+              ),
+            ],
+          ]),
+        ));
+      }
+      final data = performanceData;
+      if (data == null || data['data_available'] != true) {
+        return const Card(child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text('برای تحلیل عملکرد، ابتدا باید نتیجه معتبر آزمون شبانه داشته باشید.',
+            textAlign: TextAlign.center, style: TextStyle(height: 1.8)),
+        ));
+      }
+      final summary = Map<String, dynamic>.from(data['summary'] as Map);
+      final trend = List<dynamic>.from(data['trend'] ?? []);
+      return Column(children: [
+        Card(child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('خلاصه عملکرد شبانه', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 14),
+            Text('تعداد آزمون‌ها: ${summary['night_exams_count']}'),
+            Text('مجموع امتیاز: ${summary['total_score']}'),
+            Text('میانگین امتیاز: ${summary['average_score']}'),
+            Text('پاسخ صحیح: ${summary['correct_total']}'),
+            Text('پاسخ غلط: ${summary['wrong_total']}'),
+            Text('میانگین زمان: ${summary['average_elapsed_seconds']} ثانیه'),
+          ]),
+        )),
+        Card(child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('روند ۱۰ نتیجه اخیر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+            for (final item in trend)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text((item['exam_title'] ?? 'آزمون شبانه').toString()),
+                subtitle: Text('صحیح: ${item['correct_count']} · غلط: ${item['wrong_count']}'),
+                trailing: Text('${item['score']} امتیاز'),
+              ),
+          ]),
+        )),
+      ]);
+    }
+
     if (accountPage == 5) {
       Widget academyItem(IconData icon, String title, String description) {
         return Padding(
@@ -2010,6 +2105,53 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             Text(provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
           for (final row in provincialBoard)
             boardRow(row, provincial: true),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.nightlight_round, 'رتبه‌بندی آخرین آزمون شبانه',
+            subtitle: 'رایگان برای همه کاربران'),
+          if ((latestNightData?['results'] as List?)?.isEmpty ?? true)
+            const Text('هنوز نتیجه معتبر شبانه‌ای برای نمایش ثبت نشده است.'),
+          for (final row in (latestNightData?['results'] as List? ?? []).take(10))
+            boardRow({
+              'rank': row['rank'],
+              'display_name': row['display_name'],
+              'total_score': row['score'],
+            }),
+        ]),
+      )),
+
+      Card(child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading(Icons.workspace_premium_rounded, 'پنج رکورد برتر من',
+            subtitle: 'رایگان · فقط نتایج معتبر آزمون شبانه'),
+          if (topNightRecords.isEmpty)
+            const Text('هنوز رکورد معتبری از آزمون شبانه ندارید.'),
+          for (var index = 0; index < topNightRecords.length; index++)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: const Color(0x223D9BE9),
+                child: Text('${index + 1}', style: const TextStyle(color: Color(0xFFFFE4A8), fontWeight: FontWeight.w900)),
+              ),
+              title: Text((topNightRecords[index]['exam_title'] ?? 'آزمون شبانه').toString()),
+              subtitle: Text('صحیح: ${topNightRecords[index]['correct_count']} · غلط: ${topNightRecords[index]['wrong_count']}'),
+              trailing: Text('${topNightRecords[index]['score'] ?? 0} امتیاز',
+                style: const TextStyle(color: Color(0xFFE4C98F), fontWeight: FontWeight.w900)),
+            ),
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.analytics_outlined, color: Color(0xFFE4C98F)),
+            title: const Text('تحلیل تفصیلی عملکرد من'),
+            subtitle: const Text('ویژه کاربران دارای اشتراک فعال'),
+            trailing: const Icon(Icons.chevron_left_rounded),
+            onTap: _openPerformance,
+          ),
         ]),
       )),
 
