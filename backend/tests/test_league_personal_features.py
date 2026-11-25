@@ -91,6 +91,17 @@ def test_latest_night_leaderboard_ignores_a_future_published_exam():
         wrong_count=1,
         elapsed_seconds=28 * 60,
     )
+    ongoing_start = now - timedelta(minutes=10)
+    Exam.objects.create(
+        title="آزمون در حال برگزاری",
+        kind=Exam.Kind.NIGHT,
+        duration_minutes=30,
+        max_attempts=0,
+        counts_for_league=True,
+        status=Exam.Status.PUBLISHED,
+        starts_at=ongoing_start,
+        ends_at=ongoing_start + timedelta(minutes=20),
+    )
     future_start = now + timedelta(hours=2)
     Exam.objects.create(
         title="آزمون آینده",
