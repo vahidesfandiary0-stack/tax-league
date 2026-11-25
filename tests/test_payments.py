@@ -34,6 +34,12 @@ class PaymentWorkflowTests(TestCase):
         with self.assertRaises(ValidationError):
             order.save()
 
+    def test_repeated_plan_selection_reuses_open_order(self):
+        first = create_subscription_order(self.user, self.plan.pk)
+        second = create_subscription_order(self.user, self.plan.pk)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(PaymentOrder.objects.filter(user=self.user).count(), 1)
+
     def test_approval_grants_subscription_once(self):
         order = create_subscription_order(self.user, self.plan.pk)
         order.status = PaymentOrder.Status.UNDER_REVIEW
@@ -103,6 +109,15 @@ class PaymentApiWorkflowTests(TestCase):
         self.assertEqual(submitted.status_code, 200)
         self.assertEqual(submitted.data["status"], PaymentOrder.Status.UNDER_REVIEW)
         self.assertNotIn("receipt", submitted.data)
+
+    def test_invalid_image_bytes_are_rejected(self):
+        order = create_subscription_order(self.user, self.plan.pk)
+        invalid = SimpleUploadedFile("receipt.png", b"not-an-image", content_type="image/png")
+        response = self.client.post(
+            f"/api/v1/payments/orders/{order.pk}/submit/",
+            {"receipt": invalid}, format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_user_cannot_submit_receipt_to_another_users_order(self):
         order = create_subscription_order(self.other_user, self.plan.pk)
