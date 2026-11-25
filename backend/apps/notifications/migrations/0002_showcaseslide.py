@@ -5,12 +5,23 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 def create_default_showcase_slides(apps, schema_editor):
     Slide = apps.get_model("notifications", "ShowcaseSlide")
     db_alias = schema_editor.connection.alias
-    Slide.objects.using(db_alias).get_or_create(
+    Slide.objects.using(db_alias).update_or_create(
+        kind="founder",
+        defaults={
+            "title": "بنیانگذار لیگ : وحید اسفندیاری",
+            "body": "",
+            "image_url": "",
+            "sort_order": 0,
+            "duration_seconds": 5,
+            "is_active": True,
+        },
+    )
+    Slide.objects.using(db_alias).update_or_create(
         kind="logo",
         defaults={
             "title": "",
             "body": "",
-            "sort_order": 2,
+            "sort_order": 1,
             "duration_seconds": 5,
             "is_active": True,
         },
