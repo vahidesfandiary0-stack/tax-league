@@ -2,7 +2,7 @@ name: Backend tests
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "release/official-readiness-*"]
   pull_request:
     branches: ["main"]
 
