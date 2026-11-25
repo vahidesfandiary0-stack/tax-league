@@ -10,7 +10,20 @@ from .models import PaymentOrder, PaymentSettings, PurchasedExamAccess
 @transaction.atomic
 def create_subscription_order(user, plan_id):
     from apps.subscriptions.models import SubscriptionPlan
+    type(user).objects.select_for_update().get(pk=user.pk)
     plan = SubscriptionPlan.objects.get(pk=plan_id, is_active=True)
+    existing = PaymentOrder.objects.filter(
+        user=user,
+        product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+        plan=plan,
+        status__in=[
+            PaymentOrder.Status.AWAITING_PAYMENT,
+            PaymentOrder.Status.UNDER_REVIEW,
+            PaymentOrder.Status.REJECTED,
+        ],
+    ).order_by("-created_at").first()
+    if existing:
+        return existing
     return PaymentOrder.objects.create(
         user=user, product_type=PaymentOrder.ProductType.SUBSCRIPTION,
         plan=plan, amount_irr=plan.price_irr,
