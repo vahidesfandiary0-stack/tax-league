@@ -54,10 +54,11 @@ class ResultSerializer(serializers.ModelSerializer):
 
 class ResultListSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source="exam.title", read_only=True)
+    counts_for_league = serializers.BooleanField(source="exam.counts_for_league", read_only=True)
 
     class Meta:
         model = ExamAttempt
         fields = [
-            "id", "exam", "exam_title", "status", "score",
+            "id", "exam", "exam_title", "counts_for_league", "status", "score",
             "correct_count", "wrong_count", "blank_count", "submitted_at",
         ]
