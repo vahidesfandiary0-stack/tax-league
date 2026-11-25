@@ -9,6 +9,7 @@ from .models import ShowcaseSlide
 
 class ShowcaseSlideApiTests(APITestCase):
     def setUp(self):
+        ShowcaseSlide.objects.all().delete()
         self.user = get_user_model().objects.create_user(phone_number="09120000001")
         self.url = "/api/v1/notifications/showcase/"
 
