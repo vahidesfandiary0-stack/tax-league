@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from .focus import get_exam_focus_state
 from .models import Exam, ExamQuestion
@@ -34,8 +35,9 @@ def publish_and_start_now_selected_exams(modeladmin, request, queryset):
         try:
             if exam.status != Exam.Status.DRAFT:
                 raise ValidationError("فقط آزمون پیش‌نویس قابل شروع فوری است.")
-            exam.starts_at = None
-            exam.ends_at = None
+            launch_time = timezone.now()
+            exam.starts_at = launch_time
+            exam.ends_at = launch_time + timezone.timedelta(minutes=exam.duration_minutes)
             exam.save(update_fields=["starts_at", "ends_at"])
             publish_exam(exam.pk)
             count += 1
