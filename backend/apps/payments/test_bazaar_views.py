@@ -110,3 +110,84 @@ class BazaarSubscriptionAPITests(TestCase):
         restored_subscription = UserSubscription.objects.get(source_order=order)
         self.assertEqual(restored_subscription.ends_at, new_expiry)
         self.assertEqual(restored_subscription.status, UserSubscription.Status.ACTIVE)
+
+
+    @patch("apps.payments.bazaar_views.verify_bazaar_subscription")
+    def test_purchase_token_cannot_be_reused_for_another_order(self, verify):
+        expiry = timezone.now() + timedelta(days=30)
+        verify.return_value = {
+            "expires_at": expiry,
+            "auto_renewing": False,
+            "bazaar_order_id": "",
+        }
+        first = PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+        )
+        second = PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+        )
+        token = "one-token-one-order"
+        first_response = self.client.post(
+            f"/api/v1/payments/bazaar/orders/{first.pk}/verify/",
+            {"product_id": "raqtiva_monthly", "purchase_token": token},
+            format="json",
+        )
+        second_response = self.client.post(
+            f"/api/v1/payments/bazaar/orders/{second.pk}/verify/",
+            {"product_id": "raqtiva_monthly", "purchase_token": token},
+            format="json",
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 400)
+        self.assertEqual(BazaarPurchase.objects.filter(
+            purchase_token_hash=BazaarPurchase.token_digest(token)
+        ).count(), 1)
+
+    @patch("apps.payments.bazaar_views.verify_bazaar_subscription")
+    def test_restore_does_not_reactivate_admin_revoked_subscription(self, verify):
+        order = PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+            status=PaymentOrder.Status.APPROVED,
+        )
+        token = "revoked-purchase-token"
+        expiry = timezone.now() + timedelta(days=30)
+        BazaarPurchase.objects.create(
+            order=order,
+            user=self.user,
+            product_id="raqtiva_monthly",
+            purchase_token_hash=BazaarPurchase.token_digest(token),
+            expires_at=expiry,
+        )
+        subscription = UserSubscription.objects.create(
+            user=self.user,
+            plan=self.plan,
+            starts_at=timezone.now() - timedelta(days=1),
+            ends_at=expiry,
+            status=UserSubscription.Status.REVOKED,
+            source_order=order,
+        )
+        verify.return_value = {
+            "expires_at": expiry + timedelta(days=30),
+            "auto_renewing": True,
+            "bazaar_order_id": "",
+        }
+
+        response = self.client.post(
+            "/api/v1/payments/bazaar/restore/",
+            {"product_id": "raqtiva_monthly", "purchase_token": token},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, UserSubscription.Status.REVOKED)
