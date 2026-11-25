@@ -268,8 +268,8 @@ def test_manager_can_publish_non_night_exam_with_unreviewed_question_but_it_is_n
         title="فصل آزمون مدیریتی",
         starts_at=timezone.now() - timedelta(days=1),
         ends_at=timezone.now() + timedelta(days=1),
-        status=LeagueSeason.Status.ACTIVE,
     )
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
     question = Question.objects.create(
         subject=Question.Subject.DIRECT_TAX,
         prompt="سؤال تمرینی تأییدنشده",
