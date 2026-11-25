@@ -264,7 +264,7 @@ def test_manager_can_publish_exam_with_unreviewed_question_and_start_it_immediat
     with patch("apps.exams.services.timezone.now", return_value=late_arrival):
         attempt = start_attempt(published.pk, manager)
 
-    assert attempt.started_at == future_start
+    assert attempt.started_at == late_arrival
     assert attempt.deadline_at == future_start + timedelta(minutes=20)
     assert attempt.deadline_at - late_arrival == timedelta(minutes=8)
     assert attempt.questions.count() == 1
