@@ -457,13 +457,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     try {
       final data = await api.request('notifications/showcase/');
       if (!mounted || data is! List) return;
-      final slides = ensureRequiredBrandSlides(List<dynamic>.from(data));
-      setState(() => showcaseSlides = slides);
+      // A successful response is authoritative: preserve manager-controlled
+      // order and intentional disabled/empty slide lists.
+      setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
       // An unavailable optional endpoint must not hide the required brand
       // slides or block the dashboard.
       if (!mounted || showcaseSlides.isNotEmpty) return;
-      setState(() => showcaseSlides = ensureRequiredBrandSlides(const []));
+      setState(() => showcaseSlides = fallbackBrandSlides());
     }
   }
 
