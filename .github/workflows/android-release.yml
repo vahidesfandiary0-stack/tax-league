@@ -175,8 +175,33 @@ jobs:
         run: |
           set -euo pipefail
           AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
-          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "android.permission.INTERNET"
-          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | grep -F "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
+          "$AAPT" dump permissions build/app/outputs/flutter-apk/app-release.apk | tee build/reports/android-permissions.txt
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          report = Path("build/reports/android-permissions.txt").read_text()
+          permissions = set(re.findall(r"uses-permission(?:-sdk-\\d+)?[^\\n]*name='([^']+)'", report))
+          allowed = {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.USE_BIOMETRIC"}
+          sensitive = {
+              "android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "android.permission.SEND_SMS",
+              "android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS",
+              "android.permission.READ_PHONE_STATE", "android.permission.CALL_PHONE",
+              "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.ACCESS_BACKGROUND_LOCATION", "android.permission.CAMERA",
+              "android.permission.RECORD_AUDIO", "android.permission.READ_EXTERNAL_STORAGE",
+              "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.MANAGE_EXTERNAL_STORAGE",
+              "android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO",
+              "android.permission.READ_MEDIA_AUDIO", "android.permission.REQUEST_INSTALL_PACKAGES",
+              "android.permission.QUERY_ALL_PACKAGES", "android.permission.SYSTEM_ALERT_WINDOW",
+          }
+          if permissions & sensitive:
+              raise SystemExit("Unexpected sensitive permissions: " + ", ".join(sorted(permissions & sensitive)))
+          if permissions - allowed:
+              raise SystemExit("Review unapproved permissions: " + ", ".join(sorted(permissions - allowed)))
+          if "android.permission.INTERNET" not in permissions:
+              raise SystemExit("INTERNET permission missing")
+          print("PASS: Android permission allowlist.")
+          PY
 
       - name: Verify APK signature
         working-directory: mobile
