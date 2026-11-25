@@ -1343,13 +1343,26 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 10) {
-      final scores = results
+      // Performance metrics on this page are restricted to official league
+      // exams; practice and other exam types must never inflate league stats.
+      final officialResults = results
+          .where((item) => item is Map && item['counts_for_league'] == true)
+          .toList();
+      final scores = officialResults
           .map((item) => num.tryParse(item['score']?.toString() ?? ''))
           .whereType<num>()
           .toList();
       final averageScore = scores.isEmpty
           ? '—'
           : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
+      final correctTotal = officialResults.fold<int>(
+        0,
+        (sum, item) => sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
+      );
+      final wrongTotal = officialResults.fold<int>(
+        0,
+        (sum, item) => sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1359,16 +1372,23 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('نمای کلی عملکرد', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const Text('عملکرد رسمی من در لیگ', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
+                    style: TextStyle(color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
+                  ),
                   const SizedBox(height: 14),
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
                     children: [
                       _RaqtivaPerformanceMetric(label: 'رتبه لیگ', value: stats?['rank']?.toString() ?? '—', icon: Icons.emoji_events_rounded),
-                      _RaqtivaPerformanceMetric(label: 'امتیاز کل', value: stats?['total_score']?.toString() ?? '۰', icon: Icons.stars_rounded),
-                      _RaqtivaPerformanceMetric(label: 'آزمون‌های رسمی', value: stats?['exams_count']?.toString() ?? '۰', icon: Icons.assignment_turned_in_rounded),
-                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز نتایج', value: averageScore, icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(label: 'امتیاز کل لیگ', value: stats?['total_score']?.toString() ?? '۰', icon: Icons.stars_rounded),
+                      _RaqtivaPerformanceMetric(label: 'آزمون‌های مؤثر در لیگ', value: stats?['exams_count']?.toString() ?? '۰', icon: Icons.assignment_turned_in_rounded),
+                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز آزمون رسمی', value: averageScore, icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ صحیح رسمی', value: correctTotal.toString(), icon: Icons.check_circle_rounded),
+                      _RaqtivaPerformanceMetric(label: 'پاسخ غلط رسمی', value: wrongTotal.toString(), icon: Icons.cancel_rounded),
                     ],
                   ),
                 ],
@@ -1381,10 +1401,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('آخرین نتایج', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const Text('آخرین نتایج آزمون‌های رسمی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
-                  if (results.isEmpty) const Text('پس از شرکت در آزمون‌های رسمی، گزارش عملکرد شما اینجا نمایش داده می‌شود.'),
-                  for (final item in results.take(5))
+                  if (officialResults.isEmpty)
+                    const Text('هنوز نتیجه‌ای از آزمون رسمیِ مؤثر بر لیگ برای شما ثبت نشده است.'),
+                  for (final item in officialResults.take(5))
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text((item['exam_title'] ?? 'آزمون').toString()),
