@@ -75,8 +75,8 @@ class ExamQuestion(models.Model):
     def save(self, *args, **kwargs):
         if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
             raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
-        if self.question.status != self.question.Status.PUBLISHED:
-            raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
+        # Question review status is not a launch prerequisite for manager-built
+        # exams. Only staff/admin workflows expose exam-question authoring.
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
