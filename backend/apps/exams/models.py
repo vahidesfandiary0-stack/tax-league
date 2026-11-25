@@ -10,6 +10,7 @@ class Exam(models.Model):
         DAILY = "daily", "آزمون روزانه"
         WEEKLY = "weekly", "آزمون هفتگی"
         MOCK = "mock", "آزمون جامع"
+        NIGHT = "night", "آزمون شبانه"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"
@@ -34,16 +35,23 @@ class Exam(models.Model):
         ordering = ["-created_at"]
 
     def clean(self):
-        if self.duration_minutes < 1 or self.max_attempts < 1:
-            raise ValidationError("مدت آزمون و تعداد دفعات مجاز باید حداقل یک باشد.")
+        if self.duration_minutes < 1 or self.max_attempts < 0:
+            raise ValidationError("مدت آزمون و تعداد دفعات مجاز نامعتبر است.")
+        if self.kind == self.Kind.NIGHT:
+            if self.requires_purchase or not self.counts_for_league or self.max_attempts != 0:
+                raise ValidationError("آزمون شبانه باید رایگان، نامحدود و مؤثر در رتبه‌بندی لیگ باشد.")
+        elif self.max_attempts < 1:
+            raise ValidationError("تعداد دفعات مجاز آزمون باید حداقل یک باشد.")
+        elif self.counts_for_league:
+            raise ValidationError("فقط آزمون شبانه مجاز به اثرگذاری بر رتبه‌بندی لیگ است.")
         if self.requires_purchase and self.price_irr < 1:
             raise ValidationError({"price_irr": "برای آزمون پولی، مبلغ باید بیشتر از صفر باشد."})
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
             raise ValidationError({"ends_at": "پایان آزمون باید بعد از شروع آن باشد."})
 
     def save(self, *args, **kwargs):
-        if self.pk and Exam.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
-            raise ValidationError("آزمون منتشرشده قابل ویرایش نیست؛ برای تغییر، آزمون جدید بسازید.")
+        # Published exams remain editable by authorized staff in Django admin.
+        # Participant attempts use immutable question/option snapshots.
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -65,16 +73,9 @@ class ExamQuestion(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
-            raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
-        if self.question.status != self.question.Status.PUBLISHED:
-            raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
+        # Staff may maintain a published exam; existing attempts are snapshots.
+        # Question review status is not a launch prerequisite for manager-built exams.
         super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
-            raise ValidationError("سؤال‌های آزمون منتشرشده قابل حذف نیستند.")
-        return super().delete(*args, **kwargs)
 
 
 class ExamAttempt(models.Model):

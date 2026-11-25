@@ -3,9 +3,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "mobile/ui-redesign-20261119"]
+    branches: ["main", "mobile/ui-redesign-20261119", "release/official-readiness-*"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/official-readiness-*"]
 
 jobs:
   backend:
@@ -27,6 +27,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt
       - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
       - run: pytest
 
   mobile:
@@ -41,38 +42,6 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Patch legacy Cafe Bazaar Gradle plugin
-        run: |
-          set -euo pipefail
-          python - <<'INNER'
-          from pathlib import Path
-          import os
-          import re
-
-          cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
-          matches = sorted(cache.glob("hosted/pub.dev/flutter_poolakey-*/android/build.gradle"))
-          if len(matches) != 1:
-              raise SystemExit(f"Expected exactly one flutter_poolakey Gradle file, found {len(matches)}")
-
-          path = matches[0]
-          content = path.read_text(encoding="utf-8").replace("jcenter()", "mavenCentral()")
-          pattern = re.compile(
-              r"""(?m)^plugins\s*\{\s*id\s+["']com\.android\.library["']\s*id\s+["']kotlin-android["']\s*\}"""
-          )
-          content, count = pattern.subn(
-              'apply plugin: "com.android.library"\napply plugin: "kotlin-android"',
-              content,
-              count=1,
-          )
-          if count == 0:
-              if ('apply plugin: "com.android.library"' not in content or
-                      'apply plugin: "kotlin-android"' not in content):
-                  raise SystemExit("Unrecognized Poolakey Gradle plugin structure; refusing unsafe patch.")
-          if "jcenter()" in content or "plugins {" in content:
-              raise SystemExit("Poolakey Gradle patch verification failed.")
-          path.write_text(content, encoding="utf-8")
-          print(f"Patched and verified {path}")
-          INNER
       - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
@@ -127,33 +96,6 @@ jobs:
                   or "android:value=" not in raw_manifest):
               raise SystemExit("Android launcher label / v2 embedding XML verification failed.")
           print("Android launcher name and v2 embedding metadata verified in Android-prefixed XML")
-          INNER
-      - name: Configure JitPack for Cafe Bazaar SDK
-        working-directory: mobile
-        run: |
-          set -euo pipefail
-          python - <<'INNER'
-          from pathlib import Path
-          import re
-
-          candidates = [Path("android/build.gradle.kts"), Path("android/build.gradle")]
-          path = next((candidate for candidate in candidates if candidate.is_file()), None)
-          if path is None:
-              raise SystemExit("Generated Android root build.gradle(.kts) was not found.")
-          content = path.read_text(encoding="utf-8")
-          if "https://jitpack.io" not in content:
-              pattern = r"(allprojects\s*\{\s*repositories\s*\{)"
-              match = re.search(pattern, content, flags=re.S)
-              if match is None:
-                  raise SystemExit("Could not safely locate allprojects.repositories in Android root build file.")
-              repository = ('maven { url = uri("https://jitpack.io") }'
-                            if path.suffix == ".kts"
-                            else "maven { url 'https://jitpack.io' }")
-              content = content[:match.end()] + "\n        " + repository + content[match.end():]
-              path.write_text(content, encoding="utf-8")
-          if "https://jitpack.io" not in path.read_text(encoding="utf-8"):
-              raise SystemExit("JitPack repository verification failed.")
-          print(f"JitPack configured in {path}")
           INNER
       - name: Build debug APK
         run: flutter build apk --debug --dart-define=API_BASE_URL=https://raqtiva.ir

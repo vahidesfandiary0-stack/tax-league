@@ -14,7 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "rest_framework.authtoken", "django_filters",
     "apps.accounts", "apps.questions", "apps.exams", "apps.league",
-    "apps.payments", "apps.subscriptions", "apps.notifications", "apps.support", "apps.regulations",
+    "apps.payments", "apps.subscriptions", "apps.notifications", "apps.support", "apps.regulations", "apps.academy",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -73,6 +73,7 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+
 
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = [
     "rest_framework.throttling.AnonRateThrottle",

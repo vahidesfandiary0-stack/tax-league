@@ -17,24 +17,37 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    # Official league scores are exclusive to free night exams. Never trust
+    # the generic flag alone: legacy/admin-created practice exams must not rank.
+    from apps.exams.models import Exam
+    if (attempt.exam.kind != Exam.Kind.NIGHT
+            or attempt.exam.requires_purchase
+            or not attempt.exam.counts_for_league):
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
     if existing:
         return existing
 
+    # League eligibility is determined by the shared NIGHT exam window, not
+    # each participant's join or delayed finalize time. This keeps every user
+    # in the same exam under the same season boundary.
+    if attempt.exam.starts_at is None or attempt.exam.ends_at is None:
+        return None
     season = LeagueSeason.objects.select_for_update().filter(
         status=LeagueSeason.Status.ACTIVE,
-        starts_at__lte=attempt.started_at,
-        ends_at__gte=attempt.submitted_at,
+        starts_at__lte=attempt.exam.starts_at,
+        ends_at__gte=attempt.exam.ends_at,
     ).first()
     if season is None:
         # A completed exam must remain finalized even if no eligible season is active.
         # It simply does not contribute to an official season leaderboard.
         return None
 
-    elapsed = max(0, int((attempt.submitted_at - attempt.started_at).total_seconds()))
+    # A client may finalize after losing connectivity at the common deadline.
+    # Waiting to send the result must not increase the measured response time.
+    elapsed_end = min(attempt.submitted_at, attempt.deadline_at)
+    elapsed = max(0, int((elapsed_end - attempt.started_at).total_seconds()))
     return LeagueScoreEntry.objects.create(
         season=season,
         attempt=attempt,
@@ -85,7 +98,7 @@ def close_season(season_id, actor, note=""):
     season.refresh_from_db()
     return season
 
-def leaderboard_for_season(season_id, limit=100):
+def leaderboard_for_season(season_id, limit=100, province=None):
     """Aggregate ledger entries; no client-supplied scores are accepted."""
     from django.db.models import Count, IntegerField, Value
     from django.db.models.functions import Coalesce
@@ -97,7 +110,10 @@ def leaderboard_for_season(season_id, limit=100):
         entry__season_id=OuterRef("season_id"),
         entry__user_id=OuterRef("user_id"),
     ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(season=season).values(
+    entries = LeagueScoreEntry.objects.filter(season=season)
+    if province is not None:
+        entries = entries.filter(user__province=province, user__province_verified=True)
+    rows = entries.values(
         "season_id", "user_id", "user__display_name"
     ).annotate(
         base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
