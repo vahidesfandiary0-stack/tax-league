@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - "release/googleplay-slider-20261125"
+      - "release/googleplay-slider-final2-20261125"
     paths:
       - "backend/**"
       - ".github/workflows/release-backend-check.yml"
@@ -38,3 +39,5 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
       - name: Run backend tests
         run: pytest
+      - name: Run manual payment workflow tests explicitly
+        run: pytest apps/payments/test_manual_payments.py -q

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
+from PIL import Image, UnidentifiedImageError
 
 
 def receipt_upload_path(instance, filename):
@@ -18,15 +19,37 @@ def validate_receipt_size(file_obj):
 
 
 def validate_receipt_content(file_obj):
-    head = file_obj.read(8)
+    suffix = Path(getattr(file_obj, "name", "")).suffix.lower()
     file_obj.seek(0)
-    valid = (
-        head.startswith(b"\xff\xd8\xff")
-        or head.startswith(b"\x89PNG\r\n\x1a\n")
-        or head.startswith(b"%PDF-")
-    )
-    if not valid:
-        raise ValidationError("محتوای فایل با فرمت مجاز رسید مطابقت ندارد.")
+    head = file_obj.read(8)
+    if suffix in {".jpg", ".jpeg", ".png"}:
+        try:
+            file_obj.seek(0)
+            with Image.open(file_obj) as image:
+                width, height = image.size
+                if width < 1 or height < 1 or width * height > 40_000_000:
+                    raise ValidationError("ابعاد تصویر رسید معتبر نیست یا بیش از حد بزرگ است.")
+                image.verify()
+        except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError, ValueError):
+            raise ValidationError("فایل تصویر رسید خراب یا نامعتبر است.")
+        finally:
+            file_obj.seek(0)
+        if suffix in {".jpg", ".jpeg"} and not head.startswith(b"\xff\xd8\xff"):
+            raise ValidationError("محتوای فایل با پسوند تصویر مطابقت ندارد.")
+        if suffix == ".png" and not head.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise ValidationError("محتوای فایل با پسوند تصویر مطابقت ندارد.")
+        return
+    if suffix == ".pdf" and head.startswith(b"%PDF-"):
+        file_obj.seek(0, 2)
+        file_obj.seek(max(0, file_obj.tell() - 2048))
+        tail = file_obj.read()
+        file_obj.seek(0)
+        if b"%%EOF" not in tail:
+            raise ValidationError("ساختار فایل PDF رسید کامل نیست.")
+        return
+    file_obj.seek(0)
+    raise ValidationError("محتوای فایل با فرمت مجاز رسید مطابقت ندارد.")
+
 
 
 class PaymentSettings(models.Model):
@@ -66,6 +89,7 @@ class PaymentOrder(models.Model):
     plan = models.ForeignKey("subscriptions.SubscriptionPlan", null=True, blank=True, on_delete=models.PROTECT)
     exam = models.ForeignKey("exams.Exam", null=True, blank=True, on_delete=models.PROTECT)
     amount_irr = models.PositiveBigIntegerField()
+    plan_duration_days_snapshot = models.PositiveSmallIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AWAITING_PAYMENT)
     tracking_code = models.CharField(max_length=100, blank=True)
     receipt = models.FileField(
@@ -89,13 +113,15 @@ class PaymentOrder(models.Model):
             raise ValidationError({"amount_irr": "مبلغ سفارش باید بیشتر از صفر باشد."})
         if self.product_type == self.ProductType.SUBSCRIPTION and (not self.plan_id or self.exam_id):
             raise ValidationError("سفارش اشتراک باید فقط یک طرح اشتراک داشته باشد.")
+        if self.product_type == self.ProductType.SUBSCRIPTION and self.plan_duration_days_snapshot is not None and self.plan_duration_days_snapshot < 1:
+            raise ValidationError("مدت ثبت‌شده اشتراک باید بیشتر از صفر باشد.")
         if self.product_type == self.ProductType.EXAM and (not self.exam_id or self.plan_id):
             raise ValidationError("سفارش آزمون باید فقط یک آزمون داشته باشد.")
 
     def save(self, *args, **kwargs):
         if self.pk and PaymentOrder.objects.filter(pk=self.pk).exists():
             old = PaymentOrder.objects.get(pk=self.pk)
-            immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr")
+            immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr", "plan_duration_days_snapshot")
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
                 raise ValidationError("مشخصات و مبلغ سفارش پس از ایجاد قابل تغییر نیست.")
             if old.status == self.Status.APPROVED:
