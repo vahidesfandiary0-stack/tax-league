@@ -428,7 +428,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       }
       // Successful server data is authoritative, including an empty list:
       // managers control ordering and whether each slide is active.
-      setState(() => showcaseSlides = List<dynamic>.from(data));
+      // Founder identity and photo are intentionally confined to the account/about/founder page.
+      setState(() => showcaseSlides = List<dynamic>.from(data).where((slide) =>
+        slide is! Map || slide['kind']?.toString() != 'founder'
+      ).toList());
     } catch (_) {
       if (!mounted || showcaseSlides.isNotEmpty) return;
       setState(() => showcaseSlides = fallbackBrandSlides());
