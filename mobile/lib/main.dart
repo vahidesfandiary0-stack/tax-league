@@ -3174,7 +3174,7 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
 
   Future<void> uploadReceipt(Map<String, dynamic> order) async {
     if (sending) return;
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
       withData: true,
