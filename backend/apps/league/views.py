@@ -1,3 +1,4 @@
+from apps.exams.models import Exam
 from django.db.models import Count, F, IntegerField, Sum, Value, Window, OuterRef, Subquery
 from django.db.models.functions import Coalesce, RowNumber
 from rest_framework.permissions import IsAuthenticated
@@ -79,17 +80,25 @@ class MyLeagueStatsView(APIView):
                 "season": None, "rank": None, "total_score": 0, "exams_count": 0
             })
         base_totals = LeagueScoreEntry.objects.filter(
-            season=season, user=request.user
+            season=season, user=request.user,
+            attempt__exam__kind=Exam.Kind.NIGHT,
+            attempt__exam__counts_for_league=True,
         ).aggregate(
             base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
             exams_count=Count("id"),
         )
         correction = LeagueScoreAdjustment.objects.filter(
-            entry__season=season, entry__user=request.user
+            entry__season=season, entry__user=request.user,
+            entry__attempt__exam__kind=Exam.Kind.NIGHT,
+            entry__attempt__exam__counts_for_league=True,
         ).aggregate(total=Coalesce(Sum("score_delta"), Value(0), output_field=IntegerField()))["total"]
         total_score = base_totals["base_score"] + correction
         ranked_users = list(
-            LeagueScoreEntry.objects.filter(season=season)
+            LeagueScoreEntry.objects.filter(
+                season=season,
+                attempt__exam__kind=Exam.Kind.NIGHT,
+                attempt__exam__counts_for_league=True,
+            )
             .values("season_id", "user_id")
             .annotate(
                 base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
@@ -103,6 +112,8 @@ class MyLeagueStatsView(APIView):
                         LeagueScoreAdjustment.objects.filter(
                             entry__season_id=OuterRef("season_id"),
                             entry__user_id=OuterRef("user_id"),
+                            entry__attempt__exam__kind=Exam.Kind.NIGHT,
+                            entry__attempt__exam__counts_for_league=True,
                         ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1],
                         output_field=IntegerField(),
                     ), Value(0), output_field=IntegerField(),
