@@ -73,6 +73,7 @@ class PaymentOrder(models.Model):
         validators=[FileExtensionValidator(["jpg", "jpeg", "png", "pdf"]), validate_receipt_size, validate_receipt_content],
         blank=True,
     )
+    receipt_sha256 = models.CharField(max_length=64, blank=True, default="")
     user_note = models.CharField(max_length=500, blank=True)
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="reviewed_payment_orders")
     review_note = models.CharField(max_length=500, blank=True)
@@ -83,6 +84,12 @@ class PaymentOrder(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "status"], name="pay_user_status_idx")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["receipt_sha256"], condition=~models.Q(receipt_sha256=""),
+                name="uq_payment_receipt_sha256",
+            ),
+        ]
 
     def clean(self):
         if self.amount_irr < 1:
@@ -99,7 +106,7 @@ class PaymentOrder(models.Model):
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
                 raise ValidationError("مشخصات و مبلغ سفارش پس از ایجاد قابل تغییر نیست.")
             if old.status == self.Status.APPROVED:
-                if self.status != old.status or self.receipt != old.receipt:
+                if self.status != old.status or self.receipt != old.receipt or self.receipt_sha256 != old.receipt_sha256:
                     raise ValidationError("سفارش تأییدشده قابل تغییر نیست.")
         self.clean()
         super().save(*args, **kwargs)
