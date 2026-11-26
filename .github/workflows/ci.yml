@@ -46,6 +46,31 @@ jobs:
       - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Set Android compile SDK 36 for current plugins
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          candidates = [Path("android/app/build.gradle.kts"), Path("android/app/build.gradle")]
+          gradle = next((p for p in candidates if p.is_file()), None)
+          if gradle is None:
+              raise SystemExit("Android app Gradle file not found")
+          content = gradle.read_text()
+          if gradle.suffix == ".kts":
+              updated, count = re.subn(r"(?m)^(\\s*compileSdk\\s*=\\s*).*?$", r"\\g<1>36", content)
+          else:
+              updated, count = re.subn(r"(?m)^(\\s*compileSdkVersion\\s+).*?$", r"\\g<1>36", content)
+          if count != 1:
+              raise SystemExit(f"Expected one compile SDK declaration, found {count}")
+          gradle.write_text(updated)
+          print(f"Configured compile SDK 36 in {gradle}")
+          PY
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "platforms;android-36"
       - name: Verify Android application identity
         working-directory: mobile
         shell: bash
