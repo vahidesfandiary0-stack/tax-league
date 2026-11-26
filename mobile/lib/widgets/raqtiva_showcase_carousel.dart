@@ -312,7 +312,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
       final seconds = remaining.inSeconds.remainder(60);
       String two(int value) => value.toString().padLeft(2, '0');
       return Padding(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
