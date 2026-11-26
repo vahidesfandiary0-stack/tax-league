@@ -141,6 +141,6 @@ def reject_order(order_id, reviewer, reason):
 
 def get_payment_instructions():
     settings = PaymentSettings.objects.filter(pk=1).first()
-    if not settings or not settings.card_number:
+    if not settings or not settings.card_number or not settings.account_holder:
         return None
     return {"card_number": settings.card_number, "account_holder": settings.account_holder}
