@@ -211,6 +211,15 @@ def publish_exam(exam_id):
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
     if exam.kind == Exam.Kind.NIGHT:
         question_ids = [item.question_id for item in items]
+        # Serialize publication of overlapping source questions to prevent
+        # concurrent admins from publishing the same question in two night exams.
+        from apps.questions.models import Question
+        list(
+            Question.objects.select_for_update()
+            .filter(pk__in=question_ids)
+            .order_by("pk")
+            .values_list("pk", flat=True)
+        )
         reused = ExamQuestion.objects.filter(
             question_id__in=question_ids,
             exam__kind=Exam.Kind.NIGHT,
