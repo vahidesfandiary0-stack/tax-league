@@ -30,6 +30,7 @@ class PaymentWorkflowTests(TestCase):
     def test_order_captures_server_price_and_is_immutable(self):
         order = create_subscription_order(self.user, self.plan.pk)
         self.assertEqual(order.amount_irr, self.plan.price_irr)
+        self.assertEqual(order.payment_provider, PaymentOrder.PaymentProvider.MANUAL)
         self.assertEqual(order.plan_duration_days_snapshot, 30)
         order.amount_irr = 1
         with self.assertRaises(ValidationError):
@@ -69,6 +70,28 @@ class PaymentWorkflowTests(TestCase):
         with self.assertRaises(ValidationError):
             approve_order(order.pk, self.admin)
         self.assertEqual(UserSubscription.objects.filter(source_order=order).count(), 1)
+
+
+
+    def test_bazaar_order_cannot_submit_manual_receipt_or_be_manually_approved(self):
+        order = PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            payment_provider=PaymentOrder.PaymentProvider.CAFEBAZAAR,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+            plan_duration_days_snapshot=self.plan.duration_days,
+        )
+        receipt = SimpleUploadedFile(
+            "transfer.pdf", b"%PDF-1.4\\nreceipt\\n%%EOF", content_type="application/pdf"
+        )
+        from apps.payments.services import submit_payment
+        with self.assertRaises(ValidationError):
+            submit_payment(order.pk, self.user, receipt)
+        order.status = PaymentOrder.Status.UNDER_REVIEW
+        order.save(update_fields=["status"])
+        with self.assertRaises(ValidationError):
+            approve_order(order.pk, self.admin)
 
     def test_card_settings_singleton(self):
         first = PaymentSettings.objects.create(card_number="1111222233334444")
