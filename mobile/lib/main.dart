@@ -436,7 +436,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     try {
       final profile = await api.request('accounts/profile/');
       profileName.text = (profile['display_name'] ?? '').toString();
-      if (profileName.text.trim().split(RegExp(r'\\s+')).length < 2 && mounted) {
+      if (profileName.text.trim().split(RegExp(r'\s+')).length < 2 && mounted) {
         setState(() => accountPage = 8);
       }
     } catch (e) {
@@ -445,7 +445,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> _saveProfile() async {
-    final normalized = profileName.text.trim().replaceAll(RegExp(r'\\s+'), ' ');
+    final normalized = profileName.text.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (normalized.split(' ').length < 2) {
       setState(() => profileError = 'نام و نام خانوادگی کامل را وارد کنید.');
       return;
@@ -548,7 +548,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     try {
       final profile = await api.request('accounts/profile/');
       final fullName = (profile['display_name'] ?? '').toString().trim();
-      if (fullName.split(RegExp(r'\\s+')).length < 2) {
+      if (fullName.split(RegExp(r'\s+')).length < 2) {
         profileName.text = fullName;
         if (mounted) setState(() => accountPage = 8);
         return;
