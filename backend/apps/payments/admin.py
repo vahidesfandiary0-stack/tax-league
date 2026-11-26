@@ -31,12 +31,12 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentOrder)
 class PaymentOrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "product_type", "amount_irr", "status", "receipt_link", "created_at")
-    list_filter = ("status", "product_type")
+    list_display = ("id", "user", "product_type", "payment_provider", "amount_irr", "status", "receipt_link", "created_at")
+    list_filter = ("status", "product_type", "payment_provider")
     search_fields = ("id", "user__phone_number", "tracking_code")
     exclude = ("receipt",)
     readonly_fields = (
-        "user", "product_type", "plan", "exam", "amount_irr", "status",
+        "user", "product_type", "payment_provider", "plan", "exam", "amount_irr", "status",
         "tracking_code", "user_note", "reviewer", "review_note", "reviewed_at", "receipt_link",
         "created_at", "updated_at",
     )
