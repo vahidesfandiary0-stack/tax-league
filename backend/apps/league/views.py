@@ -1,9 +1,10 @@
-from apps.exams.models import Exam
 from django.db.models import Count, F, IntegerField, Sum, Value, Window, OuterRef, Subquery
 from django.db.models.functions import Coalesce, RowNumber
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.exams.models import Exam
 
 from .models import LeagueSeason, LeagueScoreEntry, LeagueScoreAdjustment
 from .serializers import LeagueSeasonSerializer
