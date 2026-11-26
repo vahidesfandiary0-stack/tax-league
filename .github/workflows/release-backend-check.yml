@@ -11,6 +11,7 @@ on:
       - "release/googleplay-slider-final2-20261125"
     paths:
       - "backend/**"
+      - "mobile/**"
       - ".github/workflows/release-backend-check.yml"
 
 permissions:
