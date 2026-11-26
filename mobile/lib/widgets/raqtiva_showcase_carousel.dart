@@ -59,20 +59,29 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
+  Map<String, dynamic>? get _configuredCountdownSlide {
+    final exam = _nextExam;
+    if (exam == null) return null;
+    for (final raw in widget.slides) {
+      if (raw is Map && raw['kind']?.toString() == 'exam_countdown') {
+        return <String, dynamic>{
+          ...Map<String, dynamic>.from(raw),
+          'target_at': exam['target_at'],
+          'countdown_phase': exam['countdown_phase'],
+          'server_now': exam['server_now'],
+          'received_at': exam['received_at'],
+          'exam_title': exam['title'],
+        };
+      }
+    }
+    return null;
+  }
+
   List<dynamic> get _allSlides => [
-    ...widget.slides,
-    if (_nextExam != null)
-      <String, dynamic>{
-        'id': 'builtin-exam-countdown',
-        'kind': 'exam_countdown',
-        'title': 'آزمون بعدی',
-        'target_at': _nextExam!['target_at'],
-        'countdown_phase': _nextExam!['countdown_phase'],
-        'server_now': _nextExam!['server_now'],
-        'received_at': _nextExam!['received_at'],
-        'exam_title': _nextExam!['title'],
-        'duration_seconds': 8,
-      },
+    ...widget.slides.where(
+      (raw) => !(raw is Map && raw['kind']?.toString() == 'exam_countdown'),
+    ),
+    if (_configuredCountdownSlide != null) _configuredCountdownSlide!,
   ];
 
   int get _count => _allSlides.length;
@@ -320,12 +329,23 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               children: [
                 Icon(Icons.timer_rounded, color: Color(0xFFFFD76A), size: 27),
                 SizedBox(width: 9),
-                Text(isEnding ? 'زمان باقی‌مانده تا پایان آزمون' : 'شمارش معکوس آزمون بعدی', style: TextStyle(
+                Text((title.isNotEmpty ? title : (isEnding ? 'زمان باقی‌مانده تا پایان آزمون' : 'شمارش معکوس آزمون بعدی')), style: TextStyle(
                   color: Color(0xFFFFE4A8), fontSize: 16, fontWeight: FontWeight.w900,
                 )),
               ],
             ),
             const SizedBox(height: 12),
+            if (body.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Text(
+                  body,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
+                ),
+              ),
             if (targetAt == null)
               const Text(
                 'زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.',
@@ -381,7 +401,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    'رقابت کن، رتبه بگیر، نخبه شو!',
+                    (body.isNotEmpty ? body : 'رقابت کن، رتبه بگیر، نخبه شو!'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFFFFE4A8),
