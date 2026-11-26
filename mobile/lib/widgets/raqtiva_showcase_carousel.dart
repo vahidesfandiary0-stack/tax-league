@@ -317,6 +317,15 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (imageUrl.isNotEmpty)
+              SizedBox(
+                height: 38,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
