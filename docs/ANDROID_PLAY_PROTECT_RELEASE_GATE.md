@@ -113,3 +113,9 @@ the exact APK hash, and future Google decisions cannot be guaranteed.
   still pass resolved-dependency, merged-manifest/permission, signer, package,
   SDK, diagnostic and real-device Play Protect checks before owner acceptance.
 
+## Candidate build 2026-11-26
+
+- Isolated candidate branch: `release/googleplay-slider-raqtiva-candidate-20261126`.
+- Source commit before the candidate-branch record: `c656af3a615f8513cb12d8e2ee26c0af54896181`.
+- CI verification on that source commit: Flutter mobile tests/analyze, backend configuration/migrations/tests/manual-payment tests, and production PWA build all passed.
+- The candidate build is for technical inspection only. It does not authorize installation, Play Protect acceptance, merge, production deployment, or store publication.
