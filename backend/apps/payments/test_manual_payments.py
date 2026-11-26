@@ -47,6 +47,18 @@ class PaymentWorkflowTests(TestCase):
                 )
                 validate_receipt_content(receipt)
 
+    def test_existing_bazaar_order_is_not_reused_for_manual_payment(self):
+        PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            payment_provider=PaymentOrder.PaymentProvider.CAFEBAZAAR,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+        )
+        manual_order = create_subscription_order(self.user, self.plan.pk)
+        self.assertEqual(manual_order.payment_provider, PaymentOrder.PaymentProvider.MANUAL)
+        self.assertEqual(PaymentOrder.objects.filter(user=self.user).count(), 2)
+
     def test_repeated_plan_selection_reuses_open_order(self):
         first = create_subscription_order(self.user, self.plan.pk)
         second = create_subscription_order(self.user, self.plan.pk)
@@ -119,6 +131,12 @@ class PaymentApiWorkflowTests(TestCase):
         )
         self.client.force_authenticate(user=self.user)
 
+    def test_payment_instructions_require_card_number_and_account_holder(self):
+        PaymentSettings.objects.update(account_holder="")
+        response = self.client.get("/api/v1/payments/instructions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["configured"])
+
     def test_authenticated_card_instructions_and_plan_listing(self):
         response = self.client.get("/api/v1/payments/instructions/")
         self.assertEqual(response.status_code, 200)
@@ -133,6 +151,10 @@ class PaymentApiWorkflowTests(TestCase):
         }, format="json")
         self.assertEqual(created.status_code, 201)
         order_id = created.data["id"]
+        self.assertEqual(
+            PaymentOrder.objects.get(pk=order_id).payment_provider,
+            PaymentOrder.PaymentProvider.MANUAL,
+        )
         receipt = SimpleUploadedFile(
             "transfer.pdf", b"%PDF-1.4\nreceipt\n%%EOF", content_type="application/pdf"
         )
