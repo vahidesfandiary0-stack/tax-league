@@ -87,8 +87,7 @@ abstract final class RaqtivaTheme {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide:
-                const BorderSide(color: RaqtivaColors.gold, width: 1.5),
+            borderSide: const BorderSide(color: RaqtivaColors.gold, width: 1.5),
           ),
           labelStyle: const TextStyle(color: RaqtivaColors.muted),
           hintStyle: const TextStyle(color: RaqtivaColors.muted),
@@ -114,8 +113,10 @@ abstract final class RaqtivaTheme {
             minimumSize: const Size.fromHeight(54),
             elevation: 2,
             shadowColor: const Color(0x664A83B8),
-            textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textStyle:
+                const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
         textTheme: const TextTheme(
@@ -370,14 +371,24 @@ class RaqtivaFeatureCard extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFE9AD), Color(0xFFE0BD70), Color(0xFF9D7135)],
+                      colors: [
+                        Color(0xFFFFE9AD),
+                        Color(0xFFE0BD70),
+                        Color(0xFF9D7135)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x55E6C27B), blurRadius: 15, offset: Offset(0, 4)),
-                      BoxShadow(color: Color(0x88000000), blurRadius: 7, offset: Offset(0, 3)),
+                      BoxShadow(
+                          color: Color(0x55E6C27B),
+                          blurRadius: 15,
+                          offset: Offset(0, 4)),
+                      BoxShadow(
+                          color: Color(0x88000000),
+                          blurRadius: 7,
+                          offset: Offset(0, 3)),
                     ],
                   ),
                   child: Icon(icon, color: RaqtivaColors.navy, size: 27),
@@ -407,7 +418,8 @@ class RaqtivaFeatureCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   trailing!,
                 ] else
-                  const Icon(Icons.chevron_left, color: RaqtivaColors.goldLight),
+                  const Icon(Icons.chevron_left,
+                      color: RaqtivaColors.goldLight),
               ],
             ),
           ),
@@ -478,7 +490,8 @@ class RaqtivaStadiumBackdrop extends StatelessWidget {
           ),
         ),
         const Positioned.fill(
-          child: IgnorePointer(child: CustomPaint(painter: _RaqtivaStadiumPainter())),
+          child: IgnorePointer(
+              child: CustomPaint(painter: _RaqtivaStadiumPainter())),
         ),
         child,
       ],
@@ -512,7 +525,8 @@ class _RaqtivaStadiumPainter extends CustomPainter {
       final path = Path()
         ..moveTo(origin.dx, origin.dy)
         ..lineTo(size.width * .5, size.height * .48)
-        ..lineTo(side == 0 ? size.width * .42 : size.width * .58, size.height * .36)
+        ..lineTo(
+            side == 0 ? size.width * .42 : size.width * .58, size.height * .36)
         ..close();
       canvas.drawPath(path, beam);
     }
@@ -565,7 +579,6 @@ class _RaqtivaStadiumPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RaqtivaStadiumPainter oldDelegate) => false;
 }
-
 
 /// Five-destination navigation shell. Labels may wrap to two lines on narrow
 /// phones instead of being clipped or silently shortened.
@@ -712,4 +725,3 @@ class RaqtivaBottomNavigationBar extends StatelessWidget {
     );
   }
 }
-

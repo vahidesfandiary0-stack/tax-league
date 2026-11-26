@@ -35,23 +35,24 @@ class ShowcaseSlideAdmin(admin.ModelAdmin):
     search_fields = ("title", "body")
     ordering = ("sort_order", "pk")
     readonly_fields = ("created_at", "updated_at")
+    save_on_top = True
     fieldsets = (
-        ("محتوا", {"fields": ("kind", "title", "body", "image_url")}),
-        ("نمایش", {"fields": ("is_active", "sort_order", "duration_seconds", "starts_at", "ends_at")}),
+        ("محتوا", {"fields": ("kind", "title", "body", "image", "image_url")}),
+        ("نمایش", {"fields": ("is_active", "sort_order", "duration_seconds", "starts_at", "ends_at"), "description": "در نوع «شمارش معکوس آزمون رسمی»، زمان واقعی از آزمون شبانه رسمی منتشرشده گرفته می‌شود؛ این تاریخ‌ها فقط بازه انتشار خود اسلاید را تعیین می‌کنند."}),
         ("سوابق", {"fields": ("created_at", "updated_at")}),
     )
 
     def has_module_permission(self, request):
-        return request.user.is_superuser
+        return request.user.is_staff
 
     def has_view_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return request.user.is_staff
 
     def has_add_permission(self, request):
-        return request.user.is_superuser
+        return request.user.is_staff
 
     def has_change_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return request.user.is_staff
 
     def has_delete_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return request.user.is_staff

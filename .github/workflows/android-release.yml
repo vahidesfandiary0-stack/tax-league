@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "release/googleplay-slider-*"
+  pull_request:
+    branches:
+      - "release/googleplay-slider-*"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -22,6 +25,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 
@@ -84,6 +88,33 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Pin Android Kotlin migration flags for plugin compatibility
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/gradle.properties")
+          if not path.is_file():
+              raise SystemExit("Generated Android gradle.properties was not found")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          required = {
+              "android.builtInKotlin": "false",
+              "android.newDsl": "false",
+          }
+          for key, value in required.items():
+              prefix = key + "="
+              lines = [line for line in lines if not line.startswith(prefix)]
+              lines.append(prefix + value)
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          actual = path.read_text(encoding="utf-8")
+          for key, value in required.items():
+              if f"{key}={value}" not in actual:
+                  raise SystemExit(f"Could not enforce {key}={value}")
+          print("PASS: AGP 9 compatibility flags pinned for the selected Flutter plugins.")
+          PY
+
       - name: Cache Gradle dependencies
         uses: gradle/actions/setup-gradle@v4
 
@@ -232,7 +263,8 @@ jobs:
           import re
           report = Path("build/reports/android-permissions.txt").read_text()
           permissions = set(re.findall(r"uses-permission(?:-sdk-\d+)?[^\n]*name='([^']+)'", report))
-          allowed = {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.USE_BIOMETRIC", "ir.raqtiva.tax_league.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"}
+          # Exact permission set observed in the owner-approved Play Protect baseline APK.
+          allowed = {"android.permission.INTERNET", "ir.raqtiva.tax_league.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"}
           sensitive = {
               "android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "android.permission.SEND_SMS",
               "android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS",
@@ -254,17 +286,21 @@ jobs:
           print("PASS: Android permission allowlist.")
           PY
 
-      - name: Verify APK and Google Play App Bundle signatures
+      - name: Verify APK signature and approved signing certificate
         working-directory: mobile
         run: |
           set -euo pipefail
           APK=build/app/outputs/flutter-apk/app-release.apk
           AAB=build/app/outputs/bundle/release/app-release.aab
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner"
+          EXPECTED_CERT_SHA256=d0748f8bfda87ae5582de9b560637f88348fb9b39d43e7759227983cbebd24b8
           test -s "$APK"
           test -s "$AAB"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --verbose "$APK"
+          SIGNER_REPORT="$RUNNER_TEMP/raqtiva-apk-signer.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$SIGNER_REPORT"
+          grep -E "^(Signer #1 certificate SHA-256 digest|V2 Signer: certificate SHA-256 digest): ${EXPECTED_CERT_SHA256}$" "$SIGNER_REPORT"
           jarsigner -verify -verbose -certs "$AAB" >/dev/null
-          echo "PASS: APK and AAB signatures verified."
+          echo "PASS: APK signer matches the owner-approved certificate; APK and AAB signatures verified."
 
       - name: Inspect APK permissions and Android compatibility
         working-directory: mobile
@@ -290,7 +326,16 @@ jobs:
             echo
             echo "=== APK package and Android SDK information ==="
             "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
-            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='3'"
+            APP_VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml)"
+            VERSION_NAME="${APP_VERSION%%+*}"
+            VERSION_CODE="${APP_VERSION##*+}"
+            test -n "$VERSION_NAME"
+            test -n "$VERSION_CODE"
+            if [ "$VERSION_CODE" -le 4 ]; then
+              echo "Release versionCode must be greater than the owner-approved baseline versionCode 4." >&2
+              exit 1
+            fi
+            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
             "$AAPT" dump badging "$APK" | grep -F "targetSdkVersion:'36'"
             echo
             echo "=== Resolved Flutter dependencies ==="

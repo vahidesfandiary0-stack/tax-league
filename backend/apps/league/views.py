@@ -1,12 +1,10 @@
-from django.db.models import Count, F, IntegerField, Sum, Value, Window, OuterRef, Subquery
-from django.db.models.functions import Coalesce, RowNumber
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import LeagueSeason, LeagueScoreEntry, LeagueScoreAdjustment
+from .models import LeagueSeason
 from .serializers import LeagueSeasonSerializer
-from .services import leaderboard_for_season
+from .services import leaderboard_for_season, league_rows_for_season
 
 
 def requested_season(request):
@@ -69,6 +67,55 @@ class LeaderboardView(APIView):
         return Response({"season": LeagueSeasonSerializer(season).data, "results": results})
 
 
+class ProvincialLeaderboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        province = (getattr(request.user, "province", "") or "").strip()
+        verified = bool(getattr(request.user, "province_verified", False) and province)
+        if not verified:
+            return Response({
+                "season": None,
+                "province": province,
+                "verified": False,
+                "results": [],
+            })
+
+        season = requested_season(request)
+        if not season:
+            return Response({
+                "season": None,
+                "province": province,
+                "verified": True,
+                "results": [],
+            })
+        try:
+            limit = int(request.query_params.get("limit", 100))
+        except (TypeError, ValueError):
+            return Response({"detail": "پارامتر limit باید عدد صحیح باشد."}, status=400)
+        if not 1 <= limit <= 500:
+            return Response({"detail": "limit باید بین ۱ تا ۵۰۰ باشد."}, status=400)
+
+        _, rows = leaderboard_for_season(season.pk, limit=limit, province=province)
+        results = [
+            {
+                "rank": index,
+                "display_name": row["user__display_name"] or "کاربر",
+                "total_score": row["total_score"],
+                "correct_total": row["correct_total"],
+                "wrong_total": row["wrong_total"],
+                "exams_count": row["exams_count"],
+            }
+            for index, row in enumerate(rows, start=1)
+        ]
+        return Response({
+            "season": LeagueSeasonSerializer(season).data,
+            "province": province,
+            "verified": True,
+            "results": results,
+        })
+
+
 class MyLeagueStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -78,58 +125,21 @@ class MyLeagueStatsView(APIView):
             return Response({
                 "season": None, "rank": None, "total_score": 0, "exams_count": 0
             })
-        base_totals = LeagueScoreEntry.objects.filter(
-            season=season, user=request.user
-        ).aggregate(
-            base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
-            exams_count=Count("id"),
-        )
-        correction = LeagueScoreAdjustment.objects.filter(
-            entry__season=season, entry__user=request.user
-        ).aggregate(total=Coalesce(Sum("score_delta"), Value(0), output_field=IntegerField()))["total"]
-        total_score = base_totals["base_score"] + correction
-        ranked_users = list(
-            LeagueScoreEntry.objects.filter(season=season)
-            .values("season_id", "user_id")
-            .annotate(
-                base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
-                correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
-                wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
-                total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
-            )
-            .annotate(
-                adjustment_total=Coalesce(
-                    Subquery(
-                        LeagueScoreAdjustment.objects.filter(
-                            entry__season_id=OuterRef("season_id"),
-                            entry__user_id=OuterRef("user_id"),
-                        ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1],
-                        output_field=IntegerField(),
-                    ), Value(0), output_field=IntegerField(),
-                )
-            )
-            .annotate(total_score=F("base_score") + F("adjustment_total"))
-            .annotate(
-                rank=Window(
-                    expression=RowNumber(),
-                    order_by=[
-                        F("total_score").desc(),
-                        F("correct_total").desc(),
-                        F("wrong_total").asc(),
-                        F("total_time").asc(),
-                        F("user_id").asc(),
-                    ],
-                )
-            )
-            .filter(user_id=request.user.pk)
-            .values_list("rank", flat=True)[:1]
-        )
-        rank = int(ranked_users[0]) if ranked_users else None
+        _, rows = league_rows_for_season(season.pk)
+        rank = None
+        total_score = 0
+        exams_count = 0
+        for index, row in enumerate(rows, start=1):
+            if row["user_id"] == request.user.pk:
+                rank = index
+                total_score = row["total_score"]
+                exams_count = row["exams_count"]
+                break
         return Response({
             "season": LeagueSeasonSerializer(season).data,
             "rank": rank,
             "total_score": total_score,
-            "exams_count": base_totals["exams_count"],
+            "exams_count": exams_count,
         })
 
 

@@ -10,6 +10,7 @@ class Exam(models.Model):
         DAILY = "daily", "آزمون روزانه"
         WEEKLY = "weekly", "آزمون هفتگی"
         MOCK = "mock", "آزمون جامع"
+        NIGHT = "night", "آزمون شبانه"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"
@@ -36,13 +37,21 @@ class Exam(models.Model):
     def clean(self):
         if self.duration_minutes < 1 or self.max_attempts < 1:
             raise ValidationError("مدت آزمون و تعداد دفعات مجاز باید حداقل یک باشد.")
+        if self.counts_for_league and self.kind != self.Kind.NIGHT:
+            raise ValidationError({"counts_for_league": "فقط آزمون شبانه مجاز است در رتبه‌بندی لیگ اثر بگذارد."})
+        if self.kind == self.Kind.NIGHT and not self.counts_for_league:
+            raise ValidationError({"counts_for_league": "آزمون شبانه رسمی باید در رتبه‌بندی لیگ محاسبه شود."})
+        if self.kind == self.Kind.NIGHT and self.requires_purchase:
+            raise ValidationError({"requires_purchase": "آزمون شبانه باید رایگان باشد."})
+        if self.kind == self.Kind.NIGHT and (not self.starts_at or not self.ends_at):
+            raise ValidationError("آزمون شبانه باید زمان شروع و پایان مشخص داشته باشد.")
         if self.requires_purchase and self.price_irr < 1:
             raise ValidationError({"price_irr": "برای آزمون پولی، مبلغ باید بیشتر از صفر باشد."})
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
             raise ValidationError({"ends_at": "پایان آزمون باید بعد از شروع آن باشد."})
 
     def save(self, *args, **kwargs):
-        if self.pk and Exam.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
+        if self.pk and Exam.objects.filter(pk=self.pk, status__in=[self.Status.PUBLISHED, self.Status.ARCHIVED]).exists():
             raise ValidationError("آزمون منتشرشده قابل ویرایش نیست؛ برای تغییر، آزمون جدید بسازید.")
         super().save(*args, **kwargs)
 
@@ -65,7 +74,7 @@ class ExamQuestion(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
+        if Exam.objects.filter(pk=self.exam_id, status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED]).exists():
             raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
         if self.question.status != self.question.Status.PUBLISHED:
             raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")

@@ -10,10 +10,24 @@ from .models import PaymentOrder, PaymentSettings, PurchasedExamAccess
 @transaction.atomic
 def create_subscription_order(user, plan_id):
     from apps.subscriptions.models import SubscriptionPlan
+    type(user).objects.select_for_update().get(pk=user.pk)
     plan = SubscriptionPlan.objects.get(pk=plan_id, is_active=True)
+    existing = PaymentOrder.objects.filter(
+        user=user,
+        product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+        plan=plan,
+        status__in=[
+            PaymentOrder.Status.AWAITING_PAYMENT,
+            PaymentOrder.Status.UNDER_REVIEW,
+            PaymentOrder.Status.REJECTED,
+        ],
+    ).order_by("-created_at").first()
+    if existing:
+        return existing
     return PaymentOrder.objects.create(
         user=user, product_type=PaymentOrder.ProductType.SUBSCRIPTION,
         plan=plan, amount_irr=plan.price_irr,
+        plan_duration_days_snapshot=plan.duration_days,
     )
 
 
@@ -63,13 +77,15 @@ def approve_order(order_id, reviewer):
     now = timezone.now()
     if order.product_type == PaymentOrder.ProductType.SUBSCRIPTION:
         from apps.subscriptions.models import UserSubscription
+        # Serialize approvals per account, including the first concurrent purchase.
+        type(order.user).objects.select_for_update().get(pk=order.user_id)
         latest = UserSubscription.objects.select_for_update().filter(
             user=order.user, status=UserSubscription.Status.ACTIVE, ends_at__gt=now
         ).order_by("-ends_at").first()
         starts_at = latest.ends_at if latest else now
         UserSubscription.objects.create(
             user=order.user, plan=order.plan, starts_at=starts_at,
-            ends_at=starts_at + timedelta(days=order.plan.duration_days),
+            ends_at=starts_at + timedelta(days=order.plan_duration_days_snapshot or order.plan.duration_days),
             source_order=order,
         )
     else:

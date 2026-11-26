@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tax_league/utils/showcase_slide_utils.dart';
+import 'package:tax_league/widgets/raqtiva_showcase_carousel.dart';
+
+Future<void> showCountdownSlide(WidgetTester tester) async {
+  await tester.drag(find.byType(PageView), const Offset(-500, 0));
+  await tester.pumpAndSettle();
+  await tester.drag(find.byType(PageView), const Offset(-500, 0));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  group('Showcase fallback content', () {
+    test('keeps founder first and official logo second with approved copy', () {
+      final slides = fallbackBrandSlides();
+      expect(slides, hasLength(2));
+      expect(slides[0]['kind'], 'founder');
+      expect(slides[0]['title'], 'بنیانگذار لیگ : وحید اسفندیاری');
+      expect(
+        slides[0]['body'],
+        '',
+      );
+      expect(slides[1]['kind'], 'logo');
+    });
+
+    testWidgets(
+        'shows only the approved founder identity when no biography is configured',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(slides: fallbackBrandSlides()),
+          ),
+        ),
+      );
+
+      final title = tester.widget<Text>(
+        find.text('بنیانگذار لیگ : وحید اسفندیاری'),
+      );
+      expect(title.maxLines, 1);
+      expect(title.softWrap, isFalse);
+      expect(
+          find.text('حسابرس ارشد اداره کل امورمالیاتی خوزستان'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Official exam countdown', () {
+    testWidgets('selects the nearest future official league exam',
+        (tester) async {
+      final now = DateTime.now();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(
+              slides: const [
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'شمارش معکوس آزمون بعدی',
+                  'body': ''
+                },
+              ],
+              exams: [
+                {
+                  'title': 'آزمون تمرینی',
+                  'counts_for_league': false,
+                  'kind': 'daily',
+                  'starts_at':
+                      now.add(const Duration(seconds: 30)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 10)).toIso8601String(),
+                },
+                {
+                  'title': 'آزمون رسمی لیگ',
+                  'kind': 'night',
+                  'counts_for_league': true,
+                  'starts_at':
+                      now.add(const Duration(seconds: 90)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 15)).toIso8601String(),
+                },
+              ],
+            ),
+          ),
+        ),
+      );
+      await showCountdownSlide(tester);
+      expect(find.text('شمارش معکوس آزمون بعدی'), findsOneWidget);
+      expect(find.text('آزمون رسمی لیگ'), findsOneWidget);
+      expect(find.text('آزمون تمرینی'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'keeps required slides and shows a no-schedule state when no exam exists',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(
+              slides: [
+                {'kind': 'message', 'title': 'پیام مدیریت', 'body': 'متن پیام'},
+              ],
+              exams: [],
+            ),
+          ),
+        ),
+      );
+      await showCountdownSlide(tester);
+      expect(find.text('شمارش معکوس آزمون شبانه'), findsOneWidget);
+      expect(find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'), findsOneWidget);
+      expect(find.text('پیام مدیریت'), findsNothing);
+      expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
+      await tester.drag(find.byType(PageView), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      // The slide title and its footer label intentionally share this text.
+      expect(find.text('پیام مدیریت'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('uses administrator-edited countdown title and body',
+        (tester) async {
+      final now = DateTime.now().toUtc();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(
+              slides: const [
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'تا شروع رقابت رسمی',
+                  'body': 'برای آزمون آماده شوید',
+                  'duration_seconds': 11,
+                },
+              ],
+              exams: [
+                {
+                  'title': 'آزمون رسمی',
+                  'kind': 'night',
+                  'counts_for_league': true,
+                  'starts_at':
+                      now.add(const Duration(minutes: 4)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 40)).toIso8601String(),
+                },
+              ],
+            ),
+          ),
+        ),
+      );
+      await showCountdownSlide(tester);
+      expect(find.text('تا شروع رقابت رسمی'), findsOneWidget);
+      expect(find.text('برای آزمون آماده شوید'), findsOneWidget);
+      expect(find.text('آزمون رسمی'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('counts down to the end of a running official night exam',
+        (tester) async {
+      final now = DateTime.now().toUtc();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(
+              slides: const [
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'زمان باقی‌مانده تا پایان آزمون',
+                  'body': ''
+                },
+              ],
+              exams: [
+                {
+                  'title': 'آزمون آغازشده',
+                  'kind': 'night',
+                  'counts_for_league': true,
+                  'starts_at': now
+                      .subtract(const Duration(minutes: 2))
+                      .toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 13)).toIso8601String(),
+                },
+              ],
+            ),
+          ),
+        ),
+      );
+      await showCountdownSlide(tester);
+      expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
+      expect(find.text('آزمون آغازشده'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+}

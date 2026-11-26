@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import AttemptAnswer, AttemptQuestion, Exam, ExamAttempt
@@ -5,10 +6,14 @@ from .models import AttemptAnswer, AttemptQuestion, Exam, ExamAttempt
 
 class ExamListSerializer(serializers.ModelSerializer):
     question_count = serializers.IntegerField(source="exam_questions.count", read_only=True)
+    server_now = serializers.SerializerMethodField()
+
+    def get_server_now(self, obj):
+        return timezone.now().isoformat()
 
     class Meta:
         model = Exam
-        fields = ["id", "title", "kind", "description", "duration_minutes", "starts_at", "ends_at", "question_count"]
+        fields = ["id", "title", "kind", "description", "duration_minutes", "starts_at", "ends_at", "question_count", "counts_for_league", "server_now"]
 
 
 class AttemptOptionSerializer(serializers.Serializer):
@@ -54,10 +59,11 @@ class ResultSerializer(serializers.ModelSerializer):
 
 class ResultListSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source="exam.title", read_only=True)
+    counts_for_league = serializers.BooleanField(source="exam.counts_for_league", read_only=True)
 
     class Meta:
         model = ExamAttempt
         fields = [
-            "id", "exam", "exam_title", "status", "score",
+            "id", "exam", "exam_title", "counts_for_league", "status", "score",
             "correct_count", "wrong_count", "blank_count", "submitted_at",
         ]

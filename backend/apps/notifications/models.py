@@ -1,5 +1,6 @@
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -27,16 +28,30 @@ class Notification(models.Model):
         return f"{self.recipient_id}: {self.title}"
 
 
+def validate_showcase_image_size(image):
+    if image.size > 5 * 1024 * 1024:
+        raise ValidationError("حجم تصویر اسلاید نباید بیشتر از ۵ مگابایت باشد.")
+
+
 class ShowcaseSlide(models.Model):
     class Kind(models.TextChoices):
         FOUNDER = "founder", "بنیان‌گذار"
         LOGO = "logo", "لوگوی لیگ"
         MESSAGE = "message", "پیام مدیریتی"
         ADVERTISEMENT = "advertisement", "تبلیغات"
+        EXAM_COUNTDOWN = "exam_countdown", "شمارش معکوس آزمون رسمی"
 
     kind = models.CharField(max_length=20, choices=Kind.choices)
     title = models.CharField(max_length=160, blank=True)
     body = models.TextField(max_length=1200, blank=True)
+    image = models.ImageField(
+        upload_to="showcase/",
+        blank=True,
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp"]),
+            validate_showcase_image_size,
+        ],
+    )
     image_url = models.URLField(max_length=1000, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     duration_seconds = models.PositiveSmallIntegerField(

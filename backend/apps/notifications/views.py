@@ -48,8 +48,14 @@ class ShowcaseSlideListView(APIView):
                 "kind": slide.kind,
                 "title": slide.title,
                 "body": slide.body,
-                "image_url": slide.image_url,
+                "image_url": (
+                    request.build_absolute_uri(slide.image.url)
+                    if slide.image
+                    else slide.image_url
+                ),
                 "duration_seconds": slide.duration_seconds,
+                "starts_at": slide.starts_at,
+                "ends_at": slide.ends_at,
             }
             for slide in slides
         ])

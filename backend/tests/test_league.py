@@ -25,8 +25,10 @@ def make_season(title="فصل آزمایشی", *, starts_at=None, ends_at=None):
 def make_official_attempt(user, *, submitted_at=None, score=17):
     now = submitted_at or timezone.now()
     exam = Exam.objects.create(
-        title="آزمون رسمی", kind=Exam.Kind.DAILY,
+        title="آزمون رسمی", kind=Exam.Kind.NIGHT,
         duration_minutes=30, max_attempts=1, counts_for_league=True,
+        starts_at=now - timedelta(minutes=30),
+        ends_at=now + timedelta(minutes=30),
     )
     return ExamAttempt.objects.create(
         exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
@@ -349,3 +351,76 @@ def test_appeal_review_requires_league_permission():
     assert response.status_code == 400
     appeal.refresh_from_db()
     assert appeal.status == LeagueAppeal.Status.PENDING
+
+@pytest.mark.django_db
+def test_only_best_attempt_per_user_and_night_exam_contributes_to_league():
+    user = get_user_model().objects.create_user(phone_number="09124440020")
+    season = make_season("فصل بهترین تلاش")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    now = timezone.now()
+    exam = Exam.objects.create(
+        title="آزمون شبانه تکرارشونده", kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(hours=1), ends_at=now + timedelta(hours=1),
+        counts_for_league=True,
+    )
+    attempts = []
+    for index, score in enumerate((40, 70)):
+        submitted = now - timedelta(minutes=10 - index * 5)
+        attempts.append(ExamAttempt.objects.create(
+            exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
+            started_at=submitted - timedelta(minutes=5),
+            deadline_at=submitted + timedelta(minutes=20),
+            submitted_at=submitted, score=score,
+            correct_count=score // 10, wrong_count=0, blank_count=0,
+        ))
+    for attempt in attempts:
+        record_attempt_score(attempt.pk)
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    board = client.get("/api/v1/league/leaderboard/")
+    stats = client.get("/api/v1/league/me/")
+    assert board.status_code == 200
+    assert board.data["results"][0]["total_score"] == 70
+    assert stats.data["total_score"] == 70
+    assert stats.data["exams_count"] == 1
+
+@pytest.mark.django_db
+def test_provincial_leaderboard_includes_only_verified_users_in_own_province():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(
+        phone_number="09124440101", province="تهران", province_verified=True
+    )
+    same_province = user_model.objects.create_user(
+        phone_number="09124440102", province="تهران", province_verified=True
+    )
+    unverified = user_model.objects.create_user(
+        phone_number="09124440103", province="تهران", province_verified=False
+    )
+    other_province = user_model.objects.create_user(
+        phone_number="09124440104", province="اصفهان", province_verified=True
+    )
+    season = make_season("فصل رتبه استانی")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+
+    for participant, score in (
+        (owner, 80), (same_province, 90), (unverified, 100), (other_province, 110)
+    ):
+        attempt = make_official_attempt(participant, score=score)
+        record_attempt_score(attempt.pk)
+
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    response = client.get("/api/v1/league/provincial-leaderboard/?limit=20")
+    assert response.status_code == 200
+    assert response.data["verified"] is True
+    assert response.data["province"] == "تهران"
+    assert [row["total_score"] for row in response.data["results"]] == [90, 80]
+
+    owner.province_verified = False
+    owner.save(update_fields=["province_verified"])
+    hidden = client.get("/api/v1/league/provincial-leaderboard/?limit=20")
+    assert hidden.status_code == 200
+    assert hidden.data["results"] == []
+    assert hidden.data["verified"] is False
+
