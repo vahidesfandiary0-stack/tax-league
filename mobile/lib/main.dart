@@ -686,6 +686,14 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> _startExam(Map<String, dynamic> exam) async {
     setState(() { busy = true; error = null; });
     try {
+      final profile = await api.request('accounts/profile/');
+      if ((profile['display_name'] ?? '').toString().trim().split(RegExp(r'\\s+')).length < 2) {
+        if (mounted) {
+          setState(() => accountPage = 8);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('برای شرکت در آزمون، ابتدا نام و نام خانوادگی خود را ثبت کنید.')));
+        }
+        return;
+      }
       final attempt = await api.requestPost('exams/' + exam['id'].toString() + '/start/', {});
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
