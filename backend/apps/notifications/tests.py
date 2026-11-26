@@ -63,14 +63,6 @@ class ShowcaseSlideApiTests(APITestCase):
             duration_seconds=11,
             sort_order=2,
         )
-        countdown = ShowcaseSlide.objects.create(
-            kind=ShowcaseSlide.Kind.EXAM_COUNTDOWN,
-            title="تا شروع رقابت رسمی",
-            body="برای آزمون آماده شوید",
-            image_url="https://cdn.example.test/countdown.png",
-            duration_seconds=11,
-            sort_order=2,
-        )
         self.client.force_authenticate(user=self.user)
 
         response = self.client.get(self.url)
@@ -87,11 +79,6 @@ class ShowcaseSlideApiTests(APITestCase):
             response.data[1]["body"],
             "حسابرس ارشد اداره کل امورمالیاتی خوزستان",
         )
-        self.assertEqual(response.data[2]["kind"], ShowcaseSlide.Kind.EXAM_COUNTDOWN)
-        self.assertEqual(response.data[2]["title"], "تا شروع رقابت رسمی")
-        self.assertEqual(response.data[2]["body"], "برای آزمون آماده شوید")
-        self.assertEqual(response.data[2]["image_url"], "https://cdn.example.test/countdown.png")
-        self.assertEqual(response.data[2]["duration_seconds"], 11)
         self.assertEqual(response.data[2]["kind"], ShowcaseSlide.Kind.EXAM_COUNTDOWN)
         self.assertEqual(response.data[2]["title"], "تا شروع رقابت رسمی")
         self.assertEqual(response.data[2]["body"], "برای آزمون آماده شوید")
