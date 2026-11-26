@@ -43,6 +43,9 @@ class StartAttemptView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, exam_id):
+        full_name = " ".join((request.user.display_name or "").split())
+        if len(full_name.split()) < 2:
+            raise ValidationError({"detail": "برای شروع آزمون، ابتدا نام و نام خانوادگی خود را در پروفایل ثبت کنید."})
         try:
             attempt = start_attempt(exam_id, request.user)
         except (DjangoValidationError, Exam.DoesNotExist) as exc:
