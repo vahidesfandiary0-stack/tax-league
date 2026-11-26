@@ -63,6 +63,8 @@ def start_attempt(exam_id, user):
     # here would queue every participant behind one database row at the league start.
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
+    if exam.counts_for_league and not (user.display_name or "").strip():
+        raise ValidationError("برای شرکت در آزمون رسمی لیگ، ابتدا نام و نام خانوادگی خود را در پروفایل ثبت کنید.")
     now = timezone.now()
     if exam.starts_at and now < exam.starts_at:
         raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
