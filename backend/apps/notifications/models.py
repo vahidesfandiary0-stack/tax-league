@@ -39,6 +39,7 @@ class ShowcaseSlide(models.Model):
         LOGO = "logo", "لوگوی لیگ"
         MESSAGE = "message", "پیام مدیریتی"
         ADVERTISEMENT = "advertisement", "تبلیغات"
+        EXAM_COUNTDOWN = "exam_countdown", "شمارش معکوس آزمون رسمی"
 
     kind = models.CharField(max_length=20, choices=Kind.choices)
     title = models.CharField(max_length=160, blank=True)
