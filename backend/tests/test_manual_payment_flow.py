@@ -74,7 +74,7 @@ def test_duplicate_receipt_and_tracking_code_are_rejected(tmp_path, settings):
     first = create_subscription_order(user, plan.pk)
     second = create_subscription_order(user, plan.pk)
     third = create_subscription_order(user, plan.pk)
-    png_header = b"\\x89PNG\\r\\n\\x1a\\n"
+    png_header = b"\x89PNG\r\n\x1a\n"
 
     submit_payment(
         first.pk, user,
