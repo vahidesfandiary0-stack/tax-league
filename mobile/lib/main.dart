@@ -2067,7 +2067,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: () => setState(() => accountPage = 4),
+          onTap: _openSubscriptionPage,
           child: Ink(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
