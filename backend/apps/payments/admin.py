@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.urls import reverse
+from django.utils.html import format_html
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -29,19 +31,26 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentOrder)
 class PaymentOrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "product_type", "amount_irr", "status", "created_at")
+    list_display = ("id", "user", "product_type", "amount_irr", "status", "receipt_link", "created_at")
     list_filter = ("status", "product_type")
     search_fields = ("id", "user__phone_number", "tracking_code")
     exclude = ("receipt",)
     readonly_fields = (
         "user", "product_type", "plan", "exam", "amount_irr", "status",
-        "tracking_code", "user_note", "reviewer", "review_note", "reviewed_at",
+        "tracking_code", "user_note", "reviewer", "review_note", "reviewed_at", "receipt_link",
         "created_at", "updated_at",
     )
     actions = ("approve_selected", "reject_selected")
 
     def has_add_permission(self, request):
         return False
+
+    @admin.display(description="رسید پرداخت")
+    def receipt_link(self, obj):
+        if not obj.receipt:
+            return "رسیدی ثبت نشده"
+        url = reverse("payment-admin-receipt", args=[obj.pk])
+        return format_html('<a href="{}" target="_blank" rel="noopener">مشاهده / دریافت رسید</a>', url)
 
     @admin.action(description="تأیید سفارش‌های انتخاب‌شده")
     def approve_selected(self, request, queryset):
