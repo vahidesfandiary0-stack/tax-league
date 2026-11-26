@@ -197,7 +197,9 @@ def test_season_status_cannot_be_changed_through_regular_model_save():
 def test_closed_season_score_correction_is_append_only_and_idempotent():
     from uuid import uuid4
 
-    user = get_user_model().objects.create_user(phone_number="09124440008")
+    user = get_user_model().objects.create_user(
+        phone_number="09124440008", display_name="کاربر آزمون"
+    )
     manager = get_user_model().objects.create_superuser(
         phone_number="09124440009", password="not-used"
     )
