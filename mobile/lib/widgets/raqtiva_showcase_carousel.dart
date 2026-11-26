@@ -63,25 +63,37 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
+  // The three core carousel slides are product requirements, not CMS content.
+  // Always render them in this fixed order; append only additional admin slides.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    return widget.slides
-        .map((raw) {
-          if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
-            return raw;
-          }
-          if (exam == null) return null;
-          return <String, dynamic>{
-            ...Map<String, dynamic>.from(raw),
-            'target_at': exam['target_at'],
-            'countdown_phase': exam['countdown_phase'],
-            'server_now': exam['server_now'],
-            'received_at': exam['received_at'],
-            'exam_title': exam['title'],
-          };
-        })
-        .where((slide) => slide != null)
-        .toList();
+    final mandatory = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'kind': 'founder',
+        'title': 'بنیانگذار لیگ : وحید اسفندیاری',
+      },
+      <String, dynamic>{
+        'kind': 'logo',
+        'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
+      },
+      <String, dynamic>{
+        'kind': 'exam_countdown',
+        'title': 'شمارش معکوس آزمون شبانه',
+        if (exam != null) ...<String, dynamic>{
+          'target_at': exam['target_at'],
+          'countdown_phase': exam['countdown_phase'],
+          'server_now': exam['server_now'],
+          'received_at': exam['received_at'],
+          'exam_title': exam['title'],
+        },
+      },
+    ];
+    final adminSlides = widget.slides.where((raw) {
+      if (raw is! Map) return true;
+      final kind = raw['kind']?.toString();
+      return kind != 'founder' && kind != 'logo' && kind != 'exam_countdown';
+    });
+    return <dynamic>[...mandatory, ...adminSlides];
   }
 
   int get _count => _allSlides.length;
