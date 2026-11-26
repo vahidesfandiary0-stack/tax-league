@@ -240,25 +240,25 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      body.isEmpty
-                          ? 'حسابرس ارشد اداره کل امورمالیاتی خوزستان'
-                          : body,
-                      textAlign: TextAlign.right,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: const TextStyle(
-                        color: Color(0xFFD7E4FA),
-                        fontSize: 12,
-                        height: 1.7,
-                        fontWeight: FontWeight.w700,
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        body,
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        softWrap: true,
+                        style: const TextStyle(
+                          color: Color(0xFFD7E4FA),
+                          fontSize: 12,
+                          height: 1.7,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
