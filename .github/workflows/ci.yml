@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "mobile/ui-redesign-20261119"]
+    branches: ["main", "mobile/ui-redesign-20261119", "repair/profile-subscriptions-baseline-20261126"]
   pull_request:
     branches: ["main"]
 
