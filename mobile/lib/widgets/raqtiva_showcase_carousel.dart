@@ -19,19 +19,44 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   int _index = 0;
 
   Map<String, dynamic>? get _nextExam {
-    final now = DateTime.now();
-    DateTime? nearest;
-    Map<String, dynamic>? result;
+    final localNow = DateTime.now().toUtc();
+    Map<String, dynamic>? activeExam;
+    DateTime? activeEnd;
+    Map<String, dynamic>? upcomingExam;
+    DateTime? upcomingStart;
     for (final raw in widget.exams) {
-      if (raw is! Map || raw['counts_for_league'] != true || raw['starts_at'] == null) continue;
-      final start = DateTime.tryParse(raw['starts_at'].toString())?.toLocal();
-      if (start == null || !start.isAfter(now)) continue;
-      if (nearest == null || start.isBefore(nearest)) {
-        nearest = start;
-        result = Map<String, dynamic>.from(raw);
+      if (raw is! Map ||
+          raw['kind']?.toString() != 'night' ||
+          raw['counts_for_league'] != true ||
+          raw['starts_at'] == null ||
+          raw['ends_at'] == null) {
+        continue;
+      }
+      final start = DateTime.tryParse(raw['starts_at'].toString())?.toUtc();
+      final end = DateTime.tryParse(raw['ends_at'].toString())?.toUtc();
+      if (start == null || end == null || !end.isAfter(start)) continue;
+      final serverNow = DateTime.tryParse(raw['server_now']?.toString() ?? '')?.toUtc();
+      final receivedAt = DateTime.tryParse(raw['received_at']?.toString() ?? '')?.toUtc();
+      final now = serverNow != null && receivedAt != null
+          ? serverNow.add(localNow.difference(receivedAt))
+          : localNow;
+      if (!now.isBefore(start) && now.isBefore(end)) {
+        if (activeEnd == null || end.isBefore(activeEnd)) {
+          activeEnd = end;
+          activeExam = Map<String, dynamic>.from(raw)
+            ..['target_at'] = end.toIso8601String()
+            ..['countdown_phase'] = 'ending';
+        }
+      } else if (now.isBefore(start)) {
+        if (upcomingStart == null || start.isBefore(upcomingStart)) {
+          upcomingStart = start;
+          upcomingExam = Map<String, dynamic>.from(raw)
+            ..['target_at'] = start.toIso8601String()
+            ..['countdown_phase'] = 'starting';
+        }
       }
     }
-    return result;
+    return activeExam ?? upcomingExam;
   }
 
   List<dynamic> get _allSlides => [
@@ -41,7 +66,10 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
         'id': 'builtin-exam-countdown',
         'kind': 'exam_countdown',
         'title': 'آزمون بعدی',
-        'starts_at': _nextExam!['starts_at'],
+        'target_at': _nextExam!['target_at'],
+        'countdown_phase': _nextExam!['countdown_phase'],
+        'server_now': _nextExam!['server_now'],
+        'received_at': _nextExam!['received_at'],
         'exam_title': _nextExam!['title'],
         'duration_seconds': 8,
       },
@@ -268,10 +296,14 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     }
 
     if (kind == 'exam_countdown') {
-      final startsAt = DateTime.tryParse(slide['starts_at']?.toString() ?? '')?.toLocal();
-      final remaining = startsAt == null
-          ? Duration.zero
-          : startsAt.difference(DateTime.now());
+      final targetAt = DateTime.tryParse(slide['target_at']?.toString() ?? '')?.toUtc();
+      final serverNow = DateTime.tryParse(slide['server_now']?.toString() ?? '')?.toUtc();
+      final receivedAt = DateTime.tryParse(slide['received_at']?.toString() ?? '')?.toUtc();
+      final now = serverNow != null && receivedAt != null
+          ? serverNow.add(DateTime.now().toUtc().difference(receivedAt))
+          : DateTime.now().toUtc();
+      final remaining = targetAt == null ? Duration.zero : targetAt.difference(now);
+      final isEnding = slide['countdown_phase'] == 'ending';
       final days = remaining.inDays;
       final hours = remaining.inHours.remainder(24);
       final minutes = remaining.inMinutes.remainder(60);
@@ -288,13 +320,13 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               children: [
                 Icon(Icons.timer_rounded, color: Color(0xFFFFD76A), size: 27),
                 SizedBox(width: 9),
-                Text('شمارش معکوس آزمون بعدی', style: TextStyle(
+                Text(isEnding ? 'زمان باقی‌مانده تا پایان آزمون' : 'شمارش معکوس آزمون بعدی', style: TextStyle(
                   color: Color(0xFFFFE4A8), fontSize: 16, fontWeight: FontWeight.w900,
                 )),
               ],
             ),
             const SizedBox(height: 12),
-            if (startsAt == null)
+            if (targetAt == null)
               const Text(
                 'زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.',
                 textAlign: TextAlign.center,
@@ -321,7 +353,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               ),
               const SizedBox(height: 8),
               Text(
-                'شروع: ${startsAt.toString().substring(0, 16)}',
+                '‎${isEnding ? 'پایان' : 'شروع'}: ${targetAt.toLocal().toString().substring(0, 16)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10),
               ),
