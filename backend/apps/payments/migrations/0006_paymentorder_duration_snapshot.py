@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("payments", "0003_purchasedexamaccess"),
+        ("payments", "0005_paymentorder_payment_provider"),
     ]
 
     operations = [

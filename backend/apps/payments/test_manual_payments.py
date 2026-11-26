@@ -30,6 +30,7 @@ class PaymentWorkflowTests(TestCase):
     def test_order_captures_server_price_and_is_immutable(self):
         order = create_subscription_order(self.user, self.plan.pk)
         self.assertEqual(order.amount_irr, self.plan.price_irr)
+        self.assertEqual(order.payment_provider, PaymentOrder.PaymentProvider.MANUAL)
         self.assertEqual(order.plan_duration_days_snapshot, 30)
         order.amount_irr = 1
         with self.assertRaises(ValidationError):
@@ -45,6 +46,18 @@ class PaymentWorkflowTests(TestCase):
                     content_type=f"image/{'jpeg' if extension == 'jpg' else 'png'}",
                 )
                 validate_receipt_content(receipt)
+
+    def test_existing_bazaar_order_is_not_reused_for_manual_payment(self):
+        PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            payment_provider=PaymentOrder.PaymentProvider.CAFEBAZAAR,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+        )
+        manual_order = create_subscription_order(self.user, self.plan.pk)
+        self.assertEqual(manual_order.payment_provider, PaymentOrder.PaymentProvider.MANUAL)
+        self.assertEqual(PaymentOrder.objects.filter(user=self.user).count(), 2)
 
     def test_repeated_plan_selection_reuses_open_order(self):
         first = create_subscription_order(self.user, self.plan.pk)
@@ -69,6 +82,28 @@ class PaymentWorkflowTests(TestCase):
         with self.assertRaises(ValidationError):
             approve_order(order.pk, self.admin)
         self.assertEqual(UserSubscription.objects.filter(source_order=order).count(), 1)
+
+
+
+    def test_bazaar_order_cannot_submit_manual_receipt_or_be_manually_approved(self):
+        order = PaymentOrder.objects.create(
+            user=self.user,
+            product_type=PaymentOrder.ProductType.SUBSCRIPTION,
+            payment_provider=PaymentOrder.PaymentProvider.CAFEBAZAAR,
+            plan=self.plan,
+            amount_irr=self.plan.price_irr,
+            plan_duration_days_snapshot=self.plan.duration_days,
+        )
+        receipt = SimpleUploadedFile(
+            "transfer.pdf", b"%PDF-1.4\\nreceipt\\n%%EOF", content_type="application/pdf"
+        )
+        from apps.payments.services import submit_payment
+        with self.assertRaises(ValidationError):
+            submit_payment(order.pk, self.user, receipt)
+        order.status = PaymentOrder.Status.UNDER_REVIEW
+        order.save(update_fields=["status"])
+        with self.assertRaises(ValidationError):
+            approve_order(order.pk, self.admin)
 
     def test_card_settings_singleton(self):
         first = PaymentSettings.objects.create(card_number="1111222233334444")
@@ -96,6 +131,12 @@ class PaymentApiWorkflowTests(TestCase):
         )
         self.client.force_authenticate(user=self.user)
 
+    def test_payment_instructions_require_card_number_and_account_holder(self):
+        PaymentSettings.objects.update(account_holder="")
+        response = self.client.get("/api/v1/payments/instructions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["configured"])
+
     def test_authenticated_card_instructions_and_plan_listing(self):
         response = self.client.get("/api/v1/payments/instructions/")
         self.assertEqual(response.status_code, 200)
@@ -110,6 +151,10 @@ class PaymentApiWorkflowTests(TestCase):
         }, format="json")
         self.assertEqual(created.status_code, 201)
         order_id = created.data["id"]
+        self.assertEqual(
+            PaymentOrder.objects.get(pk=order_id).payment_provider,
+            PaymentOrder.PaymentProvider.MANUAL,
+        )
         receipt = SimpleUploadedFile(
             "transfer.pdf", b"%PDF-1.4\nreceipt\n%%EOF", content_type="application/pdf"
         )
