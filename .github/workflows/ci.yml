@@ -61,9 +61,9 @@ jobs:
               raise SystemExit("Android app Gradle file not found")
           content = gradle.read_text()
           if gradle.suffix == ".kts":
-              updated, count = re.subn(r"(?m)^(\\s*compileSdk\\s*=\\s*).*?$", r"\\g<1>36", content)
+              updated, count = re.subn(r"(?m)^(\s*compileSdk\s*=\s*).*?$", r"\g<1>36", content)
           else:
-              updated, count = re.subn(r"(?m)^(\\s*compileSdkVersion\\s+).*?$", r"\\g<1>36", content)
+              updated, count = re.subn(r"(?m)^(\s*compileSdkVersion\s+).*?$", r"\g<1>36", content)
           if count != 1:
               raise SystemExit(f"Expected one compile SDK declaration, found {count}")
           gradle.write_text(updated)
