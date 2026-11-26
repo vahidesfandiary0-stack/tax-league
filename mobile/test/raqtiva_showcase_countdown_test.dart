@@ -43,7 +43,9 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
-              slides: const [],
+              slides: const [
+                {'kind': 'exam_countdown', 'title': 'شمارش معکوس آزمون بعدی', 'body': ''},
+              ],
               exams: [
                 {
                   'title': 'آزمون تمرینی',
@@ -89,13 +91,48 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('uses administrator-edited countdown title and body', (tester) async {
+      final now = DateTime.now().toUtc();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RaqtivaShowcaseCarousel(
+              slides: const [
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'تا شروع رقابت رسمی',
+                  'body': 'برای آزمون آماده شوید',
+                  'duration_seconds': 11,
+                },
+              ],
+              exams: [
+                {
+                  'title': 'آزمون رسمی',
+                  'kind': 'night',
+                  'counts_for_league': true,
+                  'starts_at': now.add(const Duration(minutes: 4)).toIso8601String(),
+                  'ends_at': now.add(const Duration(minutes: 40)).toIso8601String(),
+                },
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(find.text('تا شروع رقابت رسمی'), findsOneWidget);
+      expect(find.text('برای آزمون آماده شوید'), findsOneWidget);
+      expect(find.text('آزمون رسمی'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('counts down to the end of a running official night exam', (tester) async {
       final now = DateTime.now().toUtc();
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
-              slides: const [],
+              slides: const [
+                {'kind': 'exam_countdown', 'title': 'زمان باقی‌مانده تا پایان آزمون', 'body': ''},
+              ],
               exams: [
                 {
                   'title': 'آزمون آغازشده',
@@ -112,6 +149,6 @@ void main() {
       expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
       expect(find.text('آزمون آغازشده'), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });;
+    });
   });
 }
