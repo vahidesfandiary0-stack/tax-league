@@ -97,6 +97,15 @@ class LeagueApi {
     return decode(response);
   }
 
+  Future<dynamic> requestPatch(String path, Map<String, dynamic> body) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final response = await http.patch(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
+      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
   Future<dynamic> request(String path) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
@@ -347,6 +356,9 @@ class LeagueHomePage extends StatefulWidget {
 class _LeagueHomePageState extends State<LeagueHomePage> {
   final api = LeagueApi();
   final phone = TextEditingController(), code = TextEditingController();
+  final profileName = TextEditingController();
+  String? profileError;
+  bool profileSaving = false;
   static const List<String> provinces = [
     'آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام',
     'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی',
@@ -389,6 +401,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     otpResendTimer?.cancel();
     phone.dispose();
     code.dispose();
+    profileName.dispose();
     super.dispose();
   }
 
@@ -413,7 +426,43 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> _loadIfSignedIn() async {
-    if (await api.token != null) await loadDashboard();
+    if (await api.token != null) {
+      await loadDashboard();
+      await _promptProfileIfNeeded();
+    }
+  }
+
+  Future<void> _promptProfileIfNeeded() async {
+    try {
+      final profile = await api.request('accounts/profile/');
+      profileName.text = (profile['display_name'] ?? '').toString();
+      if (profileName.text.trim().split(RegExp(r'\\s+')).length < 2 && mounted) {
+        setState(() => accountPage = 8);
+      }
+    } catch (e) {
+      if (mounted) setState(() => profileError = e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    final normalized = profileName.text.trim().replaceAll(RegExp(r'\\s+'), ' ');
+    if (normalized.split(' ').length < 2) {
+      setState(() => profileError = 'نام و نام خانوادگی کامل را وارد کنید.');
+      return;
+    }
+    setState(() { profileSaving = true; profileError = null; });
+    try {
+      final saved = await api.requestPatch('accounts/profile/', {'display_name': normalized});
+      profileName.text = saved['display_name'].toString();
+      if (mounted) {
+        setState(() => accountPage = 1);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام و نام خانوادگی ذخیره شد.')));
+      }
+    } catch (e) {
+      if (mounted) setState(() => profileError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => profileSaving = false);
+    }
   }
 
   Future<void> _loadShowcaseSlides() async {
@@ -487,6 +536,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         });
       }
       await loadDashboard();
+      await _promptProfileIfNeeded();
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
@@ -496,6 +546,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> _startExam(Map<String, dynamic> exam) async {
     setState(() { busy = true; error = null; });
     try {
+      final profile = await api.request('accounts/profile/');
+      final fullName = (profile['display_name'] ?? '').toString().trim();
+      if (fullName.split(RegExp(r'\\s+')).length < 2) {
+        profileName.text = fullName;
+        if (mounted) setState(() => accountPage = 8);
+        return;
+      }
       final attempt = await api.requestPost('exams/' + exam['id'].toString() + '/start/', {});
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
@@ -1534,23 +1591,29 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'اطلاعات حساب کاربری',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+              const Text('اطلاعات حساب کاربری', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+              const SizedBox(height: 8),
+              const Text('نام و نام خانوادگی برای شرکت در آزمون شبانه و نمایش در رتبه‌بندی الزامی است.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: profileName,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(labelText: 'نام و نام خانوادگی', hintText: 'مثلاً علی رضایی'),
+              ),
+              if (profileError != null) Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(profileError!, style: const TextStyle(color: Colors.orangeAccent)),
               ),
               const SizedBox(height: 12),
+              FilledButton(
+                onPressed: profileSaving ? null : _saveProfile,
+                child: Text(profileSaving ? 'در حال ذخیره...' : 'ذخیره نام و نام خانوادگی'),
+              ),
+              const Divider(height: 28),
               ListTile(
                 leading: const Icon(Icons.location_on_outlined, color: RaqtivaColors.gold),
                 title: const Text('استان محل سکونت'),
-                subtitle: Text(
-                  provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.',
-                ),
-              ),
-              const Divider(),
-              const ListTile(
-                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
-                title: Text('حریم خصوصی و تنظیمات'),
-                subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
+                subtitle: Text(provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.'),
               ),
             ],
           ),
