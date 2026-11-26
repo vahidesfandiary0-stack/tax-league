@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
@@ -59,3 +60,36 @@ def test_payment_instructions_are_hidden_until_admin_configures_card():
         "card_number": "6037-0000-0000-0000",
         "account_holder": "صاحب حساب",
     }
+
+
+
+@pytest.mark.django_db
+def test_duplicate_receipt_and_tracking_code_are_rejected(tmp_path, settings):
+    settings.MEDIA_ROOT = tmp_path
+    user = get_user_model().objects.create_user(phone_number="09125550003")
+    plan = SubscriptionPlan.objects.create(
+        title="اشتراک آزمایشی", period=SubscriptionPlan.Period.MONTHLY,
+        duration_days=30, price_irr=1_990_000,
+    )
+    first = create_subscription_order(user, plan.pk)
+    second = create_subscription_order(user, plan.pk)
+    third = create_subscription_order(user, plan.pk)
+    png_header = b"\\x89PNG\\r\\n\\x1a\\n"
+
+    submit_payment(
+        first.pk, user,
+        SimpleUploadedFile("first.png", png_header + b"first-content", content_type="image/png"),
+        tracking_code="TRACK-DUP-01",
+    )
+    with pytest.raises(ValidationError, match="شماره پیگیری"):
+        submit_payment(
+            second.pk, user,
+            SimpleUploadedFile("second.png", png_header + b"different-content", content_type="image/png"),
+            tracking_code="TRACK-DUP-01",
+        )
+    with pytest.raises(ValidationError, match="رسید قبلاً"):
+        submit_payment(
+            third.pk, user,
+            SimpleUploadedFile("copy.png", png_header + b"first-content", content_type="image/png"),
+            tracking_code="TRACK-DUP-02",
+        )
