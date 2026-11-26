@@ -45,7 +45,42 @@ jobs:
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - name: Generate Android project files
-        run: flutter create --platforms=android --project-name tax_league .
+        run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Verify Android application identity
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          expected = "ir.raqtiva.tax_league"
+          gradle_files = [
+              Path("android/app/build.gradle.kts"),
+              Path("android/app/build.gradle"),
+          ]
+          gradle = next((p for p in gradle_files if p.is_file()), None)
+          if gradle is None:
+              raise SystemExit("FAIL: Android app Gradle file not found")
+
+          content = gradle.read_text()
+          for field in ("namespace", "applicationId"):
+              pattern = rf'^\s*{field}\s*=\s*["\']{re.escape(expected)}["\']\s*$'
+              if not re.search(pattern, content, re.MULTILINE):
+                  raise SystemExit(f"FAIL: {field} is not {expected}")
+
+          activities = list(Path("android/app/src/main").rglob("MainActivity.kt"))
+          if not activities:
+              raise SystemExit("FAIL: MainActivity.kt not found")
+          if not any(
+              re.search(rf'^\s*package\s+{re.escape(expected)}\s*$', a.read_text(), re.MULTILINE)
+              for a in activities
+          ):
+              raise SystemExit("FAIL: MainActivity package does not match")
+
+          print(f"PASS: Android identity = {expected}")
+          PY
       - name: Generate official Android launcher icon
         working-directory: mobile
         run: |
