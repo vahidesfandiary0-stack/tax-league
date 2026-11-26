@@ -351,3 +351,37 @@ def test_appeal_review_requires_league_permission():
     assert response.status_code == 400
     appeal.refresh_from_db()
     assert appeal.status == LeagueAppeal.Status.PENDING
+
+@pytest.mark.django_db
+def test_only_best_attempt_per_user_and_night_exam_contributes_to_league():
+    user = get_user_model().objects.create_user(phone_number="09124440020")
+    season = make_season("فصل بهترین تلاش")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+    now = timezone.now()
+    exam = Exam.objects.create(
+        title="آزمون شبانه تکرارشونده", kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(hours=1), ends_at=now + timedelta(hours=1),
+        counts_for_league=True,
+    )
+    attempts = []
+    for index, score in enumerate((40, 70)):
+        submitted = now - timedelta(minutes=10 - index * 5)
+        attempts.append(ExamAttempt.objects.create(
+            exam=exam, user=user, status=ExamAttempt.Status.SUBMITTED,
+            started_at=submitted - timedelta(minutes=5),
+            deadline_at=submitted + timedelta(minutes=20),
+            submitted_at=submitted, score=score,
+            correct_count=score // 10, wrong_count=0, blank_count=0,
+        ))
+    for attempt in attempts:
+        record_attempt_score(attempt.pk)
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    board = client.get("/api/v1/league/leaderboard/")
+    stats = client.get("/api/v1/league/me/")
+    assert board.status_code == 200
+    assert board.data["results"][0]["total_score"] == 70
+    assert stats.data["total_score"] == 70
+    assert stats.data["exams_count"] == 1
+
