@@ -2200,7 +2200,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
         RaqtivaShowcaseCarousel(slides: showcaseSlides, exams: exams),
-        if (showcaseSlides.isNotEmpty) const SizedBox(height: 14),
+        const SizedBox(height: 14),
         accountStrip(),
         GridView.count(
           crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),

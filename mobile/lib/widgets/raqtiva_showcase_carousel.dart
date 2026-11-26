@@ -34,18 +34,45 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return result;
   }
 
-  List<dynamic> get _allSlides => [
-    ...widget.slides,
-    if (_nextExam != null)
+  List<dynamic> get _allSlides {
+    // The three official slides are mandatory and always come first.
+    // Server-managed content is appended, never allowed to replace them.
+    final customSlides = widget.slides.where((raw) {
+      if (raw is! Map) return false;
+      final kind = raw['kind']?.toString();
+      return kind != 'founder' &&
+          kind != 'logo' &&
+          kind != 'exam_countdown';
+    }).toList();
+
+    final nextExam = _nextExam;
+
+    return [
+      <String, dynamic>{
+        'id': 'builtin-founder',
+        'kind': 'founder',
+        'title': 'بنیانگذار لیگ : وحید اسفندیاری',
+        'body': 'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
+        'duration_seconds': 5,
+      },
+      <String, dynamic>{
+        'id': 'builtin-logo',
+        'kind': 'logo',
+        'title': '',
+        'body': '',
+        'duration_seconds': 5,
+      },
       <String, dynamic>{
         'id': 'builtin-exam-countdown',
         'kind': 'exam_countdown',
         'title': 'آزمون بعدی',
-        'starts_at': _nextExam!['starts_at'],
-        'exam_title': _nextExam!['title'],
+        'starts_at': nextExam?['starts_at'],
+        'exam_title': nextExam?['title'],
         'duration_seconds': 8,
       },
-  ];
+      ...customSlides,
+    ];
+  }
 
   int get _count => _allSlides.length;
 
@@ -64,8 +91,8 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     _scheduleNext();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      // If the scheduled exam starts, remove its countdown slide safely and
-      // return the carousel to a valid page index.
+      // Refresh the countdown every second. The mandatory countdown slide
+      // remains visible and switches to the no-schedule message after start.
       if (_index >= _count) {
         _index = 0;
         if (_controller.hasClients) _controller.jumpToPage(0);
@@ -227,7 +254,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       title.isEmpty
-                          ? 'بنیان‌گذار لیگ: وحید اسفندیاری'
+                          ? 'بنیانگذار لیگ : وحید اسفندیاری'
                           : title,
                       maxLines: 1,
                       softWrap: false,
@@ -246,7 +273,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       body.isEmpty
-                          ? 'حسابرس ارشد اداره کل امورمالیاتی خوزستان'
+                          ? 'مالک و بنیان‌گذار لیگ نخبگان مالیاتی'
                           : body,
                       textAlign: TextAlign.right,
                       maxLines: 1,
