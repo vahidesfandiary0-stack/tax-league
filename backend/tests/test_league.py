@@ -385,3 +385,42 @@ def test_only_best_attempt_per_user_and_night_exam_contributes_to_league():
     assert stats.data["total_score"] == 70
     assert stats.data["exams_count"] == 1
 
+@pytest.mark.django_db
+def test_provincial_leaderboard_includes_only_verified_users_in_own_province():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(
+        phone_number="09124440101", province="تهران", province_verified=True
+    )
+    same_province = user_model.objects.create_user(
+        phone_number="09124440102", province="تهران", province_verified=True
+    )
+    unverified = user_model.objects.create_user(
+        phone_number="09124440103", province="تهران", province_verified=False
+    )
+    other_province = user_model.objects.create_user(
+        phone_number="09124440104", province="اصفهان", province_verified=True
+    )
+    season = make_season("فصل رتبه استانی")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+
+    for participant, score in (
+        (owner, 80), (same_province, 90), (unverified, 100), (other_province, 110)
+    ):
+        attempt = make_official_attempt(participant, score=score)
+        record_attempt_score(attempt.pk)
+
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    response = client.get("/api/v1/league/provincial-leaderboard/?limit=20")
+    assert response.status_code == 200
+    assert response.data["verified"] is True
+    assert response.data["province"] == "تهران"
+    assert [row["total_score"] for row in response.data["results"]] == [90, 80]
+
+    owner.province_verified = False
+    owner.save(update_fields=["province_verified"])
+    hidden = client.get("/api/v1/league/provincial-leaderboard/?limit=20")
+    assert hidden.status_code == 200
+    assert hidden.data["results"] == []
+    assert hidden.data["verified"] is False
+
