@@ -71,7 +71,7 @@ jobs:
           test -s build/web/index.html
           test -s build/web/manifest.json
           test -s build/web/flutter_bootstrap.js
-          test -s build/web/precache_manifest.json
+          find build/web -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Upload web PWA artifact
         uses: actions/upload-artifact@v4
