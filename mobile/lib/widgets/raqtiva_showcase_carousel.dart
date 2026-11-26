@@ -67,6 +67,40 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   // Always render them in this fixed order; append only additional admin slides.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
+    final configuredCountdown = widget.slides.cast<dynamic?>().firstWhere(
+          (raw) => raw is Map && raw['kind']?.toString() == 'exam_countdown',
+          orElse: () => null,
+        );
+    final countdown = <String, dynamic>{
+      'kind': 'exam_countdown',
+      'title': 'شمارش معکوس آزمون شبانه',
+    };
+    if (configuredCountdown is Map) {
+      countdown.addAll(Map<String, dynamic>.from(configuredCountdown));
+      countdown['kind'] = 'exam_countdown';
+      if ((countdown['title'] ?? '').toString().isEmpty) {
+        countdown['title'] = 'شمارش معکوس آزمون شبانه';
+      }
+    }
+    if (exam == null) {
+      for (final key in <String>[
+        'target_at',
+        'countdown_phase',
+        'server_now',
+        'received_at',
+        'exam_title',
+      ]) {
+        countdown.remove(key);
+      }
+    } else {
+      countdown.addAll(<String, dynamic>{
+        'target_at': exam['target_at'],
+        'countdown_phase': exam['countdown_phase'],
+        'server_now': exam['server_now'],
+        'received_at': exam['received_at'],
+        'exam_title': exam['title'],
+      });
+    }
     final mandatory = <Map<String, dynamic>>[
       <String, dynamic>{
         'kind': 'founder',
@@ -76,17 +110,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
         'kind': 'logo',
         'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
       },
-      <String, dynamic>{
-        'kind': 'exam_countdown',
-        'title': 'شمارش معکوس آزمون شبانه',
-        if (exam != null) ...<String, dynamic>{
-          'target_at': exam['target_at'],
-          'countdown_phase': exam['countdown_phase'],
-          'server_now': exam['server_now'],
-          'received_at': exam['received_at'],
-          'exam_title': exam['title'],
-        },
-      },
+      countdown,
     ];
     final adminSlides = widget.slides.where((raw) {
       if (raw is! Map) return true;

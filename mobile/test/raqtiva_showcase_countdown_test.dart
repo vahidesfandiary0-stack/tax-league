@@ -3,6 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tax_league/utils/showcase_slide_utils.dart';
 import 'package:tax_league/widgets/raqtiva_showcase_carousel.dart';
 
+Future<void> showCountdownSlide(WidgetTester tester) async {
+  await tester.drag(find.byType(PageView), const Offset(-500, 0));
+  await tester.pumpAndSettle();
+  await tester.drag(find.byType(PageView), const Offset(-500, 0));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('Showcase fallback content', () {
     test('keeps founder first and official logo second with approved copy', () {
@@ -78,6 +85,7 @@ void main() {
           ),
         ),
       );
+      await showCountdownSlide(tester);
       expect(find.text('شمارش معکوس آزمون بعدی'), findsOneWidget);
       expect(find.text('آزمون رسمی لیگ'), findsOneWidget);
       expect(find.text('آزمون تمرینی'), findsNothing);
@@ -85,7 +93,7 @@ void main() {
     });
 
     testWidgets(
-        'hides countdown and preserves other slides when no exam exists',
+        'keeps required slides and shows a no-schedule state when no exam exists',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -99,9 +107,14 @@ void main() {
           ),
         ),
       );
-      expect(find.text('شمارش معکوس آزمون بعدی'), findsNothing);
-      expect(find.text('پیام مدیریت'), findsNWidgets(2));
+      await showCountdownSlide(tester);
+      expect(find.text('شمارش معکوس آزمون شبانه'), findsOneWidget);
+      expect(find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'), findsOneWidget);
+      expect(find.text('پیام مدیریت'), findsNothing);
       expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
+      await tester.drag(find.byType(PageView), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('پیام مدیریت'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -135,6 +148,7 @@ void main() {
           ),
         ),
       );
+      await showCountdownSlide(tester);
       expect(find.text('تا شروع رقابت رسمی'), findsOneWidget);
       expect(find.text('برای آزمون آماده شوید'), findsOneWidget);
       expect(find.text('آزمون رسمی'), findsOneWidget);
@@ -171,6 +185,7 @@ void main() {
           ),
         ),
       );
+      await showCountdownSlide(tester);
       expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
       expect(find.text('آزمون آغازشده'), findsOneWidget);
       expect(tester.takeException(), isNull);
