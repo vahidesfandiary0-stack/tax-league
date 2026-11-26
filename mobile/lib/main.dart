@@ -136,12 +136,24 @@ class _ManualSubscriptionPageState extends State<ManualSubscriptionPage> {
   String? message;
   Map<String, dynamic>? pendingOrder;
   Map<String, dynamic>? instructions;
+  final trackingCode = TextEditingController();
+  final paymentNote = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     plansFuture = widget.api.request('payments/plans/').then((v) => List<dynamic>.from(v));
-    instructionsFuture = widget.api.request('payments/instructions/');
+    instructionsFuture = widget.api.request('payments/instructions/').then((value) {
+      if (mounted) setState(() => instructions = Map<String, dynamic>.from(value as Map));
+      return value;
+    });
+  }
+
+  @override
+  void dispose() {
+    trackingCode.dispose();
+    paymentNote.dispose();
+    super.dispose();
   }
 
   Future<void> choosePlan(Map<String, dynamic> plan) async {
@@ -174,7 +186,7 @@ class _ManualSubscriptionPageState extends State<ManualSubscriptionPage> {
       setState(() { busy = true; message = null; });
       final result = await widget.api.requestMultipart(
         'payments/orders/${order['id']}/submit/',
-        {'tracking_code': '', 'note': ''},
+        {'tracking_code': trackingCode.text.trim(), 'note': paymentNote.text.trim()},
         'receipt',
         picked.files.single.path!,
       );
@@ -249,6 +261,12 @@ class _ManualSubscriptionPageState extends State<ManualSubscriptionPage> {
           const Text('سفارش اشتراک', style: TextStyle(fontWeight: FontWeight.w900)),
           Text('مبلغ: ${pendingOrder!['amount_irr']} ریال'),
           Text('وضعیت: ${pendingOrder!['status']}'),
+          if (pendingOrder!['status'] != 'under_review' && pendingOrder!['status'] != 'approved') ...[
+            const SizedBox(height: 10),
+            TextField(controller: trackingCode, decoration: const InputDecoration(labelText: 'شماره پیگیری / مرجع تراکنش')),
+            const SizedBox(height: 8),
+            TextField(controller: paymentNote, maxLines: 2, decoration: const InputDecoration(labelText: 'توضیحات (اختیاری)')),
+          ],
           const SizedBox(height: 10),
           FilledButton.icon(
             onPressed: busy || pendingOrder!['status'] == 'under_review' || pendingOrder!['status'] == 'approved' ? null : submitReceipt,
