@@ -393,8 +393,8 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    (body.isNotEmpty ? body : 'رقابت کن، رتبه بگیر، نخبه شو!'),
+                  Text(
+                    body.isNotEmpty ? body : 'رقابت کن، رتبه بگیر، نخبه شو!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFFFFE4A8),
@@ -406,10 +406,6 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                   if (title.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                  ],
-                  if (body.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 10, height: 1.4)),
                   ],
                 ],
               ),
