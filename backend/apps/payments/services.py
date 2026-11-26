@@ -16,6 +16,7 @@ def create_subscription_order(user, plan_id):
         user=user,
         product_type=PaymentOrder.ProductType.SUBSCRIPTION,
         plan=plan,
+        payment_provider=PaymentOrder.PaymentProvider.MANUAL,
         status__in=[
             PaymentOrder.Status.AWAITING_PAYMENT,
             PaymentOrder.Status.UNDER_REVIEW,
@@ -27,6 +28,7 @@ def create_subscription_order(user, plan_id):
     return PaymentOrder.objects.create(
         user=user, product_type=PaymentOrder.ProductType.SUBSCRIPTION,
         plan=plan, amount_irr=plan.price_irr,
+        payment_provider=PaymentOrder.PaymentProvider.MANUAL,
         plan_duration_days_snapshot=plan.duration_days,
     )
 
@@ -46,12 +48,15 @@ def create_exam_order(user, exam_id):
     return PaymentOrder.objects.create(
         user=user, product_type=PaymentOrder.ProductType.EXAM,
         exam=exam, amount_irr=exam.price_irr,
+        payment_provider=PaymentOrder.PaymentProvider.MANUAL,
     )
 
 
 @transaction.atomic
 def submit_payment(order_id, user, receipt, tracking_code="", note=""):
     order = PaymentOrder.objects.select_for_update().get(pk=order_id, user=user)
+    if order.payment_provider != PaymentOrder.PaymentProvider.MANUAL:
+        raise ValidationError("ارسال رسید دستی برای این روش پرداخت مجاز نیست.")
     if order.status not in (PaymentOrder.Status.AWAITING_PAYMENT, PaymentOrder.Status.REJECTED):
         raise ValidationError("این سفارش در وضعیت قابل ارسال رسید نیست.")
     if not receipt:
@@ -72,6 +77,8 @@ def submit_payment(order_id, user, receipt, tracking_code="", note=""):
 @transaction.atomic
 def approve_order(order_id, reviewer):
     order = PaymentOrder.objects.select_for_update().select_related("user", "plan", "exam").get(pk=order_id)
+    if order.payment_provider != PaymentOrder.PaymentProvider.MANUAL:
+        raise ValidationError("تأیید دستی سفارش‌های کافه‌بازار مجاز نیست.")
     if order.status != PaymentOrder.Status.UNDER_REVIEW:
         raise ValidationError("فقط سفارش در انتظار بررسی قابل تأیید است.")
     now = timezone.now()
