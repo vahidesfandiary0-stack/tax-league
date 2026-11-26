@@ -9,7 +9,7 @@ from apps.questions.models import Question, QuestionOption
 
 @pytest.mark.django_db
 def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
-    user = get_user_model().objects.create_user(phone_number="09127770001")
+    user = get_user_model().objects.create_user(phone_number="09127770001", display_name="آزمون کننده")
     question = Question.objects.create(
         subject=Question.Subject.DIRECT_TAX,
         prompt="نرخ نمونه چقدر است؟",
