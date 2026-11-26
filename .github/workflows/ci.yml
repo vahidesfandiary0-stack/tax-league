@@ -70,6 +70,28 @@ jobs:
           gradle.write_text(updated)
           print(f"Configured {gradle} to compile against Android API 36")
           PY
+          # Some Flutter plugins declare their own compileSdk instead of inheriting the app value.
+          # Align file_picker's Android library module with the API 36 requirement.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          pub_cache = Path.home() / ".pub-cache/hosted/pub.dev"
+          candidates = sorted(pub_cache.glob("file_picker-*/android/build.gradle*"))
+          if not candidates:
+              raise SystemExit("file_picker Android Gradle file was not found in pub cache")
+          for gradle in candidates:
+              content = gradle.read_text()
+              updated, count = re.subn(
+                  r'(?m)^(\\s*compileSdk(?:Version)?\\s*(?:=)?\\s*)(?:flutter\\.compileSdkVersion|\\d+)(\\s*(?:#.*)?$)',
+                  r'\\g<1>36\\g<2>',
+                  content,
+              )
+              if count != 1:
+                  raise SystemExit(f"Could not safely set compileSdk 36 in {gradle} (matches={count})")
+              gradle.write_text(updated)
+              print(f"Configured {gradle} to compile against Android API 36")
+          PY
           sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           sdkmanager_path="$(find "$sdk_root" -type f -name sdkmanager -print -quit)"
           if [ -z "$sdkmanager_path" ]; then
