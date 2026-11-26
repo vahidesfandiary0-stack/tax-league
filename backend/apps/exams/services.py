@@ -209,6 +209,15 @@ def publish_exam(exam_id):
         if not exam.starts_at or not exam.ends_at or exam.ends_at <= exam.starts_at:
             raise ValidationError("برای انتشار آزمون شبانه، زمان شروع و پایان معتبر الزامی است.")
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
+    if exam.kind == Exam.Kind.NIGHT:
+        question_ids = [item.question_id for item in items]
+        reused = ExamQuestion.objects.filter(
+            question_id__in=question_ids,
+            exam__kind=Exam.Kind.NIGHT,
+            exam__status=Exam.Status.PUBLISHED,
+        ).exclude(exam=exam).exists()
+        if reused:
+            raise ValidationError("سؤال استفاده‌شده در آزمون شبانه منتشرشده، دوباره قابل انتشار نیست.")
     if not items:
         raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
     for item in items:
