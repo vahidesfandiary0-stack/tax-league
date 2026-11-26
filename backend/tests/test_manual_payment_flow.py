@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -44,7 +46,7 @@ def test_manual_card_transfer_activates_subscription_only_after_admin_approval(t
     assert approved.status == PaymentOrder.Status.APPROVED
     assert subscription.plan_id == plan.pk
     assert subscription.starts_at <= timezone.now()
-    assert subscription.ends_at - subscription.starts_at == timezone.timedelta(days=30)
+    assert subscription.ends_at - subscription.starts_at == timedelta(days=30)
 
 
 @pytest.mark.django_db
