@@ -460,8 +460,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       // Founder content is fetched only for the authenticated home carousel.
       setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
-      if (!mounted || stats == null || showcaseSlides.isNotEmpty) return;
-      setState(() => showcaseSlides = fallbackBrandSlides());
+      if (mounted && stats != null && showcaseSlides.isEmpty) {
+        setState(() => showcaseSlides = fallbackBrandSlides());
+      }
+    }
+    // Refresh the published schedule with server time so the countdown remains
+    // correct when administrators publish or reschedule the official exam.
+    try {
+      final examData = await api.request('exams/');
+      if (!mounted || stats == null || focusMode || examData is! List) return;
+      setState(() => exams = _stampExams(examData));
+    } catch (_) {
+      // Keep the last valid schedule if the exam endpoint is temporarily unavailable.
     }
   }
 
