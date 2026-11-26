@@ -41,6 +41,8 @@ class Exam(models.Model):
             raise ValidationError({"counts_for_league": "فقط آزمون شبانه مجاز است در رتبه‌بندی لیگ اثر بگذارد."})
         if self.kind == self.Kind.NIGHT and self.requires_purchase:
             raise ValidationError({"requires_purchase": "آزمون شبانه باید رایگان باشد."})
+        if self.kind == self.Kind.NIGHT and (not self.starts_at or not self.ends_at):
+            raise ValidationError("آزمون شبانه باید زمان شروع و پایان مشخص داشته باشد.")
         if self.requires_purchase and self.price_irr < 1:
             raise ValidationError({"price_irr": "برای آزمون پولی، مبلغ باید بیشتر از صفر باشد."})
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
