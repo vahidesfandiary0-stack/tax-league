@@ -86,3 +86,18 @@ The CI pipeline verifies the release build, signature, package metadata,
 permissions and compatibility. CI cannot independently attest to the
 device-side Play Protect result. That result must be observed on a device for
 the exact APK hash, and future Google decisions cannot be guaranteed.
+
+
+## Current dependency review
+
+- `file_picker ^11.0.3` is introduced only for authenticated payment-receipt selection
+  (JPG, JPEG, PNG and PDF) before upload to the private payment endpoint.
+- `flutter_secure_storage ^9.2.2` remains unchanged. Version 12 of `file_picker`
+  was rejected because its Windows dependency graph conflicts with the existing
+  secure-storage Windows dependency; version 11.0.3 retains the static picker
+  API used by the client and supports the project's Dart 3.4 minimum.
+- This documents the functional reason and version choice, not a completed
+  Android security approval. The next signed build must still verify the
+  resolved dependency graph, final manifest and permissions, APK signer,
+  diagnostics and real-device installation before owner acceptance.
+
