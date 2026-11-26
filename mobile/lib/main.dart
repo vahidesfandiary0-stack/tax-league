@@ -1718,7 +1718,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: busy ? null : () async {
-                    final value = name.text.trim().replaceAll(RegExp(r'\\s+'), ' ');
+                    final value = name.text.trim().replaceAll(RegExp(r'\s+'), ' ');
                     if (value.split(' ').length < 2) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام و نام خانوادگی را کامل وارد کنید.')));
                       return;
