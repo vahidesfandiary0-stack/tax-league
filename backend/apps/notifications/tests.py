@@ -1,9 +1,12 @@
 from datetime import timedelta
 
+from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.test import RequestFactory
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
+from .admin import ShowcaseSlideAdmin
 from .models import ShowcaseSlide
 
 
@@ -86,6 +89,31 @@ class ShowcaseSlideApiTests(APITestCase):
         self.assertEqual(response.data[2]["duration_seconds"], 11)
         self.assertNotIn(later.pk, [item["id"] for item in response.data])
         self.assertNotIn(inactive.pk, [item["id"] for item in response.data])
+
+    def test_staff_manager_can_manage_all_showcase_slides(self):
+        manager = get_user_model().objects.create_user(
+            phone_number="09120000002",
+            is_staff=True,
+        )
+        request = RequestFactory().get("/admin/notifications/showcaseslide/")
+        request.user = manager
+        model_admin = ShowcaseSlideAdmin(ShowcaseSlide, admin.site)
+
+        self.assertTrue(model_admin.has_module_permission(request))
+        self.assertTrue(model_admin.has_view_permission(request))
+        self.assertTrue(model_admin.has_add_permission(request))
+        self.assertTrue(model_admin.has_change_permission(request))
+        self.assertTrue(model_admin.has_delete_permission(request))
+        editable_fields = {
+            field
+            for section in model_admin.fieldsets
+            for field in section[1]["fields"]
+        }
+        self.assertTrue({
+            "kind", "title", "body", "image", "image_url",
+            "is_active", "sort_order", "duration_seconds",
+            "starts_at", "ends_at",
+        }.issubset(editable_fields))
 
     def test_authenticated_user_can_receive_empty_successful_list(self):
         self.client.force_authenticate(user=self.user)
