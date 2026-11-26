@@ -90,16 +90,19 @@ void main() {
     });
 
     testWidgets('counts down to the end of a running official night exam', (tester) async {
+      final now = DateTime.now().toUtc();
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
               slides: const [],
               exams: [
                 {
                   'title': 'آزمون آغازشده',
-                  'starts_at': DateTime.now().subtract(const Duration(minutes: 2)).toUtc().toIso8601String(),
-                  'ends_at': DateTime.now().add(const Duration(minutes: 13)).toUtc().toIso8601String(),
+                  'kind': 'night',
+                  'counts_for_league': true,
+                  'starts_at': now.subtract(const Duration(minutes: 2)).toIso8601String(),
+                  'ends_at': now.add(const Duration(minutes: 13)).toIso8601String(),
                 },
               ],
             ),
@@ -109,6 +112,6 @@ void main() {
       expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
       expect(find.text('آزمون آغازشده'), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
+    });;
   });
 }
