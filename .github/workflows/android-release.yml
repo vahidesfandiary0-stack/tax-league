@@ -257,17 +257,21 @@ jobs:
           print("PASS: Android permission allowlist.")
           PY
 
-      - name: Verify APK and Google Play App Bundle signatures
+      - name: Verify APK signature and approved signing certificate
         working-directory: mobile
         run: |
           set -euo pipefail
           APK=build/app/outputs/flutter-apk/app-release.apk
           AAB=build/app/outputs/bundle/release/app-release.aab
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner"
+          EXPECTED_CERT_SHA256=d0748f8bfda87ae5582de9b560637f88348fb9b39d43e7759227983cbebd24b8
           test -s "$APK"
           test -s "$AAB"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --verbose "$APK"
+          SIGNER_REPORT="$RUNNER_TEMP/raqtiva-apk-signer.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$SIGNER_REPORT"
+          grep -F "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256" "$SIGNER_REPORT"
           jarsigner -verify -verbose -certs "$AAB" >/dev/null
-          echo "PASS: APK and AAB signatures verified."
+          echo "PASS: APK signer matches the owner-approved certificate; APK and AAB signatures verified."
 
       - name: Inspect APK permissions and Android compatibility
         working-directory: mobile
@@ -293,7 +297,12 @@ jobs:
             echo
             echo "=== APK package and Android SDK information ==="
             "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
-            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='4'"
+            APP_VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml)"
+            VERSION_NAME="${APP_VERSION%%+*}"
+            VERSION_CODE="${APP_VERSION##*+}"
+            test -n "$VERSION_NAME"
+            test -n "$VERSION_CODE"
+            "$AAPT" dump badging "$APK" | grep -F "package: name='ir.raqtiva.tax_league' versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
             "$AAPT" dump badging "$APK" | grep -F "targetSdkVersion:'36'"
             echo
             echo "=== Resolved Flutter dependencies ==="
