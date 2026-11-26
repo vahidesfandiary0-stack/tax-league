@@ -43,6 +43,13 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     client = APIClient()
     client.force_authenticate(user=user)
 
+    user.display_name = ""
+    user.save(update_fields=["display_name"])
+    blocked = client.post(reverse("exam-start", args=[exam.pk]), {}, format="json")
+    assert blocked.status_code == 400
+    user.display_name = "آزمون کننده"
+    user.save(update_fields=["display_name"])
+
     started = client.post(reverse("exam-start", args=[exam.pk]), {}, format="json")
     assert started.status_code == 200
     attempt_id = started.data["id"]
