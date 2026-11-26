@@ -3,7 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -79,7 +79,7 @@ class VerifyOTPView(APIView):
 
 
 class ProfileView(APIView):
-    permission_classes = [__import__('rest_framework.permissions', fromlist=['IsAuthenticated']).IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         return Response({"id": request.user.pk, "phone_number": request.user.phone_number, "display_name": request.user.display_name})
