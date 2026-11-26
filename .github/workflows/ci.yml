@@ -83,8 +83,8 @@ jobs:
           for gradle in candidates:
               content = gradle.read_text()
               updated, count = re.subn(
-                  r'(?m)^(\\s*compileSdk(?:Version)?\\s*(?:=)?\\s*)(?:flutter\\.compileSdkVersion|\\d+)(\\s*(?:#.*)?$)',
-                  r'\\g<1>36\\g<2>',
+                  r'(?m)^(\s*compileSdk(?:Version)?\s*(?:=)?\s*)(?:flutter\.compileSdkVersion|\d+)(\s*(?:#.*)?$)',
+                  r'\g<1>36\g<2>',
                   content,
               )
               if count != 1:
