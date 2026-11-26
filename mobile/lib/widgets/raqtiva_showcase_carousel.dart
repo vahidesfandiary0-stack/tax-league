@@ -59,30 +59,23 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
-  Map<String, dynamic>? get _configuredCountdownSlide {
+  List<dynamic> get _allSlides {
     final exam = _nextExam;
-    if (exam == null) return null;
-    for (final raw in widget.slides) {
-      if (raw is Map && raw['kind']?.toString() == 'exam_countdown') {
-        return <String, dynamic>{
-          ...Map<String, dynamic>.from(raw),
-          'target_at': exam['target_at'],
-          'countdown_phase': exam['countdown_phase'],
-          'server_now': exam['server_now'],
-          'received_at': exam['received_at'],
-          'exam_title': exam['title'],
-        };
+    return widget.slides.map((raw) {
+      if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
+        return raw;
       }
-    }
-    return null;
+      if (exam == null) return null;
+      return <String, dynamic>{
+        ...Map<String, dynamic>.from(raw),
+        'target_at': exam['target_at'],
+        'countdown_phase': exam['countdown_phase'],
+        'server_now': exam['server_now'],
+        'received_at': exam['received_at'],
+        'exam_title': exam['title'],
+      };
+    }).where((slide) => slide != null).toList();
   }
-
-  List<dynamic> get _allSlides => [
-    ...widget.slides.where(
-      (raw) => !(raw is Map && raw['kind']?.toString() == 'exam_countdown'),
-    ),
-    if (_configuredCountdownSlide != null) _configuredCountdownSlide!,
-  ];
 
   int get _count => _allSlides.length;
 
