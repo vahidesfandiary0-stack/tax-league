@@ -16,7 +16,10 @@ from apps.questions.models import Question, QuestionOption
 
 
 @pytest.mark.django_db
-def make_published_exam(user, *, question_count=1, ends_at=None):
+def make_published_exam(
+    user, *, question_count=1, ends_at=None, kind=Exam.Kind.DAILY,
+    starts_at=None, counts_for_league=False, max_attempts=2,
+):
     questions = []
     for index in range(question_count):
         question = Question.objects.create(
@@ -36,10 +39,12 @@ def make_published_exam(user, *, question_count=1, ends_at=None):
 
     exam = Exam.objects.create(
         title="آزمون آزمایشی",
-        kind=Exam.Kind.DAILY,
+        kind=kind,
         duration_minutes=30,
-        max_attempts=2,
+        max_attempts=max_attempts,
+        starts_at=starts_at,
         ends_at=ends_at,
+        counts_for_league=counts_for_league,
     )
     for position, question in enumerate(questions, start=1):
         ExamQuestion.objects.create(
@@ -188,3 +193,68 @@ def test_finalization_after_deadline_marks_attempt_expired():
 
     assert result.status == ExamAttempt.Status.EXPIRED
     assert result.submitted_at is not None
+
+@pytest.mark.django_db
+def test_night_exam_is_free_unlimited_and_can_be_submitted_early():
+    user = get_user_model().objects.create_user(phone_number="09123330011")
+    now = timezone.now()
+    exam = make_published_exam(
+        user,
+        kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(minutes=1),
+        ends_at=now + timedelta(hours=1),
+        counts_for_league=True,
+        max_attempts=1,
+    )
+
+    first = start_attempt(exam.pk, user)
+    assert first.started_at >= exam.starts_at
+    assert first.deadline_at <= exam.ends_at
+
+    finalized = finalize_attempt(first.pk, user)
+    assert finalized.status == ExamAttempt.Status.SUBMITTED
+
+    second = start_attempt(exam.pk, user)
+    assert second.pk != first.pk
+    assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 2
+
+
+@pytest.mark.django_db
+def test_night_exam_start_rejects_outside_published_schedule():
+    user = get_user_model().objects.create_user(phone_number="09123330012")
+    now = timezone.now()
+    exam = make_published_exam(
+        user,
+        kind=Exam.Kind.NIGHT,
+        starts_at=now + timedelta(minutes=5),
+        ends_at=now + timedelta(hours=1),
+        counts_for_league=True,
+        max_attempts=1,
+    )
+    with patch("apps.exams.services.timezone.now", return_value=now):
+        with pytest.raises(DjangoValidationError):
+            start_attempt(exam.pk, user)
+
+
+@pytest.mark.django_db
+def test_expired_night_attempt_is_finalized_before_a_new_unlimited_attempt():
+    user = get_user_model().objects.create_user(phone_number="09123330013")
+    now = timezone.now()
+    exam = make_published_exam(
+        user,
+        kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(minutes=1),
+        ends_at=now + timedelta(hours=2),
+        counts_for_league=True,
+        max_attempts=1,
+    )
+    first = start_attempt(exam.pk, user)
+    with patch(
+        "apps.exams.services.timezone.now",
+        return_value=first.deadline_at + timedelta(seconds=1),
+    ):
+        second = start_attempt(exam.pk, user)
+    first.refresh_from_db()
+    assert first.status == ExamAttempt.Status.EXPIRED
+    assert second.pk != first.pk
+
