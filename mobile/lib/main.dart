@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'utils/showcase_slide_utils.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -460,9 +459,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       // Founder content is fetched only for the authenticated home carousel.
       setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
-      if (mounted && stats != null && showcaseSlides.isEmpty) {
-        setState(() => showcaseSlides = fallbackBrandSlides());
-      }
+      // The administrator-managed API is authoritative. Never replace its
+      // content with hard-coded slides; retain the last valid response instead.
     }
     // Refresh the published schedule with server time so the countdown remains
     // correct when administrators publish or reschedule the official exam.
