@@ -85,38 +85,64 @@ def close_season(season_id, actor, note=""):
     season.refresh_from_db()
     return season
 
-def leaderboard_for_season(season_id, limit=100):
-    """Aggregate ledger entries; no client-supplied scores are accepted."""
-    from django.db.models import Count, IntegerField, Value
-    from django.db.models.functions import Coalesce
+def league_rows_for_season(season_id, province=None):
+    """Build the official standings from the best adjusted NIGHT attempt per user and exam."""
+    from django.db.models import Count, IntegerField, OuterRef, Subquery, Sum, Value, Window
+    from django.db.models.functions import Coalesce, RowNumber
 
     season = LeagueSeason.objects.get(pk=season_id, status__in=[
         LeagueSeason.Status.ACTIVE, LeagueSeason.Status.CLOSED
     ])
-    adjustment_totals = LeagueScoreAdjustment.objects.filter(
-        entry__season_id=OuterRef("season_id"),
-        entry__user_id=OuterRef("user_id"),
-    ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(
+    entries = LeagueScoreEntry.objects.filter(
         season=season,
         attempt__exam__kind=Exam.Kind.NIGHT,
         attempt__exam__counts_for_league=True,
-    ).values(
-        "season_id", "user_id", "user__display_name"
-    ).annotate(
-        base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
+    )
+    if province is not None:
+        entries = entries.filter(user__province=province, user__province_verified=True)
+
+    adjustment_totals = LeagueScoreAdjustment.objects.filter(
+        entry_id=OuterRef("pk")
+    ).values("entry_id").annotate(total=Sum("score_delta")).values("total")[:1]
+
+    best_entries = entries.annotate(
         adjustment_total=Coalesce(
             Subquery(adjustment_totals, output_field=IntegerField()),
             Value(0), output_field=IntegerField(),
-        ),
-        correct_total=Coalesce(Sum("correct_count"), Value(0), output_field=IntegerField()),
-        wrong_total=Coalesce(Sum("wrong_count"), Value(0), output_field=IntegerField()),
-        total_time=Coalesce(Sum("elapsed_seconds"), Value(0), output_field=IntegerField()),
-        exams_count=Count("id"),
+        )
     ).annotate(
-        total_score=F("base_score") + F("adjustment_total")
-    ).order_by("-total_score", "-correct_total", "wrong_total", "total_time", "user_id")[:limit]
+        adjusted_score=F("score") + F("adjustment_total")
+    ).annotate(
+        best_attempt_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F("user_id"), F("attempt__exam_id")],
+            order_by=[
+                F("adjusted_score").desc(),
+                F("correct_count").desc(),
+                F("wrong_count").asc(),
+                F("elapsed_seconds").asc(),
+                F("attempt_id").asc(),
+            ],
+        )
+    ).filter(best_attempt_rank=1)
+
+    rows = best_entries.values(
+        "season_id", "user_id", "user__display_name"
+    ).annotate(
+        total_score=Sum("adjusted_score"),
+        correct_total=Sum("correct_count"),
+        wrong_total=Sum("wrong_count"),
+        total_time=Sum("elapsed_seconds"),
+        exams_count=Count("id"),
+    ).order_by(
+        "-total_score", "-correct_total", "wrong_total", "total_time", "user_id"
+    )
     return season, list(rows)
+
+
+def leaderboard_for_season(season_id, limit=100, province=None):
+    season, rows = league_rows_for_season(season_id, province=province)
+    return season, rows[:limit]
 
 
 @transaction.atomic
