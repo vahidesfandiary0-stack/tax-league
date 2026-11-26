@@ -6,7 +6,7 @@ from django.db.models import Sum, OuterRef, Subquery, IntegerField, Value, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from apps.exams.models import ExamAttempt
+from apps.exams.models import Exam, ExamAttempt
 from .models import LeagueScoreAdjustment, LeagueScoreEntry, LeagueSeason, LeagueSeasonEvent
 
 
@@ -17,7 +17,7 @@ def record_attempt_score(attempt_id):
         raise ValidationError("فقط آزمون تحویل‌شده یا منقضی‌شده امتیاز می‌گیرد.")
     if attempt.score is None or attempt.submitted_at is None:
         raise ValidationError("نتیجه آزمون هنوز قطعی نشده است.")
-    if not attempt.exam.counts_for_league:
+    if not attempt.exam.counts_for_league or attempt.exam.kind != Exam.Kind.NIGHT:
         return None
 
     existing = LeagueScoreEntry.objects.filter(attempt=attempt).first()
@@ -97,7 +97,11 @@ def leaderboard_for_season(season_id, limit=100):
         entry__season_id=OuterRef("season_id"),
         entry__user_id=OuterRef("user_id"),
     ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(season=season).values(
+    rows = LeagueScoreEntry.objects.filter(
+        season=season,
+        attempt__exam__kind=Exam.Kind.NIGHT,
+        attempt__exam__counts_for_league=True,
+    ).values(
         "season_id", "user_id", "user__display_name"
     ).annotate(
         base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
@@ -125,8 +129,8 @@ def file_league_appeal(attempt_id, user, reason, details):
         raise ValidationError("این نتیجه متعلق به شما نیست.")
     if attempt.status not in (ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED):
         raise ValidationError("فقط نتیجه نهایی‌شده قابل اعتراض است.")
-    if not attempt.exam.counts_for_league:
-        raise ValidationError("این آزمون جزو امتیاز رسمی لیگ نیست.")
+    if not attempt.exam.counts_for_league or attempt.exam.kind != Exam.Kind.NIGHT:
+        raise ValidationError("فقط نتیجه آزمون شبانه رسمی قابل اعتراض است.")
     if attempt.submitted_at is None or timezone.now() > attempt.submitted_at + timedelta(days=7):
         raise ValidationError("مهلت ثبت اعتراض به پایان رسیده است.")
     reason, details = (reason or "").strip(), (details or "").strip()
