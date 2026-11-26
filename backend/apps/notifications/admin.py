@@ -38,7 +38,7 @@ class ShowcaseSlideAdmin(admin.ModelAdmin):
     save_on_top = True
     fieldsets = (
         ("محتوا", {"fields": ("kind", "title", "body", "image", "image_url")}),
-        ("نمایش", {"fields": ("is_active", "sort_order", "duration_seconds", "starts_at", "ends_at")}),
+        ("نمایش", {"fields": ("is_active", "sort_order", "duration_seconds", "starts_at", "ends_at"), "description": "در نوع «شمارش معکوس آزمون رسمی»، زمان واقعی از آزمون شبانه رسمی منتشرشده گرفته می‌شود؛ این تاریخ‌ها فقط بازه انتشار خود اسلاید را تعیین می‌کنند."}),
         ("سوابق", {"fields": ("created_at", "updated_at")}),
     )
 
