@@ -46,6 +46,8 @@ jobs:
       - run: flutter test
       - name: Generate Android project files
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v3
       - name: Set Android compile SDK 36 for current plugins
         working-directory: mobile
         shell: bash
