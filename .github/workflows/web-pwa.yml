@@ -1,0 +1,69 @@
+name: Web PWA build
+
+on:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/web-pwa.yml"
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Production API base URL (HTTPS), normally https://raqtiva.ir"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Flutter web platform files
+        working-directory: mobile
+        run: flutter create --platforms=web --org ir.raqtiva --project-name tax_league .
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Analyze application
+        working-directory: mobile
+        run: flutter analyze --no-fatal-infos lib
+
+      - name: Validate API URL
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          API_BASE_URL: ${{ github.event.inputs.api_base_url }}
+        run: |
+          set -euo pipefail
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "api_base_url must start with https://" >&2; exit 1 ;;
+          esac
+
+      - name: Build production web PWA
+        working-directory: mobile
+        env:
+          API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
+        run: |
+          set -euo pipefail
+          flutter build web --release --pwa-strategy=offline-first --dart-define=API_BASE_URL="$API_BASE_URL"
+          test -s build/web/index.html
+          test -s build/web/manifest.json
+          test -s build/web/flutter_service_worker.js
+
+      - name: Upload web PWA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqtiva-web-pwa
+          path: mobile/build/web/
+          if-no-files-found: error
+          retention-days: 30
