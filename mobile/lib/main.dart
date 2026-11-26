@@ -3681,10 +3681,12 @@ class _ManualSubscriptionPage extends StatefulWidget {
 }
 
 class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
-  bool loading = true, sending = false;
+  bool loading = true, sending = false, checkoutLoading = false;
+  bool checkoutActive = false;
   String? error;
   List<dynamic> plans = [], orders = [];
   Map<String, dynamic> instructions = {}, subscription = {};
+  Map<String, dynamic>? selectedPlan;
   String trackingCode = '';
   String note = '';
 
@@ -3726,16 +3728,14 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
     try {
       final data = await Future.wait([
         widget.api.request('payments/plans/'),
-        widget.api.request('payments/instructions/'),
         widget.api.request('payments/orders/'),
         widget.api.request('payments/subscription/me/'),
       ]);
       if (!mounted) return;
       setState(() {
         plans = List<dynamic>.from(data[0] as List);
-        instructions = Map<String, dynamic>.from(data[1] as Map);
-        orders = List<dynamic>.from(data[2] as List);
-        subscription = Map<String, dynamic>.from(data[3] as Map);
+        orders = List<dynamic>.from(data[1] as List);
+        subscription = Map<String, dynamic>.from(data[2] as Map);
       });
     } catch (e) {
       if (mounted)
@@ -3745,29 +3745,59 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
     }
   }
 
-  Future<void> createOrder(Map<String, dynamic> plan) async {
-    if (sending) return;
+  Future<void> continueToPayment() async {
+    final plan = selectedPlan;
+    if (plan == null || sending || checkoutLoading) return;
+
     setState(() {
-      sending = true;
+      checkoutLoading = true;
       error = null;
     });
+
     try {
+      // Bank details are fetched only after explicit user confirmation.
+      final rawInstructions =
+          await widget.api.request('payments/instructions/');
+      final paymentInstructions =
+          Map<String, dynamic>.from(rawInstructions as Map);
+
+      if (paymentInstructions['configured'] != true) {
+        throw Exception(
+          paymentInstructions['detail']?.toString() ??
+              'اطلاعات پرداخت هنوز توسط مدیر تنظیم نشده است.',
+        );
+      }
+
       await widget.api.requestPost('payments/orders/create/', {
         'product_type': 'subscription',
         'plan_id': plan['id'].toString(),
       });
+
+      if (!mounted) return;
+      setState(() {
+        instructions = paymentInstructions;
+        checkoutActive = true;
+      });
+
       await refresh();
-      if (mounted)
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  'سفارش ایجاد شد. اکنون مبلغ را کارت‌به‌کارت و رسید را ارسال کنید.')),
+            content: Text(
+              'سفارش آماده پرداخت است. اطلاعات کارت و مبلغ را بررسی و سپس رسید را ارسال کنید.',
+            ),
+          ),
         );
+      }
     } catch (e) {
-      if (mounted)
-        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() {
+          error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
     } finally {
-      if (mounted) setState(() => sending = false);
+      if (mounted) setState(() => checkoutLoading = false);
     }
   }
 
@@ -3908,62 +3938,130 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
                             style: const TextStyle(color: Colors.white70)),
                       ])),
                   FilledButton(
-                    onPressed: sending || instructions['configured'] != true
+                    onPressed: sending || checkoutLoading
                         ? null
-                        : () => createOrder(plan),
-                    child: const Text('انتخاب'),
+                        : () => setState(() {
+                              selectedPlan = plan;
+                              checkoutActive = false;
+                              instructions = {};
+                              error = null;
+                            }),
+                    child: Text(
+                      selectedPlan?['id']?.toString() == plan['id']?.toString()
+                          ? 'انتخاب شد'
+                          : 'انتخاب',
+                    ),
                   ),
                 ]),
               ),
             );
           }),
-        _sectionTitle('اطلاعات کارت مقصد'),
-        if (instructions['configured'] == true)
+        if (selectedPlan != null && !checkoutActive) ...[
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text('شماره کارت',
-                        style: TextStyle(color: Colors.white70)),
-                    const SizedBox(height: 5),
-                    SelectableText(
-                        instructions['card_number']?.toString() ?? '',
-                        textDirection: TextDirection.ltr,
-                        style: const TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.1)),
-                    if ((instructions['account_holder'] ?? '')
-                        .toString()
-                        .isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text('به نام: ${instructions['account_holder']}'),
-                    ],
-                    Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(
-                                text: instructions['card_number'].toString()));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('شماره کارت کپی شد.')));
-                          },
-                          icon: const Icon(Icons.copy_rounded),
-                          label: const Text('کپی شماره کارت'),
-                        )),
-                  ]),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'تأیید طرح انتخاب‌شده',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(selectedPlan!['title']?.toString() ?? 'اشتراک'),
+                  Text(
+                    '${selectedPlan!['duration_days']} روز · '
+                    '${_money(selectedPlan!['price_irr'])} ریال',
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: checkoutLoading || sending
+                        ? null
+                        : continueToPayment,
+                    child: checkoutLoading
+                        ? const CircularProgressIndicator()
+                        : const Text('ادامه و پرداخت'),
+                  ),
+                ],
+              ),
             ),
-          )
-        else
-          const Card(
-            child: Padding(
-                padding: EdgeInsets.all(14),
-                child: Text(
-                    'اطلاعات کارت هنوز توسط مدیر تنظیم نشده است؛ امکان ثبت سفارش پرداخت تا زمان ثبت شماره کارت وجود ندارد.')),
           ),
+        ],
+        if (checkoutActive) ...[
+          _sectionTitle('اطلاعات پرداخت سفارش'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('شماره کارت مقصد',
+                      style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 5),
+                  SelectableText(
+                    instructions['card_number']?.toString() ?? '',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('به نام: ${instructions['account_holder']}'),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(
+                            text: instructions['card_number'].toString()));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('شماره کارت کپی شد.')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded),
+                      label: const Text('کپی شماره کارت'),
+                    ),
+                  ),
+                  const Divider(),
+                  Text(
+                    'مبلغ سفارش: ${_money(selectedPlan?['price_irr'])} ریال',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: checkoutLoading || sending
+                        ? null
+                        : () => setState(() {
+                              checkoutActive = false;
+                              selectedPlan = null;
+                              instructions = {};
+                              trackingCode = '';
+                              note = '';
+                            }),
+                    child: const Text('بازگشت به فهرست طرح‌ها'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          TextField(
+            decoration: const InputDecoration(
+              labelText: 'شماره پیگیری انتقال (اختیاری)',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => trackingCode = v,
+          ),
+          const SizedBox(height: 9),
+          TextField(
+            decoration: const InputDecoration(
+              labelText: 'توضیحات پرداخت (اختیاری)',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => note = v,
+            maxLines: 2,
+          ),
+        ],
         _sectionTitle('سفارش‌ها و ارسال رسید'),
         TextField(
           decoration: const InputDecoration(
@@ -4007,7 +4105,7 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
                               height: 1.6)),
                       if ((order['review_note'] ?? '').toString().isNotEmpty)
                         Text(order['review_note'].toString()),
-                      if (canUpload) ...[
+                      if (canUpload && checkoutActive) ...[
                         const SizedBox(height: 8),
                         OutlinedButton.icon(
                           onPressed:
