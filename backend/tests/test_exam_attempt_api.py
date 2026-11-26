@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.exams.models import AttemptOption, Exam, ExamQuestion
+from apps.exams.models import AttemptOption, Exam, ExamAttempt, ExamQuestion
 from apps.questions.models import Question, QuestionOption
 
 
@@ -69,3 +69,23 @@ def test_participant_can_start_answer_resume_and_finalize_exam_through_api():
     assert result.data["score"] == 10
     assert result.data["correct_count"] == 1
     assert result.data["wrong_count"] == 0
+
+
+
+@pytest.mark.django_db
+def test_official_league_exam_requires_full_name_before_attempt_creation():
+    user = get_user_model().objects.create_user(phone_number="09127770002")
+    exam = Exam.objects.create(
+        title="آزمون رسمی لیگ", kind=Exam.Kind.DAILY,
+        duration_minutes=20, max_attempts=1, counts_for_league=True,
+    )
+    exam.status = Exam.Status.PUBLISHED
+    exam.save(update_fields=["status"])
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    response = client.post(reverse("exam-start", args=[exam.pk]), {}, format="json")
+
+    assert response.status_code == 400
+    assert "نام و نام خانوادگی" in str(response.data)
+    assert not ExamAttempt.objects.filter(user=user, exam=exam).exists()
