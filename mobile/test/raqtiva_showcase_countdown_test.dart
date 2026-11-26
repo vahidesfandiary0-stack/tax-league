@@ -110,7 +110,7 @@ void main() {
       await showCountdownSlide(tester);
       expect(find.text('شمارش معکوس آزمون شبانه'), findsOneWidget);
       expect(find.text('زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.'), findsOneWidget);
-      expect(find.text('پیام مدیریت'), findsNothing);
+      expect(find.text('پیام مدیریت'), findsWidgets);
       expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
       await tester.drag(find.byType(PageView), const Offset(-500, 0));
       await tester.pumpAndSettle();
