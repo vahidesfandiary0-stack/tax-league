@@ -77,7 +77,16 @@ jobs:
             find "$sdk_root/cmdline-tools" -maxdepth 4 -type f -name sdkmanager -print 2>/dev/null || true
             exit 1
           fi
+          # sdkmanager may close stdin after accepting licenses; avoid treating
+          # the resulting SIGPIPE from yes as a workflow failure.
+          set +o pipefail
           yes | "$sdkmanager_path" --licenses >/dev/null
+          sdkmanager_license_status=$?
+          set -o pipefail
+          if [ "$sdkmanager_license_status" -ne 0 ]; then
+            echo "sdkmanager --licenses failed with exit code $sdkmanager_license_status" >&2
+            exit "$sdkmanager_license_status"
+          fi
           "$sdkmanager_path" "platforms;android-36"
       - name: Verify Android application identity
         working-directory: mobile
