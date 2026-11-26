@@ -51,7 +51,7 @@ class Exam(models.Model):
             raise ValidationError({"ends_at": "پایان آزمون باید بعد از شروع آن باشد."})
 
     def save(self, *args, **kwargs):
-        if self.pk and Exam.objects.filter(pk=self.pk, status=self.Status.PUBLISHED).exists():
+        if self.pk and Exam.objects.filter(pk=self.pk, status__in=[self.Status.PUBLISHED, self.Status.ARCHIVED]).exists():
             raise ValidationError("آزمون منتشرشده قابل ویرایش نیست؛ برای تغییر، آزمون جدید بسازید.")
         super().save(*args, **kwargs)
 
