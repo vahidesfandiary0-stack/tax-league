@@ -3773,21 +3773,32 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
 
   Future<void> uploadReceipt(Map<String, dynamic> order) async {
     if (sending) return;
-    final result = await FilePicker.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
-      withData: true,
+      allowMultiple: false,
     );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.single;
-    final bytes = file.bytes;
-    if (bytes == null || bytes.isEmpty) {
-      setState(
-          () => error = 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.');
+    if (files.isEmpty) return;
+    final file = files.single;
+    var bytes = <int>[];
+    try {
+      final fileSize = await file.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
+        return;
+      }
+      bytes = await file.readAsBytes();
+    } catch (_) {
+      if (mounted) {
+        setState(
+            () => error = 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.');
+      }
       return;
     }
-    if (bytes.length > 5 * 1024 * 1024) {
-      setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
+    if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+      setState(() => error = bytes.isEmpty
+          ? 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.'
+          : 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
       return;
     }
     setState(() {
