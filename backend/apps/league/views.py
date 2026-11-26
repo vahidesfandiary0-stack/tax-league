@@ -89,7 +89,9 @@ class MyLeagueStatsView(APIView):
         ).aggregate(total=Coalesce(Sum("score_delta"), Value(0), output_field=IntegerField()))["total"]
         total_score = base_totals["base_score"] + correction
         ranked_users = list(
-            LeagueScoreEntry.objects.filter(season=season)
+            LeagueScoreEntry.objects.filter(
+                season=season, user__display_name__gt=""
+            )
             .values("season_id", "user_id")
             .annotate(
                 base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
