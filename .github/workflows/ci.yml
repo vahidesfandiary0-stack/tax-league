@@ -77,7 +77,6 @@ jobs:
           gradle.write_text(updated)
           print(f"Configured compile SDK 36 in {gradle}")
           PY
-          yes | sdkmanager --licenses >/dev/null
           sdkmanager "platforms;android-36"
       - name: Verify Android application identity
         working-directory: mobile
