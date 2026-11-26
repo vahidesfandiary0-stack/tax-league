@@ -349,3 +349,32 @@ def test_appeal_review_requires_league_permission():
     assert response.status_code == 400
     appeal.refresh_from_db()
     assert appeal.status == LeagueAppeal.Status.PENDING
+
+
+
+@pytest.mark.django_db
+def test_leaderboard_and_personal_rank_exclude_accounts_without_full_name():
+    named = get_user_model().objects.create_user(
+        phone_number="09124440110", display_name="شرکت‌کننده مجاز"
+    )
+    unnamed = get_user_model().objects.create_user(phone_number="09124440111")
+    season = make_season("فصل نمایش نام")
+    LeagueSeason.objects.filter(pk=season.pk).update(status=LeagueSeason.Status.ACTIVE)
+
+    for user, score in ((named, 20), (unnamed, 30)):
+        attempt = make_official_attempt(user, score=score)
+        LeagueScoreEntry.objects.create(
+            season=season, attempt=attempt, user=user, score=score,
+            correct_count=2, wrong_count=1, elapsed_seconds=600,
+        )
+
+    client = APIClient()
+    client.force_authenticate(user=named)
+    board = client.get(f"/api/v1/league/leaderboard/?season={season.pk}")
+    assert board.status_code == 200
+    assert [row["display_name"] for row in board.data["results"]] == ["شرکت‌کننده مجاز"]
+
+    client.force_authenticate(user=unnamed)
+    personal = client.get(f"/api/v1/league/me/?season={season.pk}")
+    assert personal.status_code == 200
+    assert personal.data["rank"] is None
