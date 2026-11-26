@@ -97,7 +97,9 @@ def leaderboard_for_season(season_id, limit=100):
         entry__season_id=OuterRef("season_id"),
         entry__user_id=OuterRef("user_id"),
     ).values("entry__user_id").annotate(total=Sum("score_delta")).values("total")[:1]
-    rows = LeagueScoreEntry.objects.filter(season=season).values(
+    rows = LeagueScoreEntry.objects.filter(
+        season=season, user__display_name__gt=""
+    ).values(
         "season_id", "user_id", "user__display_name"
     ).annotate(
         base_score=Coalesce(Sum("score"), Value(0), output_field=IntegerField()),
