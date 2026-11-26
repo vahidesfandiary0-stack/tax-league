@@ -214,7 +214,7 @@ def publish_exam(exam_id):
         reused = ExamQuestion.objects.filter(
             question_id__in=question_ids,
             exam__kind=Exam.Kind.NIGHT,
-            exam__status=Exam.Status.PUBLISHED,
+            exam__status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
         ).exclude(exam=exam).exists()
         if reused:
             raise ValidationError("سؤال استفاده‌شده در آزمون شبانه منتشرشده، دوباره قابل انتشار نیست.")
