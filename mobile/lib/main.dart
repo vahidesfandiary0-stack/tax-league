@@ -7,6 +7,7 @@ import 'ui/raqtiva_design.dart';
 import 'widgets/raqtiva_showcase_carousel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 
 void main() => runApp(const TaxLeagueApp());
@@ -97,6 +98,18 @@ class LeagueApi {
     return decode(response);
   }
 
+  Future<dynamic> requestMultipart(String path, Map<String, String> fields, String fileField, String filePath) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final request = http.MultipartRequest('POST', Uri.parse(baseUrl + '/api/v1/' + path));
+    request.headers['Authorization'] = 'Token ' + t;
+    request.fields.addAll(fields);
+    request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+    final streamed = await request.send().timeout(const Duration(seconds: 45));
+    final response = await http.Response.fromStream(streamed);
+    return decode(response);
+  }
+
   Future<dynamic> request(String path) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
@@ -106,6 +119,149 @@ class LeagueApi {
   }
 }
 
+
+
+class ManualSubscriptionPage extends StatefulWidget {
+  const ManualSubscriptionPage({super.key, required this.api});
+  final LeagueApi api;
+
+  @override
+  State<ManualSubscriptionPage> createState() => _ManualSubscriptionPageState();
+}
+
+class _ManualSubscriptionPageState extends State<ManualSubscriptionPage> {
+  late Future<List<dynamic>> plansFuture;
+  late Future<dynamic> instructionsFuture;
+  bool busy = false;
+  String? message;
+  Map<String, dynamic>? pendingOrder;
+  Map<String, dynamic>? instructions;
+
+  @override
+  void initState() {
+    super.initState();
+    plansFuture = widget.api.request('payments/plans/').then((v) => List<dynamic>.from(v));
+    instructionsFuture = widget.api.request('payments/instructions/');
+  }
+
+  Future<void> choosePlan(Map<String, dynamic> plan) async {
+    if (busy) return;
+    setState(() { busy = true; message = null; });
+    try {
+      final order = await widget.api.requestPost('payments/orders/create/', {
+        'product_type': 'subscription',
+        'plan_id': plan['id'],
+      });
+      if (!mounted) return;
+      setState(() => pendingOrder = Map<String, dynamic>.from(order));
+    } catch (e) {
+      if (mounted) setState(() => message = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> submitReceipt() async {
+    final order = pendingOrder;
+    if (order == null || busy) return;
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+        withData: false,
+      );
+      if (picked == null || picked.files.single.path == null) return;
+      setState(() { busy = true; message = null; });
+      final result = await widget.api.requestMultipart(
+        'payments/orders/${order['id']}/submit/',
+        {'tracking_code': '', 'note': ''},
+        'receipt',
+        picked.files.single.path!,
+      );
+      if (!mounted) return;
+      setState(() {
+        pendingOrder = Map<String, dynamic>.from(result);
+        message = 'رسید ثبت شد و سفارش برای بررسی مدیر ارسال گردید.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      FutureBuilder<dynamic>(
+        future: instructionsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return Card(child: Padding(padding: const EdgeInsets.all(16), child: Text('دریافت اطلاعات پرداخت ناموفق بود: ${snapshot.error}')));
+          final data = Map<String, dynamic>.from(snapshot.data as Map);
+          instructions = data;
+          if (data['configured'] != true) {
+            return const Card(child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('اطلاعات کارت‌به‌کارت هنوز توسط مدیر در پنل مدیریت ثبت نشده است. پس از ثبت شماره کارت و نام صاحب حساب، امکان ثبت سفارش فراهم می‌شود.'),
+            ));
+          }
+          return Card(child: Padding(
+            padding: const EdgeInsets.all(17),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Text('پرداخت کارت‌به‌کارت', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+              const SizedBox(height: 10),
+              const Text('شماره کارت مقصد'),
+              SelectableText((data['card_number'] ?? '').toString(), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              const SizedBox(height: 8),
+              Text('به نام: ${data['account_holder'] ?? '—'}'),
+              const SizedBox(height: 8),
+              const Text('پس از واریز، پلن را انتخاب و تصویر رسید یا فایل PDF را ارسال کنید. فعال‌سازی پس از بررسی و تأیید مدیر انجام می‌شود.', style: TextStyle(height: 1.7)),
+            ]),
+          ));
+        },
+      ),
+      const SizedBox(height: 10),
+      FutureBuilder<List<dynamic>>(
+        future: plansFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return Card(child: Padding(padding: const EdgeInsets.all(16), child: Text('دریافت طرح‌های اشتراک ناموفق بود: ${snapshot.error}')));
+          final plans = snapshot.data ?? [];
+          if (plans.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('در حال حاضر طرح فعالی برای فروش تعریف نشده است.')));
+          return Column(children: plans.map((raw) {
+            final plan = Map<String, dynamic>.from(raw as Map);
+            final price = int.tryParse(plan['price_irr'].toString()) ?? 0;
+            return Card(child: ListTile(
+              title: Text((plan['title'] ?? 'اشتراک').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('${plan['duration_days']} روز · ${price.toString()} ریال'),
+              trailing: FilledButton(
+                onPressed: busy || instructions?['configured'] != true || pendingOrder != null ? null : () => choosePlan(plan),
+                child: const Text('انتخاب'),
+              ),
+            ));
+          }).toList());
+        },
+      ),
+      if (pendingOrder != null) Card(child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('سفارش اشتراک', style: TextStyle(fontWeight: FontWeight.w900)),
+          Text('مبلغ: ${pendingOrder!['amount_irr']} ریال'),
+          Text('وضعیت: ${pendingOrder!['status']}'),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: busy || pendingOrder!['status'] == 'under_review' || pendingOrder!['status'] == 'approved' ? null : submitReceipt,
+            icon: const Icon(Icons.upload_file),
+            label: const Text('ارسال رسید پرداخت'),
+          ),
+        ]),
+      )),
+      if (message != null) Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(message!, textAlign: TextAlign.center))),
+      if (busy) const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator())),
+    ]);
+  }
+}
 
 class LeagueSplashScreen extends StatefulWidget {
   const LeagueSplashScreen({super.key});
@@ -1253,31 +1409,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ],
       );
     }
-    if (accountPage == 4) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_clock_rounded, size: 44, color: RaqtivaColors.gold),
-              SizedBox(height: 12),
-              Text(
-                'اشتراک ویژه فعلاً غیرفعال است.',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'فعال‌سازی خرید و پرداخت تا دریافت تأیید رسمی درگاه پرداخت به تعویق افتاده است.',
-                textAlign: TextAlign.center,
-                style: TextStyle(height: 1.8),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    if (accountPage == 4) return ManualSubscriptionPage(api: api);
     if (accountPage == 5) {
       Widget academyItem(IconData icon, String title, String description) {
         return Padding(
@@ -1528,33 +1660,77 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 8) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(17),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'اطلاعات حساب کاربری',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.location_on_outlined, color: RaqtivaColors.gold),
-                title: const Text('استان محل سکونت'),
-                subtitle: Text(
-                  provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.',
+      return FutureBuilder<dynamic>(
+        future: api.request('accounts/profile/'),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Card(child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(children: [
+                const Text('دریافت اطلاعات حساب ممکن نشد.'),
+                const SizedBox(height: 8),
+                Text(snapshot.error.toString()),
+                TextButton(onPressed: () => setState(() {}), child: const Text('تلاش دوباره')),
+              ]),
+            ));
+          }
+          final data = Map<String, dynamic>.from(snapshot.data as Map);
+          final name = TextEditingController(text: (data['display_name'] ?? '').toString());
+          return StatefulBuilder(builder: (context, localSetState) => Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const Text('اطلاعات حساب کاربری', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+                const SizedBox(height: 8),
+                Text('شماره همراه: ${data['phone_number'] ?? '—'}'),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: name,
+                  textDirection: TextDirection.rtl,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'نام و نام خانوادگی',
+                    hintText: 'مثلاً علی رضایی',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const Divider(),
-              const ListTile(
-                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
-                title: Text('حریم خصوصی و تنظیمات'),
-                subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 8),
+                const Text('این نام در جدول رتبه‌بندی نمایش داده می‌شود.', style: TextStyle(color: RaqtivaColors.muted, fontSize: 12)),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: busy ? null : () async {
+                    final value = name.text.trim().replaceAll(RegExp(r'\\s+'), ' ');
+                    if (value.split(' ').length < 2) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام و نام خانوادگی را کامل وارد کنید.')));
+                      return;
+                    }
+                    localSetState(() {});
+                    try {
+                      await api.requestPatch('accounts/profile/', {'display_name': value});
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام و نام خانوادگی ذخیره شد.')));
+                        setState(() {});
+                      }
+                    } catch (e) {
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                    }
+                  },
+                  child: const Text('ذخیره اطلاعات'),
+                ),
+                const Divider(height: 28),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.location_on_outlined, color: RaqtivaColors.gold),
+                  title: const Text('استان محل سکونت'),
+                  subtitle: Text(provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.'),
+                ),
+              ]),
+            ),
+          ));
+        },
       );
     }
     if (accountPage == 2) {
