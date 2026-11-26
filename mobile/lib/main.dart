@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'utils/showcase_slide_utils.dart';
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'ui/raqtiva_design.dart';
 import 'widgets/raqtiva_showcase_carousel.dart';
 import 'package:flutter/foundation.dart';
@@ -102,6 +104,28 @@ class LeagueApi {
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
       headers: {'Authorization': 'Token ' + t}).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
+  Future<dynamic> uploadPaymentReceipt({
+    required String orderId,
+    required String filename,
+    required List<int> bytes,
+    String trackingCode = '',
+    String note = '',
+  }) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(baseUrl + '/api/v1/payments/orders/' + orderId + '/submit/'),
+    );
+    request.headers['Authorization'] = 'Token ' + t;
+    request.fields['tracking_code'] = trackingCode;
+    request.fields['note'] = note;
+    request.files.add(http.MultipartFile.fromBytes('receipt', bytes, filename: filename));
+    final streamed = await request.send().timeout(const Duration(seconds: 45));
+    final response = await http.Response.fromStream(streamed);
     return decode(response);
   }
 }
@@ -1254,29 +1278,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 4) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_clock_rounded, size: 44, color: RaqtivaColors.gold),
-              SizedBox(height: 12),
-              Text(
-                'اشتراک ویژه فعلاً غیرفعال است.',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'فعال‌سازی خرید و پرداخت تا دریافت تأیید رسمی درگاه پرداخت به تعویق افتاده است.',
-                textAlign: TextAlign.center,
-                style: TextStyle(height: 1.8),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _ManualSubscriptionPage(api: api);
     }
     if (accountPage == 5) {
       Widget academyItem(IconData icon, String title, String description) {
@@ -1883,7 +1885,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          'مشاهده طرح‌ها، خرید و بازیابی اشتراک',
+                          'مشاهده طرح‌ها، پرداخت کارت‌به‌کارت و پیگیری سفارش',
                           style: TextStyle(
                             color: Color(0xFFBCC9D9),
                             fontSize: 11,
@@ -3086,4 +3088,256 @@ class _RaqtivaTileLinesPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(covariant _RaqtivaTileLinesPainter oldDelegate) => false;
+}
+
+
+class _ManualSubscriptionPage extends StatefulWidget {
+  const _ManualSubscriptionPage({required this.api});
+  final LeagueApi api;
+
+  @override
+  State<_ManualSubscriptionPage> createState() => _ManualSubscriptionPageState();
+}
+
+class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
+  bool loading = true, sending = false;
+  String? error;
+  List<dynamic> plans = [], orders = [];
+  Map<String, dynamic> instructions = {}, subscription = {};
+  String trackingCode = '';
+  String note = '';
+
+  @override
+  void initState() {
+    super.initState();
+    refresh();
+  }
+
+  String _money(dynamic value) {
+    final n = int.tryParse(value?.toString() ?? '') ?? 0;
+    final s = n.toString();
+    return s.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+  }
+
+  String _status(dynamic value) {
+    switch (value?.toString()) {
+      case 'awaiting_payment': return 'در انتظار پرداخت';
+      case 'under_review': return 'رسید ارسال شده؛ در انتظار بررسی مدیر';
+      case 'approved': return 'پرداخت تأیید و اشتراک فعال شده';
+      case 'rejected': return 'رسید تأیید نشد؛ امکان ارسال مجدد وجود دارد';
+      case 'cancelled': return 'لغوشده';
+      default: return 'نامشخص';
+    }
+  }
+
+  Future<void> refresh() async {
+    if (mounted) setState(() { loading = true; error = null; });
+    try {
+      final data = await Future.wait([
+        widget.api.request('payments/plans/'),
+        widget.api.request('payments/instructions/'),
+        widget.api.request('payments/orders/'),
+        widget.api.request('payments/subscription/me/'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        plans = List<dynamic>.from(data[0] as List);
+        instructions = Map<String, dynamic>.from(data[1] as Map);
+        orders = List<dynamic>.from(data[2] as List);
+        subscription = Map<String, dynamic>.from(data[3] as Map);
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> createOrder(Map<String, dynamic> plan) async {
+    if (sending) return;
+    setState(() { sending = true; error = null; });
+    try {
+      await widget.api.requestPost('payments/orders/create/', {
+        'product_type': 'subscription',
+        'plan_id': plan['id'].toString(),
+      });
+      await refresh();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سفارش ایجاد شد. اکنون مبلغ را کارت‌به‌کارت و رسید را ارسال کنید.')),
+      );
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => sending = false);
+    }
+  }
+
+  Future<void> uploadReceipt(Map<String, dynamic> order) async {
+    if (sending) return;
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.single;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      setState(() => error = 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.');
+      return;
+    }
+    if (bytes.length > 5 * 1024 * 1024) {
+      setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
+      return;
+    }
+    setState(() { sending = true; error = null; });
+    try {
+      await widget.api.uploadPaymentReceipt(
+        orderId: order['id'].toString(),
+        filename: file.name,
+        bytes: bytes,
+        trackingCode: trackingCode.trim(),
+        note: note.trim(),
+      );
+      trackingCode = '';
+      note = '';
+      await refresh();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رسید با موفقیت ارسال شد و برای بررسی مدیر ثبت گردید.')),
+      );
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => sending = false);
+    }
+  }
+
+  Widget _sectionTitle(String text) => Padding(
+    padding: const EdgeInsets.only(top: 18, bottom: 10),
+    child: Align(
+      alignment: Alignment.centerRight,
+      child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFFFE4A8))),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && plans.isEmpty && orders.isEmpty) {
+      return const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator()));
+    }
+    final active = subscription['active'] == true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (error != null) Card(
+          color: const Color(0xFF542B32),
+          child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.white))),
+        ),
+        if (active) Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('اشتراک فعال شما', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFFFE4A8))),
+              const SizedBox(height: 7),
+              Text(subscription['plan']?.toString() ?? 'اشتراک ویژه'),
+              Text('اعتبار تا: ${subscription['ends_at'] ?? '—'}'),
+            ]),
+          ),
+        ),
+        _sectionTitle('خرید اشتراک با کارت‌به‌کارت'),
+        const Text('طرح موردنظر را انتخاب کنید. مبلغ دقیق سفارش در سرور ثبت می‌شود و پس از بررسی رسید توسط مدیر، اشتراک فعال خواهد شد.', style: TextStyle(height: 1.8, color: Colors.white70)),
+        if (plans.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(14), child: Text('در حال حاضر طرح فعالی برای خرید تعریف نشده است. لطفاً بعداً مراجعه کنید.'))),
+        for (final raw in plans)
+          Builder(builder: (context) {
+            final plan = Map<String, dynamic>.from(raw as Map);
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(children: [
+                  const Icon(Icons.workspace_premium_rounded, color: Color(0xFFE4C98F), size: 30),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(plan['title']?.toString() ?? 'اشتراک', style: const TextStyle(fontWeight: FontWeight.w900)),
+                    Text('${plan['duration_days']} روز · ${_money(plan['price_irr'])} ریال', style: const TextStyle(color: Colors.white70)),
+                  ])),
+                  FilledButton(
+                    onPressed: sending || instructions['configured'] != true ? null : () => createOrder(plan),
+                    child: const Text('انتخاب'),
+                  ),
+                ]),
+              ),
+            );
+          }),
+        _sectionTitle('اطلاعات کارت مقصد'),
+        if (instructions['configured'] == true) Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Text('شماره کارت', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 5),
+              SelectableText(instructions['card_number']?.toString() ?? '', textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
+              if ((instructions['account_holder'] ?? '').toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('به نام: ${instructions['account_holder']}'),
+              ],
+              Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: instructions['card_number'].toString()));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره کارت کپی شد.')));
+                },
+                icon: const Icon(Icons.copy_rounded), label: const Text('کپی شماره کارت'),
+              )),
+            ]),
+          ),
+        ) else const Card(
+          child: Padding(padding: EdgeInsets.all(14), child: Text('اطلاعات کارت هنوز توسط مدیر تنظیم نشده است؛ امکان ثبت سفارش پرداخت تا زمان ثبت شماره کارت وجود ندارد.')),
+        ),
+        _sectionTitle('سفارش‌ها و ارسال رسید'),
+        TextField(
+          decoration: const InputDecoration(labelText: 'شماره پیگیری انتقال (اختیاری)', border: OutlineInputBorder()),
+          onChanged: (v) => trackingCode = v,
+        ),
+        const SizedBox(height: 9),
+        TextField(
+          decoration: const InputDecoration(labelText: 'توضیحات پرداخت (اختیاری)', border: OutlineInputBorder()),
+          onChanged: (v) => note = v,
+          maxLines: 2,
+        ),
+        if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('هنوز سفارشی ثبت نکرده‌اید.')),
+        for (final raw in orders)
+          Builder(builder: (context) {
+            final order = Map<String, dynamic>.from(raw as Map);
+            final status = order['status']?.toString();
+            final canUpload = status == 'awaiting_payment' || status == 'rejected';
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Text(order['product_title']?.toString() ?? 'اشتراک', style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Text('${_money(order['amount_irr'])} ریال'),
+                  const SizedBox(height: 5),
+                  Text(_status(status), style: TextStyle(color: status == 'approved' ? Colors.greenAccent : const Color(0xFFFFE4A8), height: 1.6)),
+                  if ((order['review_note'] ?? '').toString().isNotEmpty) Text(order['review_note'].toString()),
+                  if (canUpload) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: sending ? null : () => uploadReceipt(order),
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: Text(status == 'rejected' ? 'ارسال مجدد رسید' : 'انتخاب و ارسال رسید'),
+                    ),
+                  ],
+                  Text('کد سفارش: ${order['id']}', style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                ]),
+              ),
+            );
+          }),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(onPressed: loading ? null : refresh, icon: const Icon(Icons.refresh), label: const Text('به‌روزرسانی وضعیت سفارش‌ها')),
+        const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text('توجه: اشتراک فقط پس از بررسی و تأیید رسید توسط مدیریت فعال می‌شود. ارسال رسید به‌تنهایی به معنی تأیید پرداخت نیست.', style: TextStyle(color: Colors.white60, height: 1.8, fontSize: 12)),
+        ),
+      ],
+    );
+  }
 }
