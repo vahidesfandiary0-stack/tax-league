@@ -114,7 +114,8 @@ void main() {
       expect(find.text('ویژه اعضای لیگ'), findsOneWidget);
       await tester.drag(find.byType(PageView), const Offset(-500, 0));
       await tester.pumpAndSettle();
-      expect(find.text('پیام مدیریت'), findsOneWidget);
+      // The slide title and its footer label intentionally share this text.
+      expect(find.text('پیام مدیریت'), findsNWidgets(2));
       expect(tester.takeException(), isNull);
     });
 
