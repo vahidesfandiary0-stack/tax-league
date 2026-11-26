@@ -1,4 +1,5 @@
 from datetime import timedelta
+import hashlib
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -44,8 +45,21 @@ def submit_payment(order_id, user, receipt, tracking_code="", note=""):
         raise ValidationError("تصویر یا فایل رسید الزامی است.")
     for validator in PaymentOrder._meta.get_field("receipt").validators:
         validator(receipt)
+    digest = hashlib.sha256()
+    for chunk in receipt.chunks():
+        digest.update(chunk)
+    receipt.seek(0)
+    receipt_fingerprint = digest.hexdigest()
+    if PaymentOrder.objects.exclude(pk=order.pk).filter(receipt_sha256=receipt_fingerprint).exists():
+        raise ValidationError("این رسید قبلاً برای سفارش دیگری ثبت شده است.")
+    normalized_tracking_code = tracking_code.strip()[:100]
+    if normalized_tracking_code and PaymentOrder.objects.exclude(pk=order.pk).filter(
+        tracking_code__iexact=normalized_tracking_code
+    ).exclude(status=PaymentOrder.Status.CANCELLED).exists():
+        raise ValidationError("این شماره پیگیری قبلاً برای سفارش دیگری ثبت شده است.")
     order.receipt = receipt
-    order.tracking_code = tracking_code.strip()[:100]
+    order.receipt_sha256 = receipt_fingerprint
+    order.tracking_code = normalized_tracking_code
     order.user_note = note.strip()[:500]
     order.status = PaymentOrder.Status.UNDER_REVIEW
     order.reviewer = None
