@@ -3,7 +3,7 @@ from pathlib import Path
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import FileResponse
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -103,7 +103,9 @@ class SubmitPaymentView(APIView):
                 order_id, request.user, data["receipt"],
                 data.get("tracking_code", ""), data.get("note", ""),
             )
-        except (DjangoValidationError, PaymentOrder.DoesNotExist) as exc:
+        except PaymentOrder.DoesNotExist:
+            raise NotFound("سفارش پیدا نشد.")
+        except DjangoValidationError as exc:
             raise service_error(exc)
         return Response(PaymentOrderSerializer(order).data)
 
