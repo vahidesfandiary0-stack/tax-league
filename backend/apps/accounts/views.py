@@ -3,12 +3,12 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .otp import issue_challenge, verify_challenge
-from .serializers import RequestOTPSerializer, VerifyOTPSerializer
+from .serializers import ProfileSerializer, RequestOTPSerializer, VerifyOTPSerializer
 from .sms import SMSDeliveryError, SMSDeliveryNotConfigured, send_login_code
 
 User = get_user_model()
@@ -38,10 +38,7 @@ class RequestOTPView(APIView):
                 if isinstance(exc, SMSDeliveryNotConfigured)
                 else "ارسال پیامک در حال حاضر ممکن نیست؛ دوباره تلاش کنید."
             )
-            return Response(
-                {"detail": detail},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+            return Response({"detail": detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response(
             {"detail": "اگر شماره معتبر باشد، کد ورود ارسال می‌شود."},
             status=status.HTTP_200_OK,
@@ -58,7 +55,6 @@ class VerifyOTPView(APIView):
         serializer.is_valid(raise_exception=True)
         phone = serializer.validated_data["phone_number"]
         code = serializer.validated_data["code"]
-
         with transaction.atomic():
             if not verify_challenge(phone, code):
                 return Response(
@@ -67,7 +63,6 @@ class VerifyOTPView(APIView):
                 )
             user, _ = User.objects.get_or_create(phone_number=phone)
             token, _ = Token.objects.get_or_create(user=user)
-
         return Response({
             "token": token.key,
             "user": {
@@ -75,4 +70,26 @@ class VerifyOTPView(APIView):
                 "phone_number": user.phone_number,
                 "display_name": user.display_name,
             },
+        })
+
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "id": request.user.pk,
+            "phone_number": request.user.phone_number,
+            "display_name": request.user.display_name,
+        })
+
+    def patch(self, request):
+        serializer = ProfileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request.user.display_name = serializer.validated_data["display_name"]
+        request.user.save(update_fields=["display_name"])
+        return Response({
+            "id": request.user.pk,
+            "phone_number": request.user.phone_number,
+            "display_name": request.user.display_name,
         })
