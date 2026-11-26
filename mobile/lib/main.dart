@@ -98,15 +98,6 @@ class LeagueApi {
     return decode(response);
   }
 
-  Future<dynamic> requestPatch(String path, Map<String, dynamic> body) async {
-    final t = await token;
-    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
-    final response = await http.patch(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
-      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
-    return decode(response);
-  }
-
   Future<dynamic> requestMultipart(String path, Map<String, String> fields, List<int> bytes, String filename) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
