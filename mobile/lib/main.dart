@@ -3,6 +3,7 @@ import 'utils/showcase_slide_utils.dart';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'ui/raqtiva_design.dart';
 import 'widgets/raqtiva_showcase_carousel.dart';
 import 'package:flutter/foundation.dart';
@@ -104,6 +105,17 @@ class LeagueApi {
       headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
       body: jsonEncode(body)).timeout(const Duration(seconds: 20));
     return decode(response);
+  }
+
+  Future<dynamic> requestMultipart(String path, Map<String, String> fields, List<int> bytes, String filename) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final request = http.MultipartRequest('POST', Uri.parse(baseUrl + '/api/v1/' + path));
+    request.headers['Authorization'] = 'Token ' + t;
+    request.fields.addAll(fields);
+    request.files.add(http.MultipartFile.fromBytes('receipt', bytes, filename: filename));
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    return decode(await http.Response.fromStream(streamed));
   }
 
   Future<dynamic> request(String path) async {
@@ -359,6 +371,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   final profileName = TextEditingController();
   String? profileError;
   bool profileSaving = false;
+  bool subscriptionLoading = false;
+  bool subscriptionBusy = false;
+  List<dynamic> subscriptionPlans = [];
+  List<dynamic> paymentOrders = [];
+  Map<String, dynamic>? subscriptionStatus;
+  Map<String, dynamic>? paymentInstructions;
+  Map<String, dynamic>? selectedPaymentOrder;
+  PlatformFile? selectedReceipt;
+  String? paymentError;
+  final trackingCodeController = TextEditingController();
+  final paymentNoteController = TextEditingController();
   static const List<String> provinces = [
     'آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام',
     'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی',
@@ -402,6 +425,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     phone.dispose();
     code.dispose();
     profileName.dispose();
+    trackingCodeController.dispose();
+    paymentNoteController.dispose();
     super.dispose();
   }
 
@@ -443,6 +468,110 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       if (mounted) setState(() => profileError = e.toString().replaceFirst('Exception: ', ''));
     }
   }
+
+  Future<void> _loadSubscriptionData() async {
+    if (subscriptionLoading) return;
+    setState(() { subscriptionLoading = true; paymentError = null; });
+    try {
+      final values = await Future.wait([
+        api.request('payments/plans/'),
+        api.request('payments/subscription/me/'),
+        api.request('payments/instructions/'),
+        api.request('payments/orders/'),
+      ]);
+      if (!mounted) return;
+      final orderData = values[3];
+      setState(() {
+        subscriptionPlans = List<dynamic>.from(values[0] as List);
+        subscriptionStatus = Map<String, dynamic>.from(values[1] as Map);
+        paymentInstructions = Map<String, dynamic>.from(values[2] as Map);
+        paymentOrders = List<dynamic>.from(orderData is List ? orderData : (orderData['results'] ?? []));
+      });
+    } catch (e) {
+      if (mounted) setState(() => paymentError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => subscriptionLoading = false);
+    }
+  }
+
+  void _openSubscriptionPage() {
+    setState(() { accountPage = 4; selectedHomeSection = null; });
+    _loadSubscriptionData();
+  }
+
+  Future<void> _createSubscriptionOrder(Map<String, dynamic> plan) async {
+    if (subscriptionBusy) return;
+    setState(() { subscriptionBusy = true; paymentError = null; });
+    try {
+      final order = await api.requestPost('payments/orders/create/', {
+        'product_type': 'subscription', 'plan_id': plan['id'].toString(),
+      });
+      if (!mounted) return;
+      setState(() { selectedPaymentOrder = Map<String, dynamic>.from(order); selectedReceipt = null; trackingCodeController.clear(); paymentNoteController.clear(); });
+      await _loadSubscriptionData();
+      if (mounted) setState(() => selectedPaymentOrder = Map<String, dynamic>.from(order));
+    } catch (e) {
+      if (mounted) setState(() => paymentError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => subscriptionBusy = false);
+    }
+  }
+
+  Future<void> _selectPaymentOrder(Map<String, dynamic> order) async {
+    setState(() { selectedPaymentOrder = order; selectedReceipt = null; paymentError = null; trackingCodeController.text = (order['tracking_code'] ?? '').toString(); paymentNoteController.text = (order['user_note'] ?? '').toString(); });
+  }
+
+  Future<void> _pickPaymentReceipt() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom, allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'], withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      if (file.bytes == null || file.bytes!.isEmpty) {
+        setState(() => paymentError = 'خواندن فایل انتخاب‌شده ممکن نشد؛ دوباره انتخاب کنید.');
+        return;
+      }
+      setState(() { selectedReceipt = file; paymentError = null; });
+    } catch (e) {
+      if (mounted) setState(() => paymentError = 'انتخاب رسید ناموفق بود: ${e.toString()}');
+    }
+  }
+
+  Future<void> _submitPaymentReceipt() async {
+    final order = selectedPaymentOrder;
+    final file = selectedReceipt;
+    if (order == null || file == null || file.bytes == null) {
+      setState(() => paymentError = 'ابتدا سفارش و فایل رسید را انتخاب کنید.');
+      return;
+    }
+    if (subscriptionBusy) return;
+    setState(() { subscriptionBusy = true; paymentError = null; });
+    try {
+      final updated = await api.requestMultipart(
+        'payments/orders/${order['id']}/submit/',
+        {'tracking_code': trackingCodeController.text.trim(), 'note': paymentNoteController.text.trim()},
+        file.bytes!, file.name,
+      );
+      if (!mounted) return;
+      setState(() { selectedPaymentOrder = Map<String, dynamic>.from(updated); selectedReceipt = null; });
+      await _loadSubscriptionData();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رسید ثبت شد و برای بررسی مدیر ارسال گردید. تا تأیید مدیر، اشتراک فعال نمی‌شود.')));
+    } catch (e) {
+      if (mounted) setState(() => paymentError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => subscriptionBusy = false);
+    }
+  }
+
+  String _paymentStatusLabel(dynamic status) => switch (status) {
+    'awaiting_payment' => 'در انتظار پرداخت',
+    'under_review' => 'در انتظار بررسی مدیر',
+    'approved' => 'تأیید و فعال‌شده',
+    'rejected' => 'رسید رد شده؛ امکان ارسال مجدد وجود دارد',
+    'cancelled' => 'لغوشده',
+    _ => 'وضعیت نامشخص',
+  };
 
   Future<void> _saveProfile() async {
     final normalized = profileName.text.trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -764,6 +893,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         accountPage = 4;
       }
     });
+    if (index == 4) _loadSubscriptionData();
   }
 
   Widget _loginCard() {
@@ -1286,7 +1416,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               title: const Text('اشتراک ویژه'),
               subtitle: const Text('اطلاع‌رسانی درباره وضعیت فعال‌سازی اشتراک'),
               trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 4),
+              onTap: _openSubscriptionPage,
             ),
           ),
           Card(
@@ -1311,28 +1441,64 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 4) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_clock_rounded, size: 44, color: RaqtivaColors.gold),
-              SizedBox(height: 12),
-              Text(
-                'اشتراک ویژه فعلاً غیرفعال است.',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
-                textAlign: TextAlign.center,
+      final active = subscriptionStatus?['active'] == true;
+      final instructionsReady = paymentInstructions?['configured'] == true;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(child: Padding(padding: const EdgeInsets.all(17), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('وضعیت اشتراک', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            const SizedBox(height: 8),
+            Text(active ? 'اشتراک فعال: ${subscriptionStatus?['plan'] ?? 'اشتراک ویژه'}' : 'در حال حاضر اشتراک فعالی ندارید.'),
+            if (active && subscriptionStatus?['ends_at'] != null) Text('اعتبار تا: ${subscriptionStatus!['ends_at']}'),
+            const SizedBox(height: 8),
+            const Text('روش پرداخت: کارت‌به‌کارت با بررسی و تأیید دستی مدیر. ثبت رسید به‌تنهایی به معنی پرداخت موفق یا فعال‌شدن اشتراک نیست.', style: TextStyle(height: 1.7, color: RaqtivaColors.muted)),
+          ]))),
+          if (subscriptionLoading) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+          if (!subscriptionLoading) Card(child: Padding(padding: const EdgeInsets.all(17), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('انتخاب طرح اشتراک', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            const SizedBox(height: 10),
+            if (subscriptionPlans.isEmpty) const Text('در حال حاضر طرح فعالی از سرور دریافت نشد.'),
+            for (final plan in subscriptionPlans) Card(
+              color: RaqtivaColors.navyLight,
+              child: ListTile(
+                title: Text(plan['title']?.toString() ?? 'اشتراک'),
+                subtitle: Text('${plan['duration_days']} روز'),
+                trailing: Text('${plan['price_irr']} ریال'),
+                onTap: subscriptionBusy ? null : () => _createSubscriptionOrder(Map<String, dynamic>.from(plan)),
               ),
-              SizedBox(height: 8),
-              Text(
-                'فعال‌سازی خرید و پرداخت تا دریافت تأیید رسمی درگاه پرداخت به تعویق افتاده است.',
-                textAlign: TextAlign.center,
-                style: TextStyle(height: 1.8),
-              ),
+            ),
+            if (!instructionsReady) const Text('اطلاعات کارت‌به‌کارت هنوز توسط مدیر در پنل امن ثبت نشده است؛ تا آن زمان پرداختی انجام ندهید.'),
+            if (instructionsReady) ...[
+              const Divider(),
+              const Text('اطلاعات واریز', style: TextStyle(fontWeight: FontWeight.bold)),
+              SelectableText('شماره کارت: ${paymentInstructions?['card_number'] ?? ''}'),
+              SelectableText('به نام: ${paymentInstructions?['account_holder'] ?? ''}'),
             ],
-          ),
-        ),
+          ]))),
+          if (paymentOrders.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(17), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('سفارش‌های قبلی و پیگیری', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            for (final raw in paymentOrders) ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(raw['product_title']?.toString() ?? 'سفارش اشتراک'),
+              subtitle: Text('${_paymentStatusLabel(raw['status'])} · ${raw['amount_irr']} ریال'),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () => _selectPaymentOrder(Map<String, dynamic>.from(raw)),
+            ),
+          ]))),
+          if (selectedPaymentOrder != null && ['awaiting_payment', 'rejected'].contains(selectedPaymentOrder!['status'])) Card(child: Padding(padding: const EdgeInsets.all(17), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('ارسال رسید سفارش انتخاب‌شده', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            Text('مبلغ: ${selectedPaymentOrder!['amount_irr']} ریال'),
+            TextField(controller: trackingCodeController, decoration: const InputDecoration(labelText: 'شماره پیگیری / مرجع تراکنش')),
+            TextField(controller: paymentNoteController, maxLines: 2, decoration: const InputDecoration(labelText: 'توضیحات (اختیاری)')),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(onPressed: subscriptionBusy ? null : _pickPaymentReceipt, icon: const Icon(Icons.attach_file), label: Text(selectedReceipt?.name ?? 'انتخاب تصویر یا PDF رسید')),
+            FilledButton(onPressed: subscriptionBusy || !instructionsReady || selectedReceipt == null ? null : _submitPaymentReceipt, child: Text(subscriptionBusy ? 'در حال ارسال...' : 'ثبت و ارسال رسید برای بررسی')),
+          ]))),
+          if (selectedPaymentOrder != null) Card(child: Padding(padding: const EdgeInsets.all(14), child: Text('وضعیت سفارش: ${_paymentStatusLabel(selectedPaymentOrder!['status'])}${(selectedPaymentOrder!['review_note'] ?? '').toString().isEmpty ? '' : '\nیادداشت مدیر: ${selectedPaymentOrder!['review_note']}'}'))),
+          if (paymentError != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(paymentError!, style: const TextStyle(color: Colors.orangeAccent)))),
+          OutlinedButton.icon(onPressed: subscriptionLoading ? null : _loadSubscriptionData, icon: const Icon(Icons.refresh), label: const Text('به‌روزرسانی وضعیت اشتراک')),
+        ],
       );
     }
     if (accountPage == 5) {
