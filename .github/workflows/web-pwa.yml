@@ -67,7 +67,7 @@ jobs:
           API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
         run: |
           set -euo pipefail
-          flutter build web --release --base-href /app/ --web-content-hash --dart-define=API_BASE_URL="$API_BASE_URL"
+          flutter build web --release --base-href /app/ --dart-define=API_BASE_URL="$API_BASE_URL"
           test -s build/web/index.html
           test -s build/web/manifest.json
           test -s build/web/flutter_bootstrap.js
