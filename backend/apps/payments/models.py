@@ -76,6 +76,10 @@ class PaymentOrder(models.Model):
         SUBSCRIPTION = "subscription", "اشتراک"
         EXAM = "exam", "خرید آزمون"
 
+    class PaymentProvider(models.TextChoices):
+        MANUAL = "manual", "پرداخت دستی"
+        CAFEBAZAAR = "cafebazaar", "کافه‌بازار"
+
     class Status(models.TextChoices):
         AWAITING_PAYMENT = "awaiting_payment", "در انتظار پرداخت"
         UNDER_REVIEW = "under_review", "در انتظار بررسی"
@@ -86,6 +90,9 @@ class PaymentOrder(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="payment_orders")
     product_type = models.CharField(max_length=16, choices=ProductType.choices)
+    payment_provider = models.CharField(
+        max_length=16, choices=PaymentProvider.choices, default=PaymentProvider.MANUAL
+    )
     plan = models.ForeignKey("subscriptions.SubscriptionPlan", null=True, blank=True, on_delete=models.PROTECT)
     exam = models.ForeignKey("exams.Exam", null=True, blank=True, on_delete=models.PROTECT)
     amount_irr = models.PositiveBigIntegerField()
@@ -121,7 +128,7 @@ class PaymentOrder(models.Model):
     def save(self, *args, **kwargs):
         if self.pk and PaymentOrder.objects.filter(pk=self.pk).exists():
             old = PaymentOrder.objects.get(pk=self.pk)
-            immutable = ("user_id", "product_type", "plan_id", "exam_id", "amount_irr", "plan_duration_days_snapshot")
+            immutable = ("user_id", "product_type", "payment_provider", "plan_id", "exam_id", "amount_irr", "plan_duration_days_snapshot")
             if any(getattr(old, field) != getattr(self, field) for field in immutable):
                 raise ValidationError("مشخصات و مبلغ سفارش پس از ایجاد قابل تغییر نیست.")
             if old.status == self.Status.APPROVED:
@@ -148,3 +155,35 @@ class PurchasedExamAccess(models.Model):
 
     def __str__(self):
         return f"{self.user} · {self.exam}"
+
+
+
+class BazaarSubscriptionPurchase(models.Model):
+    """Server-verified Bazaar purchase metadata; raw purchase tokens are never stored."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.OneToOneField(
+        PaymentOrder,
+        on_delete=models.PROTECT,
+        related_name="bazaar_purchase",
+    )
+    product_id = models.CharField(max_length=100)
+    purchase_token_hash = models.CharField(max_length=64, unique=True)
+    linked_subscription_token_hash = models.CharField(max_length=64, blank=True)
+    purchased_at = models.DateTimeField()
+    valid_until = models.DateTimeField()
+    auto_renewing = models.BooleanField(default=False)
+    verified_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-verified_at"]
+        indexes = [
+            models.Index(fields=["product_id", "valid_until"], name="bazaar_sku_valid_idx"),
+        ]
+
+    def clean(self):
+        if self.valid_until <= self.purchased_at:
+            raise ValidationError("تاریخ اعتبار خرید بازار معتبر نیست.")
+
+    def __str__(self):
+        return f"{self.product_id} · {self.order_id}"
