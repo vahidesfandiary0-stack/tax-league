@@ -67,7 +67,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   // Always render them in this fixed order; append only additional admin slides.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    final configuredCountdown = widget.slides.cast<dynamic?>().firstWhere(
+    final configuredCountdown = widget.slides.cast<dynamic>().firstWhere(
           (raw) => raw is Map && raw['kind']?.toString() == 'exam_countdown',
           orElse: () => null,
         );
