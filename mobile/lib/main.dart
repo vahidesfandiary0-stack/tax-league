@@ -3773,13 +3773,11 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
 
   Future<void> uploadReceipt(Map<String, dynamic> order) async {
     if (sending) return;
-    final files = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
-      allowMultiple: false,
     );
-    if (files.isEmpty) return;
-    final file = files.single;
+    if (file == null) return;
     var bytes = <int>[];
     try {
       final fileSize = await file.length();
