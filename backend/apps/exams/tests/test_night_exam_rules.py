@@ -27,10 +27,23 @@ class NightExamRulesTests(TestCase):
         with self.assertRaises(ValidationError):
             exam.clean()
 
+    def test_night_exam_must_count_for_league(self):
+        exam = Exam(
+            title="آزمون شبانه غیررسمی",
+            kind=Exam.Kind.NIGHT,
+            starts_at=timezone.now(),
+            ends_at=timezone.now() + timedelta(minutes=30),
+        )
+        with self.assertRaises(ValidationError):
+            exam.clean()
+
     def test_night_exam_must_be_free(self):
         exam = Exam(
             title="آزمون شبانه آزمایشی",
             kind=Exam.Kind.NIGHT,
+            counts_for_league=True,
+            starts_at=timezone.now(),
+            ends_at=timezone.now() + timedelta(minutes=30),
             requires_purchase=True,
             price_irr=1000,
         )
