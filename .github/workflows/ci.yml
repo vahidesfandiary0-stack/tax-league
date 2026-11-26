@@ -70,8 +70,15 @@ jobs:
           gradle.write_text(updated)
           print(f"Configured {gradle} to compile against Android API 36")
           PY
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager "platforms;android-36"
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          sdkmanager_path="$(find "$sdk_root" -type f -name sdkmanager -print -quit)"
+          if [ -z "$sdkmanager_path" ]; then
+            echo "Android SDK manager executable not found under $sdk_root" >&2
+            find "$sdk_root/cmdline-tools" -maxdepth 4 -type f -name sdkmanager -print 2>/dev/null || true
+            exit 1
+          fi
+          yes | "$sdkmanager_path" --licenses >/dev/null
+          "$sdkmanager_path" "platforms;android-36"
       - name: Verify Android application identity
         working-directory: mobile
         shell: bash
