@@ -54,6 +54,8 @@ class ShowcaseSlideListView(APIView):
                     else slide.image_url
                 ),
                 "duration_seconds": slide.duration_seconds,
+                "starts_at": slide.starts_at,
+                "ends_at": slide.ends_at,
             }
             for slide in slides
         ])
