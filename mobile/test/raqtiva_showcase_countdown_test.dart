@@ -17,7 +17,9 @@ void main() {
       expect(slides[1]['kind'], 'logo');
     });
 
-    testWidgets('shows only the approved founder identity when no biography is configured', (tester) async {
+    testWidgets(
+        'shows only the approved founder identity when no biography is configured',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -31,35 +33,45 @@ void main() {
       );
       expect(title.maxLines, 1);
       expect(title.softWrap, isFalse);
-      expect(find.text('حسابرس ارشد اداره کل امورمالیاتی خوزستان'), findsNothing);
+      expect(
+          find.text('حسابرس ارشد اداره کل امورمالیاتی خوزستان'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
 
   group('Official exam countdown', () {
-    testWidgets('selects the nearest future official league exam', (tester) async {
+    testWidgets('selects the nearest future official league exam',
+        (tester) async {
       final now = DateTime.now();
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
               slides: const [
-                {'kind': 'exam_countdown', 'title': 'شمارش معکوس آزمون بعدی', 'body': ''},
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'شمارش معکوس آزمون بعدی',
+                  'body': ''
+                },
               ],
               exams: [
                 {
                   'title': 'آزمون تمرینی',
                   'counts_for_league': false,
                   'kind': 'daily',
-                  'starts_at': now.add(const Duration(seconds: 30)).toIso8601String(),
-                  'ends_at': now.add(const Duration(minutes: 10)).toIso8601String(),
+                  'starts_at':
+                      now.add(const Duration(seconds: 30)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 10)).toIso8601String(),
                 },
                 {
                   'title': 'آزمون رسمی لیگ',
                   'kind': 'night',
                   'counts_for_league': true,
-                  'starts_at': now.add(const Duration(seconds: 90)).toIso8601String(),
-                  'ends_at': now.add(const Duration(minutes: 15)).toIso8601String(),
+                  'starts_at':
+                      now.add(const Duration(seconds: 90)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 15)).toIso8601String(),
                 },
               ],
             ),
@@ -72,7 +84,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('hides countdown and preserves other slides when no exam exists', (tester) async {
+    testWidgets(
+        'hides countdown and preserves other slides when no exam exists',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -91,7 +105,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('uses administrator-edited countdown title and body', (tester) async {
+    testWidgets('uses administrator-edited countdown title and body',
+        (tester) async {
       final now = DateTime.now().toUtc();
       await tester.pumpWidget(
         MaterialApp(
@@ -110,8 +125,10 @@ void main() {
                   'title': 'آزمون رسمی',
                   'kind': 'night',
                   'counts_for_league': true,
-                  'starts_at': now.add(const Duration(minutes: 4)).toIso8601String(),
-                  'ends_at': now.add(const Duration(minutes: 40)).toIso8601String(),
+                  'starts_at':
+                      now.add(const Duration(minutes: 4)).toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 40)).toIso8601String(),
                 },
               ],
             ),
@@ -124,22 +141,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('counts down to the end of a running official night exam', (tester) async {
+    testWidgets('counts down to the end of a running official night exam',
+        (tester) async {
       final now = DateTime.now().toUtc();
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
               slides: const [
-                {'kind': 'exam_countdown', 'title': 'زمان باقی‌مانده تا پایان آزمون', 'body': ''},
+                {
+                  'kind': 'exam_countdown',
+                  'title': 'زمان باقی‌مانده تا پایان آزمون',
+                  'body': ''
+                },
               ],
               exams: [
                 {
                   'title': 'آزمون آغازشده',
                   'kind': 'night',
                   'counts_for_league': true,
-                  'starts_at': now.subtract(const Duration(minutes: 2)).toIso8601String(),
-                  'ends_at': now.add(const Duration(minutes: 13)).toIso8601String(),
+                  'starts_at': now
+                      .subtract(const Duration(minutes: 2))
+                      .toIso8601String(),
+                  'ends_at':
+                      now.add(const Duration(minutes: 13)).toIso8601String(),
                 },
               ],
             ),

@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class RaqtivaShowcaseCarousel extends StatefulWidget {
-  const RaqtivaShowcaseCarousel({super.key, required this.slides, this.exams = const <dynamic>[]});
+  const RaqtivaShowcaseCarousel(
+      {super.key, required this.slides, this.exams = const <dynamic>[]});
 
   final List<dynamic> slides;
   final List<dynamic> exams;
 
   @override
-  State<RaqtivaShowcaseCarousel> createState() => _RaqtivaShowcaseCarouselState();
+  State<RaqtivaShowcaseCarousel> createState() =>
+      _RaqtivaShowcaseCarouselState();
 }
 
 class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
@@ -35,8 +37,10 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
       final start = DateTime.tryParse(raw['starts_at'].toString())?.toUtc();
       final end = DateTime.tryParse(raw['ends_at'].toString())?.toUtc();
       if (start == null || end == null || !end.isAfter(start)) continue;
-      final serverNow = DateTime.tryParse(raw['server_now']?.toString() ?? '')?.toUtc();
-      final receivedAt = DateTime.tryParse(raw['received_at']?.toString() ?? '')?.toUtc();
+      final serverNow =
+          DateTime.tryParse(raw['server_now']?.toString() ?? '')?.toUtc();
+      final receivedAt =
+          DateTime.tryParse(raw['received_at']?.toString() ?? '')?.toUtc();
       final now = serverNow != null && receivedAt != null
           ? serverNow.add(localNow.difference(receivedAt))
           : localNow;
@@ -61,20 +65,23 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
 
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    return widget.slides.map((raw) {
-      if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
-        return raw;
-      }
-      if (exam == null) return null;
-      return <String, dynamic>{
-        ...Map<String, dynamic>.from(raw),
-        'target_at': exam['target_at'],
-        'countdown_phase': exam['countdown_phase'],
-        'server_now': exam['server_now'],
-        'received_at': exam['received_at'],
-        'exam_title': exam['title'],
-      };
-    }).where((slide) => slide != null).toList();
+    return widget.slides
+        .map((raw) {
+          if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
+            return raw;
+          }
+          if (exam == null) return null;
+          return <String, dynamic>{
+            ...Map<String, dynamic>.from(raw),
+            'target_at': exam['target_at'],
+            'countdown_phase': exam['countdown_phase'],
+            'server_now': exam['server_now'],
+            'received_at': exam['received_at'],
+            'exam_title': exam['title'],
+          };
+        })
+        .where((slide) => slide != null)
+        .toList();
   }
 
   int get _count => _allSlides.length;
@@ -256,9 +263,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerRight,
                     child: Text(
-                      title.isEmpty
-                          ? 'بنیانگذار لیگ : وحید اسفندیاری'
-                          : title,
+                      title.isEmpty ? 'بنیانگذار لیگ : وحید اسفندیاری' : title,
                       maxLines: 1,
                       softWrap: false,
                       textAlign: TextAlign.right,
@@ -298,13 +303,17 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     }
 
     if (kind == 'exam_countdown') {
-      final targetAt = DateTime.tryParse(slide['target_at']?.toString() ?? '')?.toUtc();
-      final serverNow = DateTime.tryParse(slide['server_now']?.toString() ?? '')?.toUtc();
-      final receivedAt = DateTime.tryParse(slide['received_at']?.toString() ?? '')?.toUtc();
+      final targetAt =
+          DateTime.tryParse(slide['target_at']?.toString() ?? '')?.toUtc();
+      final serverNow =
+          DateTime.tryParse(slide['server_now']?.toString() ?? '')?.toUtc();
+      final receivedAt =
+          DateTime.tryParse(slide['received_at']?.toString() ?? '')?.toUtc();
       final now = serverNow != null && receivedAt != null
           ? serverNow.add(DateTime.now().toUtc().difference(receivedAt))
           : DateTime.now().toUtc();
-      final remaining = targetAt == null ? Duration.zero : targetAt.difference(now);
+      final remaining =
+          targetAt == null ? Duration.zero : targetAt.difference(now);
       final isEnding = slide['countdown_phase'] == 'ending';
       final days = remaining.inDays;
       final hours = remaining.inHours.remainder(24);
@@ -331,9 +340,17 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               children: [
                 Icon(Icons.timer_rounded, color: Color(0xFFFFD76A), size: 27),
                 SizedBox(width: 9),
-                Text((title.isNotEmpty ? title : (isEnding ? 'زمان باقی‌مانده تا پایان آزمون' : 'شمارش معکوس آزمون بعدی')), style: TextStyle(
-                  color: Color(0xFFFFE4A8), fontSize: 16, fontWeight: FontWeight.w900,
-                )),
+                Text(
+                    (title.isNotEmpty
+                        ? title
+                        : (isEnding
+                            ? 'زمان باقی‌مانده تا پایان آزمون'
+                            : 'شمارش معکوس آزمون بعدی')),
+                    style: TextStyle(
+                      color: Color(0xFFFFE4A8),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    )),
               ],
             ),
             const SizedBox(height: 12),
@@ -345,14 +362,16 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 11, height: 1.5),
                 ),
               ),
             if (targetAt == null)
               const Text(
                 'زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
+                style:
+                    TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
               )
             else ...[
               if ((slide['exam_title'] ?? '').toString().isNotEmpty)
@@ -414,7 +433,12 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                   ),
                   if (title.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text(title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700)),
                   ],
                 ],
               ),
@@ -469,12 +493,14 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 if (title.isNotEmpty) const SizedBox(height: 7),
                 Text(
                   body,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 14, height: 1.8),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   kind == 'advertisement' ? 'تبلیغات' : 'پیام مدیریت',
-                  style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10),
+                  style:
+                      const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10),
                 ),
               ],
             ),
@@ -485,7 +511,6 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   }
 }
 
-
 class _CountdownUnit extends StatelessWidget {
   const _CountdownUnit({required this.value, required this.label});
   final String value;
@@ -493,20 +518,25 @@ class _CountdownUnit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(minWidth: 48),
-    margin: const EdgeInsets.symmetric(horizontal: 3),
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xFF0A1B32),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0x88E4D0A0)),
-    ),
-    child: Column(
-      children: [
-        Text(value, style: const TextStyle(color: Color(0xFFFFD76A), fontSize: 17, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Color(0xFFD7E4FA), fontSize: 9)),
-      ],
-    ),
-  );
+        constraints: const BoxConstraints(minWidth: 48),
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1B32),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0x88E4D0A0)),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style: const TextStyle(
+                    color: Color(0xFFFFD76A),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: const TextStyle(color: Color(0xFFD7E4FA), fontSize: 9)),
+          ],
+        ),
+      );
 }

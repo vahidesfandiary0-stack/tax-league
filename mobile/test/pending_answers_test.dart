@@ -13,11 +13,15 @@ void main() {
     });
 
     test('round-trips an empty answer queue', () {
-      expect(LeagueApi.decodePendingAnswers(LeagueApi.encodePendingAnswers({})), isEmpty);
+      expect(LeagueApi.decodePendingAnswers(LeagueApi.encodePendingAnswers({})),
+          isEmpty);
     });
 
-    test('rejects malformed persisted data instead of silently dropping answers', () {
-      expect(() => LeagueApi.decodePendingAnswers('not-json'), throwsFormatException);
+    test(
+        'rejects malformed persisted data instead of silently dropping answers',
+        () {
+      expect(() => LeagueApi.decodePendingAnswers('not-json'),
+          throwsFormatException);
     });
   });
 }

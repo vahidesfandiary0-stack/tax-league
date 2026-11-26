@@ -16,13 +16,13 @@ class TaxLeagueApp extends StatelessWidget {
   const TaxLeagueApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    title: 'لیگ نخبگان مالیاتی',
-    theme: RaqtivaTheme.dark.copyWith(
-      visualDensity: VisualDensity.adaptivePlatformDensity,
-    ),
-    home: const LeagueSplashScreen(),
-  );
+        debugShowCheckedModeBanner: false,
+        title: 'لیگ نخبگان مالیاتی',
+        theme: RaqtivaTheme.dark.copyWith(
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        home: const LeagueSplashScreen(),
+      );
 }
 
 class ApiException implements Exception {
@@ -36,14 +36,17 @@ class ApiException implements Exception {
 
 class LeagueApi {
   static const storage = FlutterSecureStorage();
-  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://raqtiva.ir');
+  static const baseUrl = String.fromEnvironment('API_BASE_URL',
+      defaultValue: 'https://raqtiva.ir');
   Future<String?> get token => storage.read(key: 'api_token');
-  Future<void> saveToken(String value) => storage.write(key: 'api_token', value: value);
+  Future<void> saveToken(String value) =>
+      storage.write(key: 'api_token', value: value);
   Future<void> clearToken() => storage.delete(key: 'api_token');
 
   static String encodePendingAnswers(Map<int, int> answers) => jsonEncode(
-    answers.map((questionId, optionId) => MapEntry(questionId.toString(), optionId)),
-  );
+        answers.map((questionId, optionId) =>
+            MapEntry(questionId.toString(), optionId)),
+      );
 
   static Map<int, int> decodePendingAnswers(String raw) {
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
@@ -55,7 +58,9 @@ class LeagueApi {
     if (raw == null || raw.isEmpty) return {};
     return decodePendingAnswers(raw);
   }
-  Future<void> writePendingAnswers(String attemptId, Map<int, int> answers) async {
+
+  Future<void> writePendingAnswers(
+      String attemptId, Map<int, int> answers) async {
     final key = 'pending_answers_$attemptId';
     if (answers.isEmpty) {
       await storage.delete(key: key);
@@ -68,33 +73,47 @@ class LeagueApi {
     final data = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       var message = 'خطای ارتباط با سرور';
-      if (data is Map && data['detail'] != null) message = data['detail'].toString();
+      if (data is Map && data['detail'] != null)
+        message = data['detail'].toString();
       throw ApiException(response.statusCode, message);
     }
     return data;
   }
 
   Future<dynamic> publicPost(String path, Map<String, dynamic> body) async {
-    final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Content-Type': 'application/json'}, body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    final response = await http
+        .post(Uri.parse(baseUrl + '/api/v1/' + path),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body))
+        .timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
   Future<dynamic> requestPost(String path, Map<String, dynamic> body) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
-    final response = await http.post(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
-      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    final response = await http
+        .post(Uri.parse(baseUrl + '/api/v1/' + path),
+            headers: {
+              'Authorization': 'Token ' + t,
+              'Content-Type': 'application/json'
+            },
+            body: jsonEncode(body))
+        .timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
   Future<dynamic> requestPatch(String path, Map<String, dynamic> body) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
-    final response = await http.patch(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
-      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    final response = await http
+        .patch(Uri.parse(baseUrl + '/api/v1/' + path),
+            headers: {
+              'Authorization': 'Token ' + t,
+              'Content-Type': 'application/json'
+            },
+            body: jsonEncode(body))
+        .timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
@@ -102,7 +121,9 @@ class LeagueApi {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
     final response = await http.get(Uri.parse(baseUrl + '/api/v1/' + path),
-      headers: {'Authorization': 'Token ' + t}).timeout(const Duration(seconds: 20));
+        headers: {
+          'Authorization': 'Token ' + t
+        }).timeout(const Duration(seconds: 20));
     return decode(response);
   }
 
@@ -122,13 +143,13 @@ class LeagueApi {
     request.headers['Authorization'] = 'Token ' + t;
     request.fields['tracking_code'] = trackingCode;
     request.fields['note'] = note;
-    request.files.add(http.MultipartFile.fromBytes('receipt', bytes, filename: filename));
+    request.files.add(
+        http.MultipartFile.fromBytes('receipt', bytes, filename: filename));
     final streamed = await request.send().timeout(const Duration(seconds: 45));
     final response = await http.Response.fromStream(streamed);
     return decode(response);
   }
 }
-
 
 class LeagueSplashScreen extends StatefulWidget {
   const LeagueSplashScreen({super.key});
@@ -371,12 +392,37 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   final api = LeagueApi();
   final phone = TextEditingController(), code = TextEditingController();
   static const List<String> provinces = [
-    'آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام',
-    'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی',
-    'خراسان شمالی', 'خوزستان', 'زنجان', 'سمنان', 'سیستان و بلوچستان',
-    'فارس', 'قزوین', 'قم', 'کردستان', 'کرمان', 'کرمانشاه',
-    'کهگیلویه و بویراحمد', 'گلستان', 'گیلان', 'لرستان', 'مازندران',
-    'مرکزی', 'هرمزگان', 'همدان', 'یزد',
+    'آذربایجان شرقی',
+    'آذربایجان غربی',
+    'اردبیل',
+    'اصفهان',
+    'البرز',
+    'ایلام',
+    'بوشهر',
+    'تهران',
+    'چهارمحال و بختیاری',
+    'خراسان جنوبی',
+    'خراسان رضوی',
+    'خراسان شمالی',
+    'خوزستان',
+    'زنجان',
+    'سمنان',
+    'سیستان و بلوچستان',
+    'فارس',
+    'قزوین',
+    'قم',
+    'کردستان',
+    'کرمان',
+    'کرمانشاه',
+    'کهگیلویه و بویراحمد',
+    'گلستان',
+    'گیلان',
+    'لرستان',
+    'مازندران',
+    'مرکزی',
+    'هرمزگان',
+    'همدان',
+    'یزد',
   ];
   String? selectedProvince;
   bool busy = false, otpRequested = false;
@@ -386,7 +432,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   int? selectedHomeSection;
   String? error;
   Map<String, dynamic>? stats;
-  List<dynamic> board = [], provincialBoard = [], appeals = [], exams = [], results = [];
+  List<dynamic> board = [],
+      provincialBoard = [],
+      appeals = [],
+      exams = [],
+      results = [];
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -400,11 +450,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   void initState() {
     super.initState();
     _loadIfSignedIn();
-    focusPoller = Timer.periodic(const Duration(seconds: 10), (_) => _refreshFocusMode());
+    focusPoller =
+        Timer.periodic(const Duration(seconds: 10), (_) => _refreshFocusMode());
     showcasePoller = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted && stats != null && !focusMode) _loadShowcaseSlides();
     });
   }
+
   @override
   void dispose() {
     focusPoller?.cancel();
@@ -475,15 +527,20 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Future<void> requestCode() async {
     if (busy || otpResendSeconds > 0) return;
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
-      await api.publicPost('auth/request-otp/', {'phone_number': phone.text.trim()});
+      await api
+          .publicPost('auth/request-otp/', {'phone_number': phone.text.trim()});
       if (mounted) {
         setState(() => otpRequested = true);
         _startOtpResendCountdown();
       }
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -510,7 +567,10 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
 
   Future<void> verifyCode() async {
     if (busy) return;
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
       final payload = <String, dynamic>{
         'phone_number': phone.text.trim(),
@@ -529,22 +589,32 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       }
       await loadDashboard();
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
-    } finally { if (mounted) setState(() => busy = false); }
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
-
   Future<void> _startExam(Map<String, dynamic> exam) async {
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
-      final attempt = await api.requestPost('exams/' + exam['id'].toString() + '/start/', {});
+      final attempt = await api
+          .requestPost('exams/' + exam['id'].toString() + '/start/', {});
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ExamTakingPage(api: api, attempt: Map<String, dynamic>.from(attempt), examTitle: exam['title'] ?? 'آزمون'),
+        builder: (_) => ExamTakingPage(
+            api: api,
+            attempt: Map<String, dynamic>.from(attempt),
+            examTitle: exam['title'] ?? 'آزمون'),
       ));
       await loadDashboard();
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -553,11 +623,30 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> logout() async {
     await api.clearToken();
     if (!mounted) return;
-    setState(() { stats = null; board = []; provincialBoard = []; provincialName = null; provincialMessage = null; appeals = []; exams = []; results = []; showcaseSlides = []; focusMode = false; focusEndsAt = null; otpRequested = false; accountPage = 0; selectedHomeSection = null; code.clear(); });
+    setState(() {
+      stats = null;
+      board = [];
+      provincialBoard = [];
+      provincialName = null;
+      provincialMessage = null;
+      appeals = [];
+      exams = [];
+      results = [];
+      showcaseSlides = [];
+      focusMode = false;
+      focusEndsAt = null;
+      otpRequested = false;
+      accountPage = 0;
+      selectedHomeSection = null;
+      code.clear();
+    });
   }
 
   Future<void> loadDashboard() async {
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
       final focus = await api.request('exams/focus-status/');
       final active = focus['active'] == true;
@@ -586,11 +675,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         String? province;
         String? provinceNotice;
         try {
-          final provincial = await api.request('league/provincial-leaderboard/?limit=20');
+          final provincial =
+              await api.request('league/provincial-leaderboard/?limit=20');
           provincialRows = List<dynamic>.from(provincial['results'] ?? []);
           province = provincial['province']?.toString();
           if (provincialRows.isEmpty) {
-            provinceNotice = 'هنوز امتیاز معتبری برای رتبه‌بندی این استان ثبت نشده است.';
+            provinceNotice =
+                'هنوز امتیاز معتبری برای رتبه‌بندی این استان ثبت نشده است.';
           }
         } catch (e) {
           provinceNotice = e.toString().replaceFirst('Exception: ', '');
@@ -610,114 +701,194 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
-    } finally { if (mounted) setState(() => busy = false); }
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
     if (mounted && !focusMode && stats != null) await _loadShowcaseSlides();
   }
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
-    child: Scaffold(
-      appBar: stats != null && accountPage == 0 && selectedHomeSection == null ? null : AppBar(
-        leading: stats != null && (accountPage > 0 || selectedHomeSection != null)
-            ? IconButton(
-                onPressed: () => setState(() {
-                  if (accountPage > 0) {
-                    accountPage = accountPage == 4 || accountPage == 5 ? 0 : accountPage == 9 ? 1 : accountPage == 3 ? 2 : accountPage == 2 || accountPage == 6 || accountPage == 7 || accountPage == 8 ? 1 : 0;
-                  } else { selectedHomeSection = null; }
-                }),
-                icon: const Icon(Icons.arrow_back_rounded),
-              )
-            : null,
-        title: Text(accountPage == 0 ? (selectedHomeSection == null ? 'لیگ نخبگان مالیاتی' : const ['وضعیت من در لیگ', 'آزمون‌های منتشرشده', 'تاریخچه نتایج من', 'جدول برترین‌ها', 'برترین‌های استان', 'میدان رقابت و دوئل‌ها'][selectedHomeSection!]) : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : accountPage == 4 ? 'اشتراک ویژه' : accountPage == 5 ? 'آکادمی' : accountPage == 6 ? 'پیگیری و پشتیبانی' : accountPage == 7 ? 'تاریخچه نتایج' : accountPage == 9 ? 'باشگاه طراحان سؤال' : accountPage == 10 ? 'عملکرد من' : 'اطلاعات حساب'),
-        actions: [
-          if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
-          IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      body: RaqtivaStadiumBackdrop(
-        child: SafeArea(
-          child: RefreshIndicator(
-          onRefresh: loadDashboard,
-          child: ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 20), children: [
-          if (stats == null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
-            margin: const EdgeInsets.only(bottom: 18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF1A385A), Color(0xFF102541), Color(0xFF071326)],
-              ),
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: const Color(0x77E4D0A0), width: 1),
-              boxShadow: const [
-                BoxShadow(color: Color(0x224D8BC4), blurRadius: 28, offset: Offset(0, 5)),
-                BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 13)),
-              ],
-            ),
-            child: Column(children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: .88, end: 1),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutBack,
-                builder: (context, scale, child) =>
-                    Transform.scale(scale: scale, child: child),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  size: 62,
-                  color: Color(0xFFFFD76A),
-                  shadows: [
-                    Shadow(color: Color(0xFFFFC34A), blurRadius: 18),
-                    Shadow(color: Color(0xAAFFB82E), blurRadius: 30),
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          appBar: stats != null &&
+                  accountPage == 0 &&
+                  selectedHomeSection == null
+              ? null
+              : AppBar(
+                  leading: stats != null &&
+                          (accountPage > 0 || selectedHomeSection != null)
+                      ? IconButton(
+                          onPressed: () => setState(() {
+                            if (accountPage > 0) {
+                              accountPage = accountPage == 4 || accountPage == 5
+                                  ? 0
+                                  : accountPage == 9
+                                      ? 1
+                                      : accountPage == 3
+                                          ? 2
+                                          : accountPage == 2 ||
+                                                  accountPage == 6 ||
+                                                  accountPage == 7 ||
+                                                  accountPage == 8
+                                              ? 1
+                                              : 0;
+                            } else {
+                              selectedHomeSection = null;
+                            }
+                          }),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        )
+                      : null,
+                  title: Text(accountPage == 0
+                      ? (selectedHomeSection == null
+                          ? 'لیگ نخبگان مالیاتی'
+                          : const [
+                              'وضعیت من در لیگ',
+                              'آزمون‌های منتشرشده',
+                              'تاریخچه نتایج من',
+                              'جدول برترین‌ها',
+                              'برترین‌های استان',
+                              'میدان رقابت و دوئل‌ها'
+                            ][selectedHomeSection!])
+                      : accountPage == 1
+                          ? 'حساب کاربری'
+                          : accountPage == 2
+                              ? 'درباره لیگ'
+                              : accountPage == 3
+                                  ? 'معرفی بنیان‌گذار'
+                                  : accountPage == 4
+                                      ? 'اشتراک ویژه'
+                                      : accountPage == 5
+                                          ? 'آکادمی'
+                                          : accountPage == 6
+                                              ? 'پیگیری و پشتیبانی'
+                                              : accountPage == 7
+                                                  ? 'تاریخچه نتایج'
+                                                  : accountPage == 9
+                                                      ? 'باشگاه طراحان سؤال'
+                                                      : accountPage == 10
+                                                          ? 'عملکرد من'
+                                                          : 'اطلاعات حساب'),
+                  actions: [
+                    if (stats != null)
+                      IconButton(
+                          onPressed: busy ? null : logout,
+                          icon: const Icon(Icons.logout)),
+                    IconButton(
+                        onPressed: busy ? null : loadDashboard,
+                        icon: const Icon(Icons.refresh)),
                   ],
                 ),
+          body: RaqtivaStadiumBackdrop(
+            child: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: loadDashboard,
+                child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                    children: [
+                      if (stats == null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+                          margin: const EdgeInsets.only(bottom: 18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                              colors: [
+                                Color(0xFF1A385A),
+                                Color(0xFF102541),
+                                Color(0xFF071326)
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(
+                                color: const Color(0x77E4D0A0), width: 1),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Color(0x224D8BC4),
+                                  blurRadius: 28,
+                                  offset: Offset(0, 5)),
+                              BoxShadow(
+                                  color: Color(0x99000000),
+                                  blurRadius: 24,
+                                  offset: Offset(0, 13)),
+                            ],
+                          ),
+                          child: Column(children: [
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: .88, end: 1),
+                              duration: const Duration(milliseconds: 900),
+                              curve: Curves.easeOutBack,
+                              builder: (context, scale, child) =>
+                                  Transform.scale(scale: scale, child: child),
+                              child: const Icon(
+                                Icons.emoji_events_rounded,
+                                size: 62,
+                                color: Color(0xFFFFD76A),
+                                shadows: [
+                                  Shadow(
+                                      color: Color(0xFFFFC34A), blurRadius: 18),
+                                  Shadow(
+                                      color: Color(0xAAFFB82E), blurRadius: 30),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Image.asset(
+                              "assets/brand/logo_full.png",
+                              height: 190,
+                              fit: BoxFit.contain,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              "رقابت کن، رتبه بگیر، نخبه شو!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFE4C98F),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: .2,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                          ]),
+                        ),
+                      if (error != null)
+                        Card(
+                            child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text(error!,
+                                    style: const TextStyle(
+                                        color: Colors.orangeAccent)))),
+                      if (stats == null)
+                        _loginCard()
+                      else if (accountPage == 0)
+                        ..._content()
+                      else
+                        _accountContent(),
+                      if (busy)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    ]),
               ),
-              const SizedBox(height: 4),
-              Image.asset(
-                "assets/brand/logo_full.png",
-                height: 190,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "رقابت کن، رتبه بگیر، نخبه شو!",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFE4C98F),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: .2,
+            ),
+          ),
+          bottomNavigationBar: stats == null || focusMode
+              ? null
+              : RaqtivaBottomNavigationBar(
+                  selectedIndex: _selectedNavigationIndex,
+                  onDestinationSelected: _selectNavigation,
                 ),
-              ),
-              const SizedBox(height: 5),
-            ]),
-          ),
-          if (error != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent)))),
-          if (stats == null) _loginCard()
-          else if (accountPage == 0) ..._content()
-          else _accountContent(),
-          if (busy) const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          ]),
-          ),
         ),
-      ),
-      bottomNavigationBar: stats == null || focusMode
-          ? null
-          : RaqtivaBottomNavigationBar(
-              selectedIndex: _selectedNavigationIndex,
-              onDestinationSelected: _selectNavigation,
-            ),
-    ),
-  );
+      );
 
   int get _selectedNavigationIndex => accountPage == 4
       ? 4
@@ -766,16 +937,20 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             children: [
               Icon(icon, color: RaqtivaColors.gold, size: 25),
               const SizedBox(height: 9),
-              Text(title, textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: RaqtivaColors.text,
-                  fontWeight: FontWeight.w900, fontSize: 11,
-                )),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: RaqtivaColors.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  )),
               const SizedBox(height: 5),
-              Text(subtitle, textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: RaqtivaColors.muted, fontSize: 9,
-                )),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: RaqtivaColors.muted,
+                    fontSize: 9,
+                  )),
             ],
           ),
         ),
@@ -872,9 +1047,11 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 const SizedBox(height: 21),
                 Row(
                   children: [
-                    feature(Icons.nightlight_round, 'آزمون شبانه', 'رقابت تخصصی'),
+                    feature(
+                        Icons.nightlight_round, 'آزمون شبانه', 'رقابت تخصصی'),
                     const SizedBox(width: 9),
-                    feature(Icons.emoji_events_rounded, 'لیگ ملی', 'رتبه کشوری'),
+                    feature(
+                        Icons.emoji_events_rounded, 'لیگ ملی', 'رتبه کشوری'),
                     const SizedBox(width: 9),
                     feature(Icons.school_rounded, 'آکادمی', 'یادگیری هدفمند'),
                   ],
@@ -943,7 +1120,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          otpRequested ? 'تأیید هویت شما' : 'ورود به لیگ نخبگان',
+                          otpRequested
+                              ? 'تأیید هویت شما'
+                              : 'ورود به لیگ نخبگان',
                           style: const TextStyle(
                             color: RaqtivaColors.text,
                             fontSize: 17,
@@ -1066,16 +1245,17 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                                   'برای حساب جدید یا تأییدنشده لازم است',
                               prefixIcon: Icon(Icons.location_on_outlined),
                             ),
-                            items: provinces.map((province) =>
-                              DropdownMenuItem<String>(
-                                value: province,
-                                child: Text(province),
-                              )).toList(),
+                            items: provinces
+                                .map((province) => DropdownMenuItem<String>(
+                                      value: province,
+                                      child: Text(province),
+                                    ))
+                                .toList(),
                             onChanged: busy
                                 ? null
                                 : (value) => setState(
-                                    () => selectedProvince = value,
-                                  ),
+                                      () => selectedProvince = value,
+                                    ),
                           ),
                         ],
                       ),
@@ -1084,9 +1264,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               SizedBox(
                 height: 55,
                 child: FilledButton.icon(
-                  onPressed: busy
-                      ? null
-                      : (otpRequested ? verifyCode : requestCode),
+                  onPressed:
+                      busy ? null : (otpRequested ? verifyCode : requestCode),
                   icon: busy
                       ? const SizedBox(
                           width: 19,
@@ -1112,7 +1291,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                       ? Container(
                           key: const ValueKey('otp-countdown'),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12,
+                            horizontal: 14,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
                             color: RaqtivaColors.navyLight,
@@ -1195,30 +1375,46 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           title: Text('اعتراض به ' + examTitle),
-          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: reason, maxLength: 200,
-              decoration: const InputDecoration(labelText: 'موضوع اعتراض')),
-            TextField(controller: details, minLines: 3, maxLines: 5, maxLength: 4000,
-              decoration: const InputDecoration(labelText: 'شرح اعتراض')),
+          content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+                controller: reason,
+                maxLength: 200,
+                decoration: const InputDecoration(labelText: 'موضوع اعتراض')),
+            TextField(
+                controller: details,
+                minLines: 3,
+                maxLines: 5,
+                maxLength: 4000,
+                decoration: const InputDecoration(labelText: 'شرح اعتراض')),
           ])),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('انصراف')),
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('انصراف')),
             FilledButton(
               onPressed: () async {
-                if (reason.text.trim().isEmpty || details.text.trim().isEmpty) return;
+                if (reason.text.trim().isEmpty || details.text.trim().isEmpty)
+                  return;
                 Navigator.pop(dialogContext);
-                setState(() { busy = true; error = null; });
+                setState(() {
+                  busy = true;
+                  error = null;
+                });
                 try {
                   await api.requestPost('league/appeals/', {
                     'attempt_id': attemptId,
                     'reason': reason.text.trim(),
                     'details': details.text.trim(),
                   });
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('اعتراض ثبت شد.')));
+                  if (mounted)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('اعتراض ثبت شد.')));
                   await loadDashboard();
                 } catch (e) {
-                  if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+                  if (mounted)
+                    setState(() =>
+                        error = e.toString().replaceFirst('Exception: ', ''));
                 } finally {
                   if (mounted) setState(() => busy = false);
                 }
@@ -1317,7 +1513,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               padding: EdgeInsets.all(18),
               child: Column(
                 children: [
-                  Icon(Icons.school_rounded, size: 48, color: RaqtivaColors.gold),
+                  Icon(Icons.school_rounded,
+                      size: 48, color: RaqtivaColors.gold),
                   SizedBox(height: 12),
                   Text(
                     'آکادمی لیگ نخبگان مالیاتی',
@@ -1374,11 +1571,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
       final correctTotal = allResults.fold<int>(
         0,
-        (sum, item) => sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
+        (sum, item) =>
+            sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
       );
       final wrongTotal = allResults.fold<int>(
         0,
-        (sum, item) => sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
+        (sum, item) =>
+            sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
       );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1389,23 +1588,44 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('عملکرد رسمی من در لیگ', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const Text('عملکرد رسمی من در لیگ',
+                      style:
+                          TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
                   const Text(
                     'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
-                    style: TextStyle(color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
+                    style: TextStyle(
+                        color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
                   ),
                   const SizedBox(height: 14),
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
                     children: [
-                      _RaqtivaPerformanceMetric(label: 'رتبه لیگ', value: stats?['rank']?.toString() ?? '—', icon: Icons.emoji_events_rounded),
-                      _RaqtivaPerformanceMetric(label: 'امتیاز کل لیگ', value: stats?['total_score']?.toString() ?? '۰', icon: Icons.stars_rounded),
-                      _RaqtivaPerformanceMetric(label: 'آزمون‌های مؤثر در لیگ', value: stats?['exams_count']?.toString() ?? '۰', icon: Icons.assignment_turned_in_rounded),
-                      _RaqtivaPerformanceMetric(label: 'میانگین امتیاز همه آزمون‌ها', value: averageScore, icon: Icons.insights_rounded),
-                      _RaqtivaPerformanceMetric(label: 'پاسخ صحیح همه آزمون‌ها', value: correctTotal.toString(), icon: Icons.check_circle_rounded),
-                      _RaqtivaPerformanceMetric(label: 'پاسخ غلط همه آزمون‌ها', value: wrongTotal.toString(), icon: Icons.cancel_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'رتبه لیگ',
+                          value: stats?['rank']?.toString() ?? '—',
+                          icon: Icons.emoji_events_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'امتیاز کل لیگ',
+                          value: stats?['total_score']?.toString() ?? '۰',
+                          icon: Icons.stars_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'آزمون‌های مؤثر در لیگ',
+                          value: stats?['exams_count']?.toString() ?? '۰',
+                          icon: Icons.assignment_turned_in_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'میانگین امتیاز همه آزمون‌ها',
+                          value: averageScore,
+                          icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'پاسخ صحیح همه آزمون‌ها',
+                          value: correctTotal.toString(),
+                          icon: Icons.check_circle_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'پاسخ غلط همه آزمون‌ها',
+                          value: wrongTotal.toString(),
+                          icon: Icons.cancel_rounded),
                     ],
                   ),
                 ],
@@ -1418,16 +1638,23 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('آخرین نتایج آزمون‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const Text('آخرین نتایج آزمون‌ها',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
                   if (allResults.isEmpty)
-                    const Text('پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
+                    const Text(
+                        'پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
                   for (final item in allResults.take(5))
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text((item['exam_title'] ?? 'آزمون').toString()),
-                      subtitle: Text('صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
-                      trailing: Text('${item['score'] ?? 0} امتیاز', style: const TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                          'صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
+                      trailing: Text('${item['score'] ?? 0} امتیاز',
+                          style: const TextStyle(
+                              color: RaqtivaColors.goldLight,
+                              fontWeight: FontWeight.bold)),
                     ),
                 ],
               ),
@@ -1453,7 +1680,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                       SizedBox(width: 9),
                       Text(
                         'اعتراض‌های من',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900, fontSize: 16),
                       ),
                     ],
                   ),
@@ -1484,11 +1712,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.help_outline_rounded, color: RaqtivaColors.gold),
+                      Icon(Icons.help_outline_rounded,
+                          color: RaqtivaColors.gold),
                       SizedBox(width: 9),
                       Text(
                         'راهنما و پشتیبانی',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900, fontSize: 16),
                       ),
                     ],
                   ),
@@ -1559,15 +1789,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(Icons.location_on_outlined, color: RaqtivaColors.gold),
+                leading: const Icon(Icons.location_on_outlined,
+                    color: RaqtivaColors.gold),
                 title: const Text('استان محل سکونت'),
                 subtitle: Text(
-                  provincialName ?? 'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.',
+                  provincialName ??
+                      'وضعیت استان هنوز از سرویس لیگ دریافت نشده است.',
                 ),
               ),
               const Divider(),
               const ListTile(
-                leading: Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
+                leading:
+                    Icon(Icons.privacy_tip_outlined, color: RaqtivaColors.gold),
                 title: Text('حریم خصوصی و تنظیمات'),
                 subtitle: Text('بخش تنظیمات تکمیلی در حال آماده‌سازی است.'),
               ),
@@ -1637,16 +1870,21 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             child: Icon(icon, color: const Color(0xFFD2B477)),
           ),
           const SizedBox(width: 11),
-          Expanded(child: Column(
+          Expanded(
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w800,
-              )),
+              Text(title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  )),
               if (subtitle != null)
-                Text(subtitle, style: const TextStyle(
-                  color: Color(0xFF9EADC1), fontSize: 11,
-                )),
+                Text(subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF9EADC1),
+                      fontSize: 11,
+                    )),
             ],
           )),
         ]),
@@ -1729,9 +1967,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: isPodium
-                ? medalColor.withAlpha(140)
-                : const Color(0x223D5575),
+            color:
+                isPodium ? medalColor.withAlpha(140) : const Color(0x223D5575),
           ),
           boxShadow: isFirst
               ? const [
@@ -1755,9 +1992,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                     ? medalColor.withAlpha(46)
                     : const Color(0xFF263A55),
                 border: Border.all(
-                  color: isPodium
-                      ? medalColor
-                      : const Color(0x334F6684),
+                  color: isPodium ? medalColor : const Color(0x334F6684),
                 ),
               ),
               child: Text(
@@ -1825,24 +2060,25 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     }
 
     final cards = [
-      Card(child: ListTile(
+      Card(
+          child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
         leading: const CircleAvatar(
           backgroundColor: Color(0x223D9BE9),
           child: Icon(Icons.person_outline, color: Color(0xFF8FC8FF)),
         ),
         title: const Text('حساب کاربری',
-          style: TextStyle(fontWeight: FontWeight.w800)),
+            style: TextStyle(fontWeight: FontWeight.w800)),
         subtitle: const Text('اطلاعات و تنظیمات حساب'),
         trailing: const Icon(Icons.chevron_left),
         onTap: () => setState(() => accountPage = 1),
       )),
-
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           heading(Icons.emoji_events_outlined, 'جایگاه من در لیگ',
-            subtitle: 'عملکرد شما در آزمون‌های رسمی'),
+              subtitle: 'عملکرد شما در آزمون‌های رسمی'),
           Row(children: [
             statBox('رتبه', rank, Icons.military_tech),
             const SizedBox(width: 9),
@@ -1852,7 +2088,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ]),
         ]),
       )),
-
       Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -1870,7 +2105,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 17, vertical: 17,
+                horizontal: 17,
+                vertical: 17,
               ),
               child: Row(
                 children: [
@@ -1924,12 +2160,12 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           ),
         ),
       ),
-
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           heading(Icons.nightlight_round, 'میدان رقابت',
-            subtitle: 'آزمون‌های منتشرشده و رسمی'),
+              subtitle: 'آزمون‌های منتشرشده و رسمی'),
           if (exams.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -2093,40 +2329,39 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             ),
         ]),
       )),
-
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           heading(Icons.leaderboard_rounded, 'رتبه‌بندی ملی',
-            subtitle: 'برترین شرکت‌کنندگان لیگ'),
-          if (board.isEmpty)
-            const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
+              subtitle: 'برترین شرکت‌کنندگان لیگ'),
+          if (board.isEmpty) const Text('هنوز رتبه‌ای برای نمایش وجود ندارد.'),
           for (final row in board) boardRow(row),
         ]),
       )),
-
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          heading(Icons.location_on_outlined,
-            provincialName == null
-                ? 'رتبه‌بندی استانی'
-                : 'برترین‌های استان $provincialName',
-            subtitle: 'رتبه‌بندی بر اساس نتایج معتبر استان'),
+          heading(
+              Icons.location_on_outlined,
+              provincialName == null
+                  ? 'رتبه‌بندی استانی'
+                  : 'برترین‌های استان $provincialName',
+              subtitle: 'رتبه‌بندی بر اساس نتایج معتبر استان'),
           if (provincialBoard.isEmpty)
-            Text(provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
-          for (final row in provincialBoard)
-            boardRow(row, provincial: true),
+            Text(
+                provincialMessage ?? 'اطلاعات رتبه‌بندی استانی در دسترس نیست.'),
+          for (final row in provincialBoard) boardRow(row, provincial: true),
         ]),
       )),
-
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           heading(Icons.history_rounded, 'تاریخچه نتایج',
-            subtitle: 'مشاهده عملکرد و ثبت اعتراض'),
-          if (results.isEmpty)
-            const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
+              subtitle: 'مشاهده عملکرد و ثبت اعتراض'),
+          if (results.isEmpty) const Text('هنوز نتیجه نهایی‌شده‌ای ندارید.'),
           for (final item in results)
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -2143,14 +2378,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 (item['exam_title'] ?? 'آزمون').toString(),
               ),
               trailing: Text('${item['score'] ?? 0} امتیاز',
-                style: const TextStyle(
-                  color: Color(0xFFE4C98F),
-                  fontWeight: FontWeight.bold,
-                )),
+                  style: const TextStyle(
+                    color: Color(0xFFE4C98F),
+                    fontWeight: FontWeight.bold,
+                  )),
             ),
         ]),
       )),
-
       Card(
         child: Padding(
           padding: const EdgeInsets.all(17),
@@ -2183,60 +2417,138 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     if (!focusMode) {
       const sectionCards = <int>[1, 3, 6, 4, 5, 7];
       Widget accountStrip() => InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: () => setState(() { accountPage = 1; selectedHomeSection = null; }),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [Color(0xFF173A60), Color(0xFF08172D)]),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xB8E4D0A0), width: 1.15),
-            boxShadow: const [BoxShadow(color: Color(0x33E4D0A0), blurRadius: 18, spreadRadius: -4), BoxShadow(color: Color(0x99000000), blurRadius: 16, offset: Offset(0, 7))],
-          ),
-          child: Row(children: [
-            Container(width: 66, height: 66, decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [Color(0xFFFFE58D), Color(0xFFD99A19)]), border: Border.all(color: const Color(0xFFFFF0B7), width: 2)), child: const Icon(Icons.person_rounded, size: 43, color: Color(0xFF071A3E))),
-            const SizedBox(width: 15),
-            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('حساب کاربری', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Colors.white)),
-              SizedBox(height: 4), Text('تنظیمات و اطلاعات حساب', style: TextStyle(fontSize: 13, color: Color(0xFFD7E4FA))),
-            ])),
-            const Icon(Icons.chevron_left_rounded, size: 35, color: Color(0xFFFFD15A)),
-          ]),
-        ),
-      );
-      Widget tile(int section, IconData icon, String title, String subtitle) => _RaqtivaHomeTile(
-        icon: icon, title: title, subtitle: subtitle,
-        onTap: () => setState(() {
-          if (section == 5) {
-            accountPage = 10;
-            selectedHomeSection = null;
-          } else {
-            selectedHomeSection = section;
-          }
-        }),
-      );
-      if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
+            onTap: () => setState(() {
+              accountPage = 1;
+              selectedHomeSection = null;
+            }),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [Color(0xFF173A60), Color(0xFF08172D)]),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xB8E4D0A0), width: 1.15),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Color(0x33E4D0A0),
+                      blurRadius: 18,
+                      spreadRadius: -4),
+                  BoxShadow(
+                      color: Color(0x99000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 7))
+                ],
+              ),
+              child: Row(children: [
+                Container(
+                    width: 66,
+                    height: 66,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                            colors: [Color(0xFFFFE58D), Color(0xFFD99A19)]),
+                        border: Border.all(
+                            color: const Color(0xFFFFF0B7), width: 2)),
+                    child: const Icon(Icons.person_rounded,
+                        size: 43, color: Color(0xFF071A3E))),
+                const SizedBox(width: 15),
+                const Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text('حساب کاربری',
+                          style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white)),
+                      SizedBox(height: 4),
+                      Text('تنظیمات و اطلاعات حساب',
+                          style: TextStyle(
+                              fontSize: 13, color: Color(0xFFD7E4FA))),
+                    ])),
+                const Icon(Icons.chevron_left_rounded,
+                    size: 35, color: Color(0xFFFFD15A)),
+              ]),
+            ),
+          );
+      Widget tile(int section, IconData icon, String title, String subtitle) =>
+          _RaqtivaHomeTile(
+            icon: icon,
+            title: title,
+            subtitle: subtitle,
+            onTap: () => setState(() {
+              if (section == 5) {
+                accountPage = 10;
+                selectedHomeSection = null;
+              } else {
+                selectedHomeSection = section;
+              }
+            }),
+          );
+      if (selectedHomeSection != null)
+        return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
         RaqtivaShowcaseCarousel(slides: showcaseSlides, exams: exams),
         if (showcaseSlides.isNotEmpty) const SizedBox(height: 14),
         accountStrip(),
         GridView.count(
-          crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 15, crossAxisSpacing: 13, childAspectRatio: .98,
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 15,
+          crossAxisSpacing: 13,
+          childAspectRatio: .98,
           children: [
-            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ', 'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
-            tile(1, Icons.school_rounded, 'آزمون‌های منتشرشده', exams.isEmpty ? 'فعلاً آزمونی منتشر نشده است.' : '${exams.length} آزمون در دسترس'),
-            tile(2, Icons.fact_check_rounded, 'تاریخچه نتایج من', results.isEmpty ? 'هنوز نتیجه نهایی ندارید.' : '${results.length} نتیجه ثبت‌شده'),
-            tile(3, Icons.bar_chart_rounded, 'جدول برترین‌ها', board.isEmpty ? 'هنوز رتبه‌ای برای نمایش نیست.' : 'مشاهده رتبه‌بندی ملی'),
-            tile(4, Icons.location_on_rounded, provincialName == null ? 'برترین‌های استان' : 'برترین‌های $provincialName', provincialBoard.isEmpty ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.') : 'مشاهده رتبه‌بندی استان'),
-            tile(5, Icons.insights_rounded, 'عملکرد من', results.isEmpty ? 'آمار و پیشرفت شخصی شما' : '${results.length} نتیجه و گزارش عملکرد'),
-                ],
+            tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ',
+                'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+            tile(
+                1,
+                Icons.school_rounded,
+                'آزمون‌های منتشرشده',
+                exams.isEmpty
+                    ? 'فعلاً آزمونی منتشر نشده است.'
+                    : '${exams.length} آزمون در دسترس'),
+            tile(
+                2,
+                Icons.fact_check_rounded,
+                'تاریخچه نتایج من',
+                results.isEmpty
+                    ? 'هنوز نتیجه نهایی ندارید.'
+                    : '${results.length} نتیجه ثبت‌شده'),
+            tile(
+                3,
+                Icons.bar_chart_rounded,
+                'جدول برترین‌ها',
+                board.isEmpty
+                    ? 'هنوز رتبه‌ای برای نمایش نیست.'
+                    : 'مشاهده رتبه‌بندی ملی'),
+            tile(
+                4,
+                Icons.location_on_rounded,
+                provincialName == null
+                    ? 'برترین‌های استان'
+                    : 'برترین‌های $provincialName',
+                provincialBoard.isEmpty
+                    ? (provincialMessage ?? 'رتبه استانی هنوز ثبت نشده است.')
+                    : 'مشاهده رتبه‌بندی استان'),
+            tile(
+                5,
+                Icons.insights_rounded,
+                'عملکرد من',
+                results.isEmpty
+                    ? 'آمار و پیشرفت شخصی شما'
+                    : '${results.length} نتیجه و گزارش عملکرد'),
+          ],
         ),
       ];
     }
     return [
-      Card(child: Padding(
+      Card(
+          child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           heading(Icons.timer_rounded, 'حالت تمرکز آزمون فعال است'),
@@ -2254,38 +2566,46 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   String _status(dynamic status) => switch (status) {
-    'pending' => 'در انتظار', 'approved' => 'پذیرفته', 'rejected' => 'ردشده', _ => 'نامشخص',
-  };
+        'pending' => 'در انتظار',
+        'approved' => 'پذیرفته',
+        'rejected' => 'ردشده',
+        _ => 'نامشخص',
+      };
 }
 
-
-
 class _RaqtivaPerformanceMetric extends StatelessWidget {
-  const _RaqtivaPerformanceMetric({required this.label, required this.value, required this.icon});
+  const _RaqtivaPerformanceMetric(
+      {required this.label, required this.value, required this.icon});
   final String label;
   final String value;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 145,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-    decoration: BoxDecoration(
-      color: const Color(0xFF172B46),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0x55D2B477)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: RaqtivaColors.gold, size: 21),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: RaqtivaColors.goldLight, fontSize: 19, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: RaqtivaColors.muted, fontSize: 10)),
-      ],
-    ),
-  );
+        width: 145,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF172B46),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x55D2B477)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: RaqtivaColors.gold, size: 21),
+            const SizedBox(height: 8),
+            Text(value,
+                style: const TextStyle(
+                    color: RaqtivaColors.goldLight,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            Text(label,
+                style:
+                    const TextStyle(color: RaqtivaColors.muted, fontSize: 10)),
+          ],
+        ),
+      );
 }
 
 class DesignerClubPage extends StatefulWidget {
@@ -2297,131 +2617,327 @@ class DesignerClubPage extends StatefulWidget {
 
 class _DesignerClubPageState extends State<DesignerClubPage> {
   final formKey = GlobalKey<FormState>();
-  final prompt = TextEditingController(), explanation = TextEditingController(), source = TextEditingController(), validFrom = TextEditingController(), validUntil = TextEditingController();
+  final prompt = TextEditingController(),
+      explanation = TextEditingController(),
+      source = TextEditingController(),
+      validFrom = TextEditingController(),
+      validUntil = TextEditingController();
   final options = List.generate(4, (_) => TextEditingController());
-  final labels = const {'direct_tax':'مالیات‌های مستقیم','vat':'مالیات بر ارزش افزوده','taxpayer_system':'سامانه مؤدیان','disputes':'دادرسی مالیاتی','audit':'حسابرسی مالیاتی','other_laws':'سایر قوانین'};
-  final difficulties = const {'hard':'سخت','very_hard':'خیلی سخت','specialist':'تخصصی'};
+  final labels = const {
+    'direct_tax': 'مالیات‌های مستقیم',
+    'vat': 'مالیات بر ارزش افزوده',
+    'taxpayer_system': 'سامانه مؤدیان',
+    'disputes': 'دادرسی مالیاتی',
+    'audit': 'حسابرسی مالیاتی',
+    'other_laws': 'سایر قوانین'
+  };
+  final difficulties = const {
+    'hard': 'سخت',
+    'very_hard': 'خیلی سخت',
+    'specialist': 'تخصصی'
+  };
   List<dynamic> questions = [], revisions = [];
-  String subject='direct_tax', difficulty='hard';
+  String subject = 'direct_tax', difficulty = 'hard';
   String? editingId, status, feedback, error;
-  int correct=0;
-  bool loading=true, saving=false;
+  int correct = 0;
+  bool loading = true, saving = false;
 
   @override
-  void initState(){super.initState();load();}
+  void initState() {
+    super.initState();
+    load();
+  }
+
   @override
-  void dispose(){prompt.dispose();explanation.dispose();source.dispose();validFrom.dispose();validUntil.dispose();for(final c in options){c.dispose();}super.dispose();}
+  void dispose() {
+    prompt.dispose();
+    explanation.dispose();
+    source.dispose();
+    validFrom.dispose();
+    validUntil.dispose();
+    for (final c in options) {
+      c.dispose();
+    }
+    super.dispose();
+  }
 
   Future<void> load() async {
-    setState(()=>loading=true);
-    try { final d=await widget.api.request('questions/designer/'); if(mounted)setState(()=>questions=List<dynamic>.from(d)); }
-    catch(e){if(mounted)setState(()=>error=e.toString());}
-    finally{if(mounted)setState(()=>loading=false);}
+    setState(() => loading = true);
+    try {
+      final d = await widget.api.request('questions/designer/');
+      if (mounted) setState(() => questions = List<dynamic>.from(d));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
-  void reset(){
-    editingId=null;status=null;feedback=null;subject='direct_tax';difficulty='hard';correct=0;
-    prompt.clear();explanation.clear();source.clear();validFrom.clear();validUntil.clear();for(final c in options){c.clear();}revisions=[];
+
+  void reset() {
+    editingId = null;
+    status = null;
+    feedback = null;
+    subject = 'direct_tax';
+    difficulty = 'hard';
+    correct = 0;
+    prompt.clear();
+    explanation.clear();
+    source.clear();
+    validFrom.clear();
+    validUntil.clear();
+    for (final c in options) {
+      c.clear();
+    }
+    revisions = [];
   }
-  Future<void> open(Map<String,dynamic> q) async {
-    setState((){
-      editingId=q['id'].toString();status=q['status']?.toString();feedback=q['review_feedback']?.toString();
-      subject=q['subject']??'direct_tax';difficulty=q['difficulty']??'hard';
-      prompt.text=q['prompt']??'';explanation.text=q['explanation']??'';source.text=q['source_reference']??'';validFrom.text=q['valid_from']?.toString()??'';validUntil.text=q['valid_until']?.toString()??'';
-      correct=0;
-      final list=List<dynamic>.from(q['options']??[]);
-      for(var i=0;i<4;i++){
-        final o=list.firstWhere((v)=>v['position']==i+1,orElse:()=>{});
-        options[i].text=o['text']?.toString()??'';
-        if(o['is_correct']==true)correct=i;
+
+  Future<void> open(Map<String, dynamic> q) async {
+    setState(() {
+      editingId = q['id'].toString();
+      status = q['status']?.toString();
+      feedback = q['review_feedback']?.toString();
+      subject = q['subject'] ?? 'direct_tax';
+      difficulty = q['difficulty'] ?? 'hard';
+      prompt.text = q['prompt'] ?? '';
+      explanation.text = q['explanation'] ?? '';
+      source.text = q['source_reference'] ?? '';
+      validFrom.text = q['valid_from']?.toString() ?? '';
+      validUntil.text = q['valid_until']?.toString() ?? '';
+      correct = 0;
+      final list = List<dynamic>.from(q['options'] ?? []);
+      for (var i = 0; i < 4; i++) {
+        final o =
+            list.firstWhere((v) => v['position'] == i + 1, orElse: () => {});
+        options[i].text = o['text']?.toString() ?? '';
+        if (o['is_correct'] == true) correct = i;
       }
     });
-    try{final d=await widget.api.request('questions/designer/${editingId}/revisions/');if(mounted)setState(()=>revisions=List<dynamic>.from(d));}catch(_){}
+    try {
+      final d = await widget.api
+          .request('questions/designer/${editingId}/revisions/');
+      if (mounted) setState(() => revisions = List<dynamic>.from(d));
+    } catch (_) {}
   }
-  Map<String,dynamic> payload()=>{
-    'subject':subject,'difficulty':difficulty,'prompt':prompt.text.trim(),
-    'explanation':explanation.text.trim(),'source_reference':source.text.trim(),
-    'valid_from':validFrom.text.trim().isEmpty?null:validFrom.text.trim(),'valid_until':validUntil.text.trim().isEmpty?null:validUntil.text.trim(),
-    'options':List.generate(4,(i)=>{'position':i+1,'text':options[i].text.trim(),'is_correct':i==correct}),
-  };
+
+  Map<String, dynamic> payload() => {
+        'subject': subject,
+        'difficulty': difficulty,
+        'prompt': prompt.text.trim(),
+        'explanation': explanation.text.trim(),
+        'source_reference': source.text.trim(),
+        'valid_from':
+            validFrom.text.trim().isEmpty ? null : validFrom.text.trim(),
+        'valid_until':
+            validUntil.text.trim().isEmpty ? null : validUntil.text.trim(),
+        'options': List.generate(
+            4,
+            (i) => {
+                  'position': i + 1,
+                  'text': options[i].text.trim(),
+                  'is_correct': i == correct
+                }),
+      };
   Future<void> save() async {
-    if(!formKey.currentState!.validate())return;
-    setState(()=>saving=true);
-    try{
-      if(editingId==null){await widget.api.requestPost('questions/designer/',payload());}
-      else{await widget.api.requestPatch('questions/designer/${editingId}/',payload());}
-      setState(reset);await load();
-    }catch(e){if(mounted)setState(()=>error=e.toString());}
-    finally{if(mounted)setState(()=>saving=false);}
+    if (!formKey.currentState!.validate()) return;
+    setState(() => saving = true);
+    try {
+      if (editingId == null) {
+        await widget.api.requestPost('questions/designer/', payload());
+      } else {
+        await widget.api
+            .requestPatch('questions/designer/${editingId}/', payload());
+      }
+      setState(reset);
+      await load();
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
   }
+
   Future<void> submit() async {
-    if(editingId==null)return;setState(()=>saving=true);
-    try{await widget.api.requestPost('questions/designer/${editingId}/submit/',{});setState(reset);await load();}
-    catch(e){if(mounted)setState(()=>error=e.toString());}
-    finally{if(mounted)setState(()=>saving=false);}
+    if (editingId == null) return;
+    setState(() => saving = true);
+    try {
+      await widget.api
+          .requestPost('questions/designer/${editingId}/submit/', {});
+      setState(reset);
+      await load();
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
   }
-  String statusText(String? v)=>switch(v){
-    'draft'=>'پیش‌نویس','pending_review'=>'در انتظار داوری','approved'=>'تأیید داور؛ منتظر تأیید مالک',
-    'rejected'=>'نیازمند اصلاح','published'=>'منتشرشده با تأیید مالک',_=>'نامشخص'};
-  Widget field(String label,TextEditingController c,{int lines=1})=>Padding(
-    padding:const EdgeInsets.only(bottom:10),
-    child:TextFormField(controller:c,minLines:lines,maxLines:lines,decoration:InputDecoration(labelText:label),
-      validator:(v)=>(v==null||v.trim().isEmpty)?'این فیلد الزامی است.':null));
+
+  String statusText(String? v) => switch (v) {
+        'draft' => 'پیش‌نویس',
+        'pending_review' => 'در انتظار داوری',
+        'approved' => 'تأیید داور؛ منتظر تأیید مالک',
+        'rejected' => 'نیازمند اصلاح',
+        'published' => 'منتشرشده با تأیید مالک',
+        _ => 'نامشخص'
+      };
+  Widget field(String label, TextEditingController c, {int lines = 1}) =>
+      Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextFormField(
+              controller: c,
+              minLines: lines,
+              maxLines: lines,
+              decoration: InputDecoration(labelText: label),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'این فیلد الزامی است.'
+                  : null));
   @override
-  Widget build(BuildContext context){
-    if(editingId!=null || (!loading&&questions.isEmpty))return editor();
-    return Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-      const Card(child:Padding(padding:EdgeInsets.all(16),child:Column(children:[
-        Icon(Icons.edit_note_rounded,size:42,color:RaqtivaColors.gold),SizedBox(height:8),
-        Text('باشگاه طراحان سؤال',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),
-        SizedBox(height:6),Text('هر پیشنهاد ابتدا پیش‌نویس است؛ پس از داوری تخصصی، انتشار فقط با تأیید نهایی مالک انجام می‌شود.',textAlign:TextAlign.center),
-      ]))),
-      if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
-      FilledButton.icon(onPressed:()=>setState(reset),icon:const Icon(Icons.add),label:const Text('ثبت سؤال جدید')),
-      if(loading)const Center(child:CircularProgressIndicator()),
-      if(!loading&&questions.isEmpty)const Text('هنوز سؤالی ثبت نکرده‌اید.'),
-      for(final q in questions)Card(child:ListTile(
-        title:Text((q['prompt']??'سؤال').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
-        subtitle:Text('${labels[q['subject']]??q['subject']} · ${statusText(q['status']?.toString())}'),
-        trailing:const Icon(Icons.chevron_left),onTap:()=>open(Map<String,dynamic>.from(q)))),
+  Widget build(BuildContext context) {
+    if (editingId != null || (!loading && questions.isEmpty)) return editor();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const Card(
+          child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(children: [
+                Icon(Icons.edit_note_rounded,
+                    size: 42, color: RaqtivaColors.gold),
+                SizedBox(height: 8),
+                Text('باشگاه طراحان سؤال',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                SizedBox(height: 6),
+                Text(
+                    'هر پیشنهاد ابتدا پیش‌نویس است؛ پس از داوری تخصصی، انتشار فقط با تأیید نهایی مالک انجام می‌شود.',
+                    textAlign: TextAlign.center),
+              ]))),
+      if (error != null)
+        Text(error!, style: const TextStyle(color: Colors.orangeAccent)),
+      FilledButton.icon(
+          onPressed: () => setState(reset),
+          icon: const Icon(Icons.add),
+          label: const Text('ثبت سؤال جدید')),
+      if (loading) const Center(child: CircularProgressIndicator()),
+      if (!loading && questions.isEmpty)
+        const Text('هنوز سؤالی ثبت نکرده‌اید.'),
+      for (final q in questions)
+        Card(
+            child: ListTile(
+                title: Text((q['prompt'] ?? 'سؤال').toString(),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                    '${labels[q['subject']] ?? q['subject']} · ${statusText(q['status']?.toString())}'),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: () => open(Map<String, dynamic>.from(q)))),
     ]);
   }
-  Widget editor(){
-    final editable=status==null||status=='draft'||status=='rejected';
-    return Form(key:formKey,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-      Row(children:[IconButton(onPressed:(){setState(reset);load();},icon:const Icon(Icons.arrow_back)),const Text('طراحی و پیگیری سؤال',style:TextStyle(fontWeight:FontWeight.w900))]),
-      if(status!=null)Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text('وضعیت: ${statusText(status)}'),
-        if(feedback?.isNotEmpty==true)Text('نظر داور: ${feedback!}'),
-      ]))),
-      if(editable)...[
-        DropdownButtonFormField<String>(value:subject,decoration:const InputDecoration(labelText:'موضوع'),
-          items:labels.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),onChanged:(v)=>setState(()=>subject=v??subject)),
-        DropdownButtonFormField<String>(value:difficulty,decoration:const InputDecoration(labelText:'سطح دشواری'),
-          items:difficulties.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),onChanged:(v)=>setState(()=>difficulty=v??difficulty)),
-        const SizedBox(height:10),field('متن کامل سؤال',prompt,lines:4),
-        for(var i=0;i<4;i++)Row(children:[
-          Expanded(child:field('گزینه ${i+1}',options[i])),
-          Radio<int>(value:i,groupValue:correct,onChanged:(v)=>setState(()=>correct=v??0)),const Text('صحیح')]),
-        field('پاسخ تشریحی',explanation,lines:4),field('مستند قانونی دقیق',source,lines:2),
-        TextFormField(controller:validFrom,decoration:const InputDecoration(labelText:'اعتبار از تاریخ (YYYY-MM-DD)')),
-        TextFormField(controller:validUntil,decoration:const InputDecoration(labelText:'اعتبار تا تاریخ (YYYY-MM-DD)')),
-        const Text('یادداشت تله‌شناسی و نکات اختصاصی در فرم عمومی ثبت نمی‌شود.',style:TextStyle(fontSize:11,color:RaqtivaColors.muted)),
-        FilledButton.icon(onPressed:saving?null:save,icon:const Icon(Icons.save),label:Text(saving?'در حال ذخیره…':'ذخیره پیش‌نویس')),
-        if(editingId!=null)OutlinedButton.icon(onPressed:saving?null:submit,icon:const Icon(Icons.send),label:const Text('ارسال برای داوری')),
-      ] else ...[
-        Text(prompt.text),for(var i=0;i<4;i++)ListTile(title:Text(options[i].text),trailing:i==correct?const Icon(Icons.check_circle,color:Colors.green):null),
-        Text('پاسخ تشریحی: ${explanation.text}'),Text('منبع: ${source.text}'),
-      ],
-      if(revisions.isNotEmpty)ExpansionTile(title:const Text('تاریخچه نسخه‌ها'),children:[
-        for(final v in revisions)ListTile(title:Text('نسخه ${v['version']}'),subtitle:Text('${v['created_at']}'))]),
-      if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
-    ]));
+
+  Widget editor() {
+    final editable =
+        status == null || status == 'draft' || status == 'rejected';
+    return Form(
+        key: formKey,
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            IconButton(
+                onPressed: () {
+                  setState(reset);
+                  load();
+                },
+                icon: const Icon(Icons.arrow_back)),
+            const Text('طراحی و پیگیری سؤال',
+                style: TextStyle(fontWeight: FontWeight.w900))
+          ]),
+          if (status != null)
+            Card(
+                child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('وضعیت: ${statusText(status)}'),
+                          if (feedback?.isNotEmpty == true)
+                            Text('نظر داور: ${feedback!}'),
+                        ]))),
+          if (editable) ...[
+            DropdownButtonFormField<String>(
+                value: subject,
+                decoration: const InputDecoration(labelText: 'موضوع'),
+                items: labels.entries
+                    .map((e) =>
+                        DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .toList(),
+                onChanged: (v) => setState(() => subject = v ?? subject)),
+            DropdownButtonFormField<String>(
+                value: difficulty,
+                decoration: const InputDecoration(labelText: 'سطح دشواری'),
+                items: difficulties.entries
+                    .map((e) =>
+                        DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .toList(),
+                onChanged: (v) => setState(() => difficulty = v ?? difficulty)),
+            const SizedBox(height: 10),
+            field('متن کامل سؤال', prompt, lines: 4),
+            for (var i = 0; i < 4; i++)
+              Row(children: [
+                Expanded(child: field('گزینه ${i + 1}', options[i])),
+                Radio<int>(
+                    value: i,
+                    groupValue: correct,
+                    onChanged: (v) => setState(() => correct = v ?? 0)),
+                const Text('صحیح')
+              ]),
+            field('پاسخ تشریحی', explanation, lines: 4),
+            field('مستند قانونی دقیق', source, lines: 2),
+            TextFormField(
+                controller: validFrom,
+                decoration: const InputDecoration(
+                    labelText: 'اعتبار از تاریخ (YYYY-MM-DD)')),
+            TextFormField(
+                controller: validUntil,
+                decoration: const InputDecoration(
+                    labelText: 'اعتبار تا تاریخ (YYYY-MM-DD)')),
+            const Text(
+                'یادداشت تله‌شناسی و نکات اختصاصی در فرم عمومی ثبت نمی‌شود.',
+                style: TextStyle(fontSize: 11, color: RaqtivaColors.muted)),
+            FilledButton.icon(
+                onPressed: saving ? null : save,
+                icon: const Icon(Icons.save),
+                label: Text(saving ? 'در حال ذخیره…' : 'ذخیره پیش‌نویس')),
+            if (editingId != null)
+              OutlinedButton.icon(
+                  onPressed: saving ? null : submit,
+                  icon: const Icon(Icons.send),
+                  label: const Text('ارسال برای داوری')),
+          ] else ...[
+            Text(prompt.text),
+            for (var i = 0; i < 4; i++)
+              ListTile(
+                  title: Text(options[i].text),
+                  trailing: i == correct
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : null),
+            Text('پاسخ تشریحی: ${explanation.text}'),
+            Text('منبع: ${source.text}'),
+          ],
+          if (revisions.isNotEmpty)
+            ExpansionTile(title: const Text('تاریخچه نسخه‌ها'), children: [
+              for (final v in revisions)
+                ListTile(
+                    title: Text('نسخه ${v['version']}'),
+                    subtitle: Text('${v['created_at']}'))
+            ]),
+          if (error != null)
+            Text(error!, style: const TextStyle(color: Colors.orangeAccent)),
+        ]));
   }
 }
 
-
 class ExamTakingPage extends StatefulWidget {
-  const ExamTakingPage({super.key, required this.api, required this.attempt, required this.examTitle});
+  const ExamTakingPage(
+      {super.key,
+      required this.api,
+      required this.attempt,
+      required this.examTitle});
   final LeagueApi api;
   final Map<String, dynamic> attempt;
   final String examTitle;
@@ -2466,7 +2982,8 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
   Future<void> _restorePendingAnswers() async {
     try {
-      final saved = await widget.api.readPendingAnswers(widget.attempt['id'].toString());
+      final saved =
+          await widget.api.readPendingAnswers(widget.attempt['id'].toString());
       if (!mounted) return;
       if (saved.isNotEmpty) {
         setState(() {
@@ -2475,7 +2992,9 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => error = 'بازیابی پاسخ‌های ذخیره‌شده از حافظه امن انجام نشد.');
+      if (mounted)
+        setState(
+            () => error = 'بازیابی پاسخ‌های ذخیره‌شده از حافظه امن انجام نشد.');
     } finally {
       if (mounted) setState(() => restoringPending = false);
     }
@@ -2490,8 +3009,10 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   }
 
   String get clockText {
-    final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '${remaining.inHours.toString().padLeft(2, '0')}:$minutes:$seconds';
   }
 
@@ -2504,7 +3025,8 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       error = null;
     });
     try {
-      await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
+      await widget.api
+          .writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -2514,7 +3036,8 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
             selected[questionId] = previousOption;
           }
           pendingAnswers.remove(questionId);
-          error = 'ذخیره امن پاسخ روی گوشی ناموفق بود؛ پاسخ ارسال نشد. فضای ذخیره‌سازی دستگاه را بررسی کنید.';
+          error =
+              'ذخیره امن پاسخ روی گوشی ناموفق بود؛ پاسخ ارسال نشد. فضای ذخیره‌سازی دستگاه را بررسی کنید.';
         });
       }
       if (mounted) setState(() => busy = false);
@@ -2527,10 +3050,12 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       );
       if (!mounted) return;
       setState(() => pendingAnswers.remove(questionId));
-      await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
+      await widget.api
+          .writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
     } catch (e) {
-      if (mounted) setState(() => error =
-        'پاسخ در حافظه امن گوشی ذخیره شد اما هنوز به سرور نرسیده است. اینترنت را بررسی و «ارسال پاسخ‌های ذخیره‌شده» را بزنید. (${e.toString().replaceFirst('Exception: ', '')})');
+      if (mounted)
+        setState(() => error =
+            'پاسخ در حافظه امن گوشی ذخیره شد اما هنوز به سرور نرسیده است. اینترنت را بررسی و «ارسال پاسخ‌های ذخیره‌شده» را بزنید. (${e.toString().replaceFirst('Exception: ', '')})');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -2538,7 +3063,10 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
   Future<void> _syncPendingAnswers() async {
     if (busy || pendingAnswers.isEmpty) return;
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
       final snapshot = Map<int, int>.from(pendingAnswers);
       for (final entry in snapshot.entries) {
@@ -2548,16 +3076,19 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         );
         if (!mounted) return;
         setState(() => pendingAnswers.remove(entry.key));
-        await widget.api.writePendingAnswers(widget.attempt['id'].toString(), pendingAnswers);
+        await widget.api.writePendingAnswers(
+            widget.attempt['id'].toString(), pendingAnswers);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('همه پاسخ‌های ذخیره‌شده به سرور ارسال شدند.')),
+          const SnackBar(
+              content: Text('همه پاسخ‌های ذخیره‌شده به سرور ارسال شدند.')),
         );
       }
     } catch (e) {
-      if (mounted) setState(() => error =
-        'ارسال پاسخ‌ها کامل نشد؛ پاسخ‌های ارسال‌نشده روی گوشی باقی مانده‌اند. ${e.toString().replaceFirst('Exception: ', '')}');
+      if (mounted)
+        setState(() => error =
+            'ارسال پاسخ‌ها کامل نشد؛ پاسخ‌های ارسال‌نشده روی گوشی باقی مانده‌اند. ${e.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -2569,10 +3100,14 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       await _syncPendingAnswers();
       if (!mounted || pendingAnswers.isNotEmpty) return;
     }
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
       final result = await widget.api.requestPost(
-        'exams/attempts/' + widget.attempt['id'].toString() + '/finalize/', {},
+        'exams/attempts/' + widget.attempt['id'].toString() + '/finalize/',
+        {},
       );
       if (!mounted) return;
       setState(() => finished = true);
@@ -2584,20 +3119,28 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: const Text('آزمون پایان یافت'),
-            content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('امتیاز: ${result['score']}'),
-              Text('پاسخ صحیح: ${result['correct_count']}'),
-              Text('پاسخ غلط: ${result['wrong_count']}'),
-              Text('بدون پاسخ: ${result['blank_count']}'),
-              if (auto) const Text('زمان آزمون به پایان رسیده بود.'),
-            ]),
-            actions: [FilledButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('مشاهده داشبورد'))],
+            content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('امتیاز: ${result['score']}'),
+                  Text('پاسخ صحیح: ${result['correct_count']}'),
+                  Text('پاسخ غلط: ${result['wrong_count']}'),
+                  Text('بدون پاسخ: ${result['blank_count']}'),
+                  if (auto) const Text('زمان آزمون به پایان رسیده بود.'),
+                ]),
+            actions: [
+              FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('مشاهده داشبورد'))
+            ],
           ),
         ),
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -2609,9 +3152,8 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         ? null
         : Map<String, dynamic>.from(questions[currentIndex]);
 
-    final progress = questions.isEmpty
-        ? 0.0
-        : (currentIndex + 1) / questions.length;
+    final progress =
+        questions.isEmpty ? 0.0 : (currentIndex + 1) / questions.length;
 
     final urgent = remaining.inMinutes < 2;
 
@@ -2625,16 +3167,20 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
             title: Text(widget.examTitle),
             actions: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                   decoration: BoxDecoration(
                     color: urgent
                         ? Colors.orange.withOpacity(0.15)
                         : const Color(0xFFC6A96A).withOpacity(0.13),
                     borderRadius: BorderRadius.circular(13),
                     border: Border.all(
-                      color: urgent ? Colors.orangeAccent : const Color(0xFFC6A96A),
+                      color: urgent
+                          ? Colors.orangeAccent
+                          : const Color(0xFFC6A96A),
                     ),
                   ),
                   child: Row(
@@ -2642,13 +3188,17 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                       Icon(
                         Icons.timer_outlined,
                         size: 18,
-                        color: urgent ? Colors.orangeAccent : const Color(0xFFE4C98F),
+                        color: urgent
+                            ? Colors.orangeAccent
+                            : const Color(0xFFE4C98F),
                       ),
                       const SizedBox(width: 7),
                       Text(
                         clockText,
                         style: TextStyle(
-                          color: urgent ? Colors.orangeAccent : const Color(0xFFE4C98F),
+                          color: urgent
+                              ? Colors.orangeAccent
+                              : const Color(0xFFE4C98F),
                           fontWeight: FontWeight.bold,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
@@ -2661,299 +3211,305 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
           ),
           body: RaqtivaStadiumBackdrop(
             child: question == null
-              ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(17),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                          colors: [Color(0xFF202D49), Color(0xFF121C30)],
-                        ),
-                        borderRadius: BorderRadius.circular(19),
-                        border: Border.all(color: const Color(0xFFC6A96A).withOpacity(0.55)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.quiz_outlined, color: Color(0xFFE4C98F)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'سؤال ${currentIndex + 1} از ${questions.length}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Text(
-                                '${(progress * 100).round()}٪',
-                                style: const TextStyle(
-                                  color: Color(0xFFE4C98F),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 13),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 8,
-                              backgroundColor: Colors.white12,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFFE4C98F),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (restoringPending) ...[
-                      const SizedBox(height: 12),
-                      const LinearProgressIndicator(),
-                      const SizedBox(height: 7),
-                      const Text(
-                        'در حال بازیابی پاسخ‌های ذخیره‌شده...',
-                        style: TextStyle(color: Colors.white60),
-                      ),
-                    ],
-
-                    if (pendingAnswers.isNotEmpty) ...[
-                      const SizedBox(height: 13),
+                ? const Center(child: Text('این آزمون سؤال قابل نمایشی ندارد.'))
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                    children: [
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(17),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF493923).withOpacity(0.38),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: const Color(0xFFC6A96A)),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [Color(0xFF202D49), Color(0xFF121C30)],
+                          ),
+                          borderRadius: BorderRadius.circular(19),
+                          border: Border.all(
+                              color: const Color(0xFFC6A96A).withOpacity(0.55)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.cloud_upload_outlined,
+                                const Icon(Icons.quiz_outlined,
                                     color: Color(0xFFE4C98F)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${pendingAnswers.length} پاسخ هنوز به سرور ارسال نشده است.',
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                    'سؤال ${currentIndex + 1} از ${questions.length}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Text(
+                                  '${(progress * 100).round()}٪',
+                                  style: const TextStyle(
+                                    color: Color(0xFFE4C98F),
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
-                            OutlinedButton.icon(
-                              onPressed: busy ? null : _syncPendingAnswers,
-                              icon: const Icon(Icons.sync),
-                              label: const Text('ارسال پاسخ‌های ذخیره‌شده'),
+                            const SizedBox(height: 13),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 8,
+                                backgroundColor: Colors.white12,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFE4C98F),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                      if (restoringPending) ...[
+                        const SizedBox(height: 12),
+                        const LinearProgressIndicator(),
+                        const SizedBox(height: 7),
+                        const Text(
+                          'در حال بازیابی پاسخ‌های ذخیره‌شده...',
+                          style: TextStyle(color: Colors.white60),
+                        ),
+                      ],
+                      if (pendingAnswers.isNotEmpty) ...[
+                        const SizedBox(height: 13),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF493923).withOpacity(0.38),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: const Color(0xFFC6A96A)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.cloud_upload_outlined,
+                                      color: Color(0xFFE4C98F)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${pendingAnswers.length} پاسخ هنوز به سرور ارسال نشده است.',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              OutlinedButton.icon(
+                                onPressed: busy ? null : _syncPendingAnswers,
+                                icon: const Icon(Icons.sync),
+                                label: const Text('ارسال پاسخ‌های ذخیره‌شده'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (error != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: Colors.redAccent.withOpacity(0.55)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: Colors.orangeAccent),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                  child: Text(error!,
+                                      style: const TextStyle(height: 1.7))),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      const Row(
+                        children: [
+                          Icon(Icons.menu_book_outlined,
+                              color: Color(0xFFE4C98F)),
+                          SizedBox(width: 8),
+                          Text(
+                            'متن سؤال',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(19),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF172238),
+                          borderRadius: BorderRadius.circular(19),
+                          border: Border.all(color: Colors.white12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.14),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          question['prompt'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            height: 1.95,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 19),
+                      const Row(
+                        children: [
+                          Icon(Icons.fact_check_outlined,
+                              color: Color(0xFFE4C98F)),
+                          SizedBox(width: 8),
+                          Text(
+                            'گزینه موردنظر را انتخاب کنید',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      for (int i = 0;
+                          i <
+                              List<dynamic>.from(question['options'] ?? [])
+                                  .length;
+                          i++)
+                        Builder(builder: (context) {
+                          final option =
+                              List<dynamic>.from(question['options'] ?? [])[i];
+                          final isSelected =
+                              selected[question['id'] as int] == option['id'];
 
-                    if (error != null) ...[
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF273A50)
+                                  : const Color(0xFF172238),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFFE4C98F)
+                                    : Colors.white12,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: RadioListTile<int>(
+                              value: option['id'] as int,
+                              groupValue: selected[question['id'] as int],
+                              activeColor: const Color(0xFFE4C98F),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              onChanged: busy || finished || restoringPending
+                                  ? null
+                                  : (value) {
+                                      if (value != null) {
+                                        _choose(question['id'] as int, value);
+                                      }
+                                    },
+                              title: Text(
+                                option['text'] ?? '',
+                                style: TextStyle(
+                                  height: 1.7,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: currentIndex == 0
+                                  ? null
+                                  : () => setState(() => currentIndex--),
+                              icon: const Icon(Icons.arrow_forward_rounded),
+                              label: const Text('سؤال قبلی'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: currentIndex >= questions.length - 1
+                                  ? null
+                                  : () => setState(() => currentIndex++),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              label: const Text('سؤال بعدی'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      FilledButton.icon(
+                        onPressed: busy ||
+                                restoringPending ||
+                                pendingAnswers.isNotEmpty
+                            ? null
+                            : () => _finalize(),
+                        icon: const Icon(Icons.task_alt_rounded),
+                        label: Text(
+                          busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون',
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          backgroundColor: const Color(0xFFC6A96A),
+                          foregroundColor: const Color(0xFF172238),
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(13),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.55)),
+                          color: Colors.white.withOpacity(0.045),
+                          borderRadius: BorderRadius.circular(13),
                         ),
-                        child: Row(
+                        child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.error_outline, color: Colors.orangeAccent),
-                            const SizedBox(width: 9),
-                            Expanded(child: Text(error!, style: const TextStyle(height: 1.7))),
+                            Icon(Icons.shield_outlined,
+                                size: 19, color: Color(0xFFE4C98F)),
+                            SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                'پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  height: 1.8,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 18),
-                    const Row(
-                      children: [
-                        Icon(Icons.menu_book_outlined, color: Color(0xFFE4C98F)),
-                        SizedBox(width: 8),
-                        Text(
-                          'متن سؤال',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    Container(
-                      padding: const EdgeInsets.all(19),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF172238),
-                        borderRadius: BorderRadius.circular(19),
-                        border: Border.all(color: Colors.white12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.14),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        question['prompt'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          height: 1.95,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 19),
-                    const Row(
-                      children: [
-                        Icon(Icons.fact_check_outlined, color: Color(0xFFE4C98F)),
-                        SizedBox(width: 8),
-                        Text(
-                          'گزینه موردنظر را انتخاب کنید',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    for (int i = 0;
-                        i < List<dynamic>.from(question['options'] ?? []).length;
-                        i++)
-                      Builder(builder: (context) {
-                        final option = List<dynamic>.from(question['options'] ?? [])[i];
-                        final isSelected =
-                            selected[question['id'] as int] == option['id'];
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF273A50)
-                                : const Color(0xFF172238),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFFE4C98F)
-                                  : Colors.white12,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                          ),
-                          child: RadioListTile<int>(
-                            value: option['id'] as int,
-                            groupValue: selected[question['id'] as int],
-                            activeColor: const Color(0xFFE4C98F),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                            onChanged: busy || finished || restoringPending
-                                ? null
-                                : (value) {
-                                    if (value != null) {
-                                      _choose(question['id'] as int, value);
-                                    }
-                                  },
-                            title: Text(
-                              option['text'] ?? '',
-                              style: TextStyle(
-                                height: 1.7,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: currentIndex == 0
-                                ? null
-                                : () => setState(() => currentIndex--),
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                            label: const Text('سؤال قبلی'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: currentIndex >= questions.length - 1
-                                ? null
-                                : () => setState(() => currentIndex++),
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            label: const Text('سؤال بعدی'),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 15),
-                    FilledButton.icon(
-                      onPressed: busy ||
-                              restoringPending ||
-                              pendingAnswers.isNotEmpty
-                          ? null
-                          : () => _finalize(),
-                      icon: const Icon(Icons.task_alt_rounded),
-                      label: Text(
-                        busy ? 'در حال ثبت...' : 'پایان و تحویل آزمون',
-                      ),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                        backgroundColor: const Color(0xFFC6A96A),
-                        foregroundColor: const Color(0xFF172238),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(13),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.045),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.shield_outlined,
-                              size: 19, color: Color(0xFFE4C98F)),
-                          SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              'پاسخ‌ها ابتدا به‌صورت امن روی گوشی نگه‌داری و سپس به سرور ارسال می‌شوند. تا ارسال کامل پاسخ‌ها، تحویل آزمون فعال نمی‌شود. امتیاز نهایی توسط سرور محاسبه می‌شود.',
-                              style: TextStyle(
-                                color: Colors.white60,
-                                height: 1.8,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
           ),
         ),
       ),
     );
   }
 }
-
 
 class _RaqtivaHomeTile extends StatelessWidget {
   const _RaqtivaHomeTile({
@@ -3073,14 +3629,14 @@ class _RaqtivaHomeTile extends StatelessWidget {
                   child: Container(
                     width: 34,
                     height: 34,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF020A20).withOpacity(.86),
-                            border: Border.all(
-                              color: const Color(0xFFFFD15A),
-                              width: 1.5,
-                            ),
-                          ),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF020A20).withOpacity(.86),
+                      border: Border.all(
+                        color: const Color(0xFFFFD15A),
+                        width: 1.5,
+                      ),
+                    ),
                     child: const Icon(
                       Icons.chevron_left_rounded,
                       size: 25,
@@ -3094,26 +3650,34 @@ class _RaqtivaHomeTile extends StatelessWidget {
         ),
       );
 }
+
 class _RaqtivaTileLinesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0x553DA8FF)..style = PaintingStyle.stroke..strokeWidth = 1;
+    final paint = Paint()
+      ..color = const Color(0x553DA8FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
     for (var i = 0; i < 5; i++) {
-      final rect = Rect.fromCenter(center: Offset(size.width * .5, size.height * .35), width: size.width * (1.0 + i * .28), height: size.height * (.45 + i * .18));
+      final rect = Rect.fromCenter(
+          center: Offset(size.width * .5, size.height * .35),
+          width: size.width * (1.0 + i * .28),
+          height: size.height * (.45 + i * .18));
       canvas.drawArc(rect, .15, 2.85, false, paint);
     }
   }
+
   @override
   bool shouldRepaint(covariant _RaqtivaTileLinesPainter oldDelegate) => false;
 }
-
 
 class _ManualSubscriptionPage extends StatefulWidget {
   const _ManualSubscriptionPage({required this.api});
   final LeagueApi api;
 
   @override
-  State<_ManualSubscriptionPage> createState() => _ManualSubscriptionPageState();
+  State<_ManualSubscriptionPage> createState() =>
+      _ManualSubscriptionPageState();
 }
 
 class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
@@ -3138,17 +3702,27 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
 
   String _status(dynamic value) {
     switch (value?.toString()) {
-      case 'awaiting_payment': return 'در انتظار پرداخت';
-      case 'under_review': return 'رسید ارسال شده؛ در انتظار بررسی مدیر';
-      case 'approved': return 'پرداخت تأیید و اشتراک فعال شده';
-      case 'rejected': return 'رسید تأیید نشد؛ امکان ارسال مجدد وجود دارد';
-      case 'cancelled': return 'لغوشده';
-      default: return 'نامشخص';
+      case 'awaiting_payment':
+        return 'در انتظار پرداخت';
+      case 'under_review':
+        return 'رسید ارسال شده؛ در انتظار بررسی مدیر';
+      case 'approved':
+        return 'پرداخت تأیید و اشتراک فعال شده';
+      case 'rejected':
+        return 'رسید تأیید نشد؛ امکان ارسال مجدد وجود دارد';
+      case 'cancelled':
+        return 'لغوشده';
+      default:
+        return 'نامشخص';
     }
   }
 
   Future<void> refresh() async {
-    if (mounted) setState(() { loading = true; error = null; });
+    if (mounted)
+      setState(() {
+        loading = true;
+        error = null;
+      });
     try {
       final data = await Future.wait([
         widget.api.request('payments/plans/'),
@@ -3164,7 +3738,8 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
         subscription = Map<String, dynamic>.from(data[3] as Map);
       });
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -3172,18 +3747,25 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
 
   Future<void> createOrder(Map<String, dynamic> plan) async {
     if (sending) return;
-    setState(() { sending = true; error = null; });
+    setState(() {
+      sending = true;
+      error = null;
+    });
     try {
       await widget.api.requestPost('payments/orders/create/', {
         'product_type': 'subscription',
         'plan_id': plan['id'].toString(),
       });
       await refresh();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('سفارش ایجاد شد. اکنون مبلغ را کارت‌به‌کارت و رسید را ارسال کنید.')),
-      );
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'سفارش ایجاد شد. اکنون مبلغ را کارت‌به‌کارت و رسید را ارسال کنید.')),
+        );
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => sending = false);
     }
@@ -3200,14 +3782,18 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
     final file = result.files.single;
     final bytes = file.bytes;
     if (bytes == null || bytes.isEmpty) {
-      setState(() => error = 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.');
+      setState(
+          () => error = 'خواندن فایل انتخاب‌شده ممکن نشد. دوباره انتخاب کنید.');
       return;
     }
     if (bytes.length > 5 * 1024 * 1024) {
       setState(() => error = 'حجم رسید نباید بیشتر از ۵ مگابایت باشد.');
       return;
     }
-    setState(() { sending = true; error = null; });
+    setState(() {
+      sending = true;
+      error = null;
+    });
     try {
       await widget.api.uploadPaymentReceipt(
         orderId: order['id'].toString(),
@@ -3219,51 +3805,78 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
       trackingCode = '';
       note = '';
       await refresh();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رسید با موفقیت ارسال شد و برای بررسی مدیر ثبت گردید.')),
-      );
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('رسید با موفقیت ارسال شد و برای بررسی مدیر ثبت گردید.')),
+        );
     } catch (e) {
-      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => sending = false);
     }
   }
 
   Widget _sectionTitle(String text) => Padding(
-    padding: const EdgeInsets.only(top: 18, bottom: 10),
-    child: Align(
-      alignment: Alignment.centerRight,
-      child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFFFE4A8))),
-    ),
-  );
+        padding: const EdgeInsets.only(top: 18, bottom: 10),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(text,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFFFFE4A8))),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     if (loading && plans.isEmpty && orders.isEmpty) {
-      return const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator()));
+      return const Center(
+          child: Padding(
+              padding: EdgeInsets.all(30), child: CircularProgressIndicator()));
     }
     final active = subscription['active'] == true;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (error != null) Card(
-          color: const Color(0xFF542B32),
-          child: Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.white))),
-        ),
-        if (active) Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('اشتراک فعال شما', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFFFE4A8))),
-              const SizedBox(height: 7),
-              Text(subscription['plan']?.toString() ?? 'اشتراک ویژه'),
-              Text('اعتبار تا: ${subscription['ends_at'] ?? '—'}'),
-            ]),
+        if (error != null)
+          Card(
+            color: const Color(0xFF542B32),
+            child: Padding(
+                padding: const EdgeInsets.all(12),
+                child:
+                    Text(error!, style: const TextStyle(color: Colors.white))),
           ),
-        ),
+        if (active)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('اشتراک فعال شما',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFFFE4A8))),
+                    const SizedBox(height: 7),
+                    Text(subscription['plan']?.toString() ?? 'اشتراک ویژه'),
+                    Text('اعتبار تا: ${subscription['ends_at'] ?? '—'}'),
+                  ]),
+            ),
+          ),
         _sectionTitle('خرید اشتراک با کارت‌به‌کارت'),
-        const Text('طرح موردنظر را انتخاب کنید. مبلغ دقیق سفارش در سرور ثبت می‌شود و پس از بررسی رسید توسط مدیر، اشتراک فعال خواهد شد.', style: TextStyle(height: 1.8, color: Colors.white70)),
-        if (plans.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(14), child: Text('در حال حاضر طرح فعالی برای خرید تعریف نشده است. لطفاً بعداً مراجعه کنید.'))),
+        const Text(
+            'طرح موردنظر را انتخاب کنید. مبلغ دقیق سفارش در سرور ثبت می‌شود و پس از بررسی رسید توسط مدیر، اشتراک فعال خواهد شد.',
+            style: TextStyle(height: 1.8, color: Colors.white70)),
+        if (plans.isEmpty)
+          const Card(
+              child: Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Text(
+                      'در حال حاضر طرح فعالی برای خرید تعریف نشده است. لطفاً بعداً مراجعه کنید.'))),
         for (final raw in plans)
           Builder(builder: (context) {
             final plan = Map<String, dynamic>.from(raw as Map);
@@ -3271,14 +3884,24 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Row(children: [
-                  const Icon(Icons.workspace_premium_rounded, color: Color(0xFFE4C98F), size: 30),
+                  const Icon(Icons.workspace_premium_rounded,
+                      color: Color(0xFFE4C98F), size: 30),
                   const SizedBox(width: 10),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(plan['title']?.toString() ?? 'اشتراک', style: const TextStyle(fontWeight: FontWeight.w900)),
-                    Text('${plan['duration_days']} روز · ${_money(plan['price_irr'])} ریال', style: const TextStyle(color: Colors.white70)),
-                  ])),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        Text(plan['title']?.toString() ?? 'اشتراک',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w900)),
+                        Text(
+                            '${plan['duration_days']} روز · ${_money(plan['price_irr'])} ریال',
+                            style: const TextStyle(color: Colors.white70)),
+                      ])),
                   FilledButton(
-                    onPressed: sending || instructions['configured'] != true ? null : () => createOrder(plan),
+                    onPressed: sending || instructions['configured'] != true
+                        ? null
+                        : () => createOrder(plan),
                     child: const Text('انتخاب'),
                   ),
                 ]),
@@ -3286,73 +3909,124 @@ class _ManualSubscriptionPageState extends State<_ManualSubscriptionPage> {
             );
           }),
         _sectionTitle('اطلاعات کارت مقصد'),
-        if (instructions['configured'] == true) Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const Text('شماره کارت', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 5),
-              SelectableText(instructions['card_number']?.toString() ?? '', textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
-              if ((instructions['account_holder'] ?? '').toString().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text('به نام: ${instructions['account_holder']}'),
-              ],
-              Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: instructions['card_number'].toString()));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره کارت کپی شد.')));
-                },
-                icon: const Icon(Icons.copy_rounded), label: const Text('کپی شماره کارت'),
-              )),
-            ]),
+        if (instructions['configured'] == true)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('شماره کارت',
+                        style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 5),
+                    SelectableText(
+                        instructions['card_number']?.toString() ?? '',
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1)),
+                    if ((instructions['account_holder'] ?? '')
+                        .toString()
+                        .isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text('به نام: ${instructions['account_holder']}'),
+                    ],
+                    Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(
+                                text: instructions['card_number'].toString()));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('شماره کارت کپی شد.')));
+                          },
+                          icon: const Icon(Icons.copy_rounded),
+                          label: const Text('کپی شماره کارت'),
+                        )),
+                  ]),
+            ),
+          )
+        else
+          const Card(
+            child: Padding(
+                padding: EdgeInsets.all(14),
+                child: Text(
+                    'اطلاعات کارت هنوز توسط مدیر تنظیم نشده است؛ امکان ثبت سفارش پرداخت تا زمان ثبت شماره کارت وجود ندارد.')),
           ),
-        ) else const Card(
-          child: Padding(padding: EdgeInsets.all(14), child: Text('اطلاعات کارت هنوز توسط مدیر تنظیم نشده است؛ امکان ثبت سفارش پرداخت تا زمان ثبت شماره کارت وجود ندارد.')),
-        ),
         _sectionTitle('سفارش‌ها و ارسال رسید'),
         TextField(
-          decoration: const InputDecoration(labelText: 'شماره پیگیری انتقال (اختیاری)', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+              labelText: 'شماره پیگیری انتقال (اختیاری)',
+              border: OutlineInputBorder()),
           onChanged: (v) => trackingCode = v,
         ),
         const SizedBox(height: 9),
         TextField(
-          decoration: const InputDecoration(labelText: 'توضیحات پرداخت (اختیاری)', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+              labelText: 'توضیحات پرداخت (اختیاری)',
+              border: OutlineInputBorder()),
           onChanged: (v) => note = v,
           maxLines: 2,
         ),
-        if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('هنوز سفارشی ثبت نکرده‌اید.')),
+        if (orders.isEmpty)
+          const Padding(
+              padding: EdgeInsets.all(12),
+              child: Text('هنوز سفارشی ثبت نکرده‌اید.')),
         for (final raw in orders)
           Builder(builder: (context) {
             final order = Map<String, dynamic>.from(raw as Map);
             final status = order['status']?.toString();
-            final canUpload = status == 'awaiting_payment' || status == 'rejected';
+            final canUpload =
+                status == 'awaiting_payment' || status == 'rejected';
             return Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(order['product_title']?.toString() ?? 'اشتراک', style: const TextStyle(fontWeight: FontWeight.w900)),
-                  Text('${_money(order['amount_irr'])} ریال'),
-                  const SizedBox(height: 5),
-                  Text(_status(status), style: TextStyle(color: status == 'approved' ? Colors.greenAccent : const Color(0xFFFFE4A8), height: 1.6)),
-                  if ((order['review_note'] ?? '').toString().isNotEmpty) Text(order['review_note'].toString()),
-                  if (canUpload) ...[
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: sending ? null : () => uploadReceipt(order),
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: Text(status == 'rejected' ? 'ارسال مجدد رسید' : 'انتخاب و ارسال رسید'),
-                    ),
-                  ],
-                  Text('کد سفارش: ${order['id']}', style: const TextStyle(fontSize: 10, color: Colors.white54)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(order['product_title']?.toString() ?? 'اشتراک',
+                          style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text('${_money(order['amount_irr'])} ریال'),
+                      const SizedBox(height: 5),
+                      Text(_status(status),
+                          style: TextStyle(
+                              color: status == 'approved'
+                                  ? Colors.greenAccent
+                                  : const Color(0xFFFFE4A8),
+                              height: 1.6)),
+                      if ((order['review_note'] ?? '').toString().isNotEmpty)
+                        Text(order['review_note'].toString()),
+                      if (canUpload) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed:
+                              sending ? null : () => uploadReceipt(order),
+                          icon: const Icon(Icons.upload_file_rounded),
+                          label: Text(status == 'rejected'
+                              ? 'ارسال مجدد رسید'
+                              : 'انتخاب و ارسال رسید'),
+                        ),
+                      ],
+                      Text('کد سفارش: ${order['id']}',
+                          style: const TextStyle(
+                              fontSize: 10, color: Colors.white54)),
+                    ]),
               ),
             );
           }),
         const SizedBox(height: 10),
-        OutlinedButton.icon(onPressed: loading ? null : refresh, icon: const Icon(Icons.refresh), label: const Text('به‌روزرسانی وضعیت سفارش‌ها')),
+        OutlinedButton.icon(
+            onPressed: loading ? null : refresh,
+            icon: const Icon(Icons.refresh),
+            label: const Text('به‌روزرسانی وضعیت سفارش‌ها')),
         const Padding(
           padding: EdgeInsets.only(top: 10),
-          child: Text('توجه: اشتراک فقط پس از بررسی و تأیید رسید توسط مدیریت فعال می‌شود. ارسال رسید به‌تنهایی به معنی تأیید پرداخت نیست.', style: TextStyle(color: Colors.white60, height: 1.8, fontSize: 12)),
+          child: Text(
+              'توجه: اشتراک فقط پس از بررسی و تأیید رسید توسط مدیریت فعال می‌شود. ارسال رسید به‌تنهایی به معنی تأیید پرداخت نیست.',
+              style:
+                  TextStyle(color: Colors.white60, height: 1.8, fontSize: 12)),
         ),
       ],
     );
