@@ -67,6 +67,55 @@ class LeaderboardView(APIView):
         return Response({"season": LeagueSeasonSerializer(season).data, "results": results})
 
 
+class ProvincialLeaderboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        province = (getattr(request.user, "province", "") or "").strip()
+        verified = bool(getattr(request.user, "province_verified", False) and province)
+        if not verified:
+            return Response({
+                "season": None,
+                "province": province,
+                "verified": False,
+                "results": [],
+            })
+
+        season = requested_season(request)
+        if not season:
+            return Response({
+                "season": None,
+                "province": province,
+                "verified": True,
+                "results": [],
+            })
+        try:
+            limit = int(request.query_params.get("limit", 100))
+        except (TypeError, ValueError):
+            return Response({"detail": "پارامتر limit باید عدد صحیح باشد."}, status=400)
+        if not 1 <= limit <= 500:
+            return Response({"detail": "limit باید بین ۱ تا ۵۰۰ باشد."}, status=400)
+
+        _, rows = leaderboard_for_season(season.pk, limit=limit, province=province)
+        results = [
+            {
+                "rank": index,
+                "display_name": row["user__display_name"] or "کاربر",
+                "total_score": row["total_score"],
+                "correct_total": row["correct_total"],
+                "wrong_total": row["wrong_total"],
+                "exams_count": row["exams_count"],
+            }
+            for index, row in enumerate(rows, start=1)
+        ]
+        return Response({
+            "season": LeagueSeasonSerializer(season).data,
+            "province": province,
+            "verified": True,
+            "results": results,
+        })
+
+
 class MyLeagueStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
