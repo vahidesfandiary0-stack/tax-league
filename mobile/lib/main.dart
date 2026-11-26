@@ -68,6 +68,15 @@ class LeagueApi {
     return decode(response);
   }
 
+  Future<dynamic> requestPatch(String path, Map<String, dynamic> body) async {
+    final t = await token;
+    if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
+    final response = await http.patch(Uri.parse(baseUrl + '/api/v1/' + path),
+      headers: {'Authorization': 'Token ' + t, 'Content-Type': 'application/json'},
+      body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+    return decode(response);
+  }
+
   Future<dynamic> requestPost(String path, Map<String, dynamic> body) async {
     final t = await token;
     if (t == null || t.isEmpty) throw Exception('ابتدا وارد حساب شوید.');
@@ -95,6 +104,9 @@ class LeagueHomePage extends StatefulWidget {
 class _LeagueHomePageState extends State<LeagueHomePage> {
   final api = LeagueApi();
   final phone = TextEditingController(), code = TextEditingController();
+  final profileName = TextEditingController();
+  String? profileError;
+  bool profileLoading = false;
   static const List<String> provinces = [
     'آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام',
     'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی',
@@ -127,6 +139,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     focusPoller?.cancel();
     phone.dispose();
     code.dispose();
+    profileName.dispose();
     super.dispose();
   }
 
@@ -151,7 +164,43 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> _loadIfSignedIn() async {
-    if (await api.token != null) await loadDashboard();
+    if (await api.token != null) {
+      await loadDashboard();
+      await _promptProfileIfNeeded();
+    }
+  }
+
+  Future<void> _promptProfileIfNeeded() async {
+    try {
+      final profile = await api.request('accounts/profile/');
+      profileName.text = (profile['display_name'] ?? '').toString();
+      if (profileName.text.trim().split(RegExp(r'\\s+')).length < 2 && mounted) {
+        setState(() => accountPage = 4);
+      }
+    } catch (e) {
+      if (mounted) setState(() => profileError = e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    final name = profileName.text.trim().replaceAll(RegExp(r'\\s+'), ' ');
+    if (name.split(' ').length < 2) {
+      setState(() => profileError = 'نام و نام خانوادگی کامل را وارد کنید.');
+      return;
+    }
+    setState(() { profileLoading = true; profileError = null; });
+    try {
+      final response = await api.requestPatch('accounts/profile/', {'display_name': name});
+      profileName.text = response['display_name'].toString();
+      if (mounted) {
+        setState(() => accountPage = 1);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام و نام خانوادگی ذخیره شد.')));
+      }
+    } catch (e) {
+      if (mounted) setState(() => profileError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => profileLoading = false);
+    }
   }
 
   Future<void> requestCode() async {
@@ -176,6 +225,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       await api.saveToken(data['token'].toString());
       if (mounted) { setState(() { otpRequested = false; code.clear(); }); }
       await loadDashboard();
+      await _promptProfileIfNeeded();
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
@@ -185,6 +235,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   Future<void> _startExam(Map<String, dynamic> exam) async {
     setState(() { busy = true; error = null; });
     try {
+      final profile = await api.request('accounts/profile/');
+      final fullName = (profile['display_name'] ?? '').toString().trim();
+      if (fullName.split(RegExp(r'\\s+')).length < 2) {
+        profileName.text = fullName;
+        if (mounted) setState(() => accountPage = 4);
+        return;
+      }
       final attempt = await api.requestPost('exams/' + exam['id'].toString() + '/start/', {});
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
@@ -268,9 +325,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     child: Scaffold(
       appBar: AppBar(
         leading: stats != null && accountPage > 0
-            ? IconButton(onPressed: () => setState(() => accountPage -= 1), icon: const Icon(Icons.arrow_back))
+            ? IconButton(onPressed: () => setState(() => accountPage = accountPage == 4 ? 1 : accountPage - 1), icon: const Icon(Icons.arrow_back))
             : null,
-        title: Text(accountPage == 0 ? 'لیگ نخبگان مالیاتی' : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : 'معرفی بنیان‌گذار'),
+        title: Text(accountPage == 0 ? 'لیگ نخبگان مالیاتی' : accountPage == 1 ? 'حساب کاربری' : accountPage == 2 ? 'درباره لیگ' : accountPage == 3 ? 'معرفی بنیان‌گذار' : 'اطلاعات حساب'),
         actions: [
           if (stats != null) IconButton(onPressed: busy ? null : logout, icon: const Icon(Icons.logout)),
           IconButton(onPressed: busy ? null : loadDashboard, icon: const Icon(Icons.refresh)),
@@ -367,14 +424,35 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Widget _accountContent() {
+    if (accountPage == 4) {
+      return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('نام و نام خانوادگی', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('برای شرکت در آزمون شبانه و نمایش صحیح در رتبه‌بندی، ثبت نام کامل الزامی است.'),
+          const SizedBox(height: 12),
+          TextField(controller: profileName, textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(labelText: 'نام و نام خانوادگی', hintText: 'مثلاً علی رضایی')),
+          if (profileError != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(profileError!, style: const TextStyle(color: Colors.orangeAccent))),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: profileLoading ? null : _saveProfile, child: Text(profileLoading ? 'در حال ذخیره...' : 'ذخیره اطلاعات')),
+        ],
+      )));
+    }
     if (accountPage == 1) {
-      return Card(child: ListTile(
+      return Column(children: [
+        Card(child: ListTile(leading: const Icon(Icons.badge_outlined), title: const Text('نام و نام خانوادگی'),
+          subtitle: Text(profileName.text.isEmpty ? 'ثبت نشده' : profileName.text), trailing: const Icon(Icons.chevron_left),
+          onTap: () async { await _promptProfileIfNeeded(); if (mounted) setState(() => accountPage = 4); })),
+        Card(child: ListTile(
         leading: const Icon(Icons.info_outline),
         title: const Text('درباره لیگ'),
         subtitle: const Text('اطلاعات و معرفی مجموعه'),
         trailing: const Icon(Icons.chevron_left),
         onTap: () => setState(() => accountPage = 2),
       ));
+      ]);
     }
     if (accountPage == 2) {
       return Card(child: ListTile(
