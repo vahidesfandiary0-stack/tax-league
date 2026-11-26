@@ -569,7 +569,22 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
   }
 
   Future<void> _loadIfSignedIn() async {
-    if (await api.token != null) await loadDashboard();
+    if (await api.token != null) {
+      await loadDashboard();
+      await _promptProfileIfNeeded();
+    }
+  }
+
+  Future<void> _promptProfileIfNeeded() async {
+    try {
+      final profile = await api.request('accounts/profile/');
+      if (!mounted) return;
+      if ((profile['display_name'] ?? '').toString().trim().isEmpty) {
+        setState(() => accountPage = 8);
+      }
+    } catch (_) {
+      // Profile completion can be retried from Account without blocking exam access.
+    }
   }
 
   Future<void> _loadShowcaseSlides() async {
@@ -643,6 +658,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         });
       }
       await loadDashboard();
+      await _promptProfileIfNeeded();
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally { if (mounted) setState(() => busy = false); }
