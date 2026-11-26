@@ -440,6 +440,15 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     if (await api.token != null) await loadDashboard();
   }
 
+  List<dynamic> _stampExams(dynamic raw) {
+    final receivedAt = DateTime.now().toUtc().toIso8601String();
+    return List<dynamic>.from(raw as List).map((item) {
+      final exam = Map<String, dynamic>.from(item as Map);
+      exam['received_at'] = receivedAt;
+      return exam;
+    }).toList();
+  }
+
   Future<void> _loadShowcaseSlides() async {
     try {
       final data = await api.request('notifications/showcase/');
@@ -554,7 +563,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           focusMode = true;
           focusEndsAt = focus['ends_at']?.toString();
           stats ??= <String, dynamic>{};
-          exams = List<dynamic>.from(data[0] as List);
+          exams = _stampExams(data[0]);
           results = List<dynamic>.from(data[1] as List);
         });
       } else {
@@ -588,7 +597,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           provincialName = province;
           provincialMessage = provinceNotice;
           appeals = List<dynamic>.from(data[2] as List);
-          exams = List<dynamic>.from(data[3] as List);
+          exams = _stampExams(data[3]);
           results = List<dynamic>.from(data[4] as List);
         });
       }
