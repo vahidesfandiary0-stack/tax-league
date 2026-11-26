@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.exams.models import (
     AttemptAnswer, Exam, ExamAttempt, ExamQuestion,
 )
-from apps.exams.services import finalize_attempt, save_answer, start_attempt
+from apps.exams.services import finalize_attempt, publish_exam, save_answer, start_attempt
 from apps.exams.serializers import AttemptSerializer
 from apps.notifications.models import Notification
 from apps.questions.models import Question, QuestionOption
@@ -257,4 +257,40 @@ def test_expired_night_attempt_is_finalized_before_a_new_unlimited_attempt():
     first.refresh_from_db()
     assert first.status == ExamAttempt.Status.EXPIRED
     assert second.pk != first.pk
+
+@pytest.mark.django_db
+def test_published_night_exam_question_cannot_be_reused_in_another_night_exam():
+    user = get_user_model().objects.create_user(phone_number="09123330014")
+    question = Question.objects.create(
+        subject=Question.Subject.DIRECT_TAX,
+        prompt="سؤال یکتای آزمون شبانه",
+        author=user,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question,
+            position=position,
+            text=f"گزینه {position}",
+            is_correct=position == 1,
+        )
+    question.status = Question.Status.PUBLISHED
+    question.save(update_fields=["status"])
+
+    now = timezone.now()
+    first = Exam.objects.create(
+        title="آزمون شبانه اول", kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(minutes=1), ends_at=now + timedelta(hours=1),
+        counts_for_league=True, requires_purchase=False,
+    )
+    ExamQuestion.objects.create(exam=first, question=question, position=1)
+    publish_exam(first.pk)
+
+    second = Exam.objects.create(
+        title="آزمون شبانه دوم", kind=Exam.Kind.NIGHT,
+        starts_at=now - timedelta(minutes=1), ends_at=now + timedelta(hours=1),
+        counts_for_league=True, requires_purchase=False,
+    )
+    ExamQuestion.objects.create(exam=second, question=question, position=1)
+    with pytest.raises(DjangoValidationError):
+        publish_exam(second.pk)
 
