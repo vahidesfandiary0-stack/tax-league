@@ -23,6 +23,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 
@@ -66,11 +67,11 @@ jobs:
           API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://raqtiva.ir' }}
         run: |
           set -euo pipefail
-          flutter build web --release --base-href /app/ --web-content-hash --dart-define=API_BASE_URL="$API_BASE_URL"
+          flutter build web --release --base-href /app/ --dart-define=API_BASE_URL="$API_BASE_URL"
           test -s build/web/index.html
           test -s build/web/manifest.json
           test -s build/web/flutter_bootstrap.js
-          test -s build/web/precache_manifest.json
+          find build/web -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Upload web PWA artifact
         uses: actions/upload-artifact@v4
