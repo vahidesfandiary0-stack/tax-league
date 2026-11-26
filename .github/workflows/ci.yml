@@ -53,14 +53,14 @@ jobs:
           from pathlib import Path
           import re
 
-          candidates = [Path("mobile/android/app/build.gradle.kts"),
-                        Path("mobile/android/app/build.gradle")]
+          candidates = [Path("android/app/build.gradle.kts"),
+                        Path("android/app/build.gradle")]
           gradle = next((p for p in candidates if p.is_file()), None)
           if gradle is None:
               raise SystemExit("Android app Gradle file not found")
           content = gradle.read_text()
           updated, count = re.subn(
-              r'compileSdk\\s*(?:=|Version)\\s*flutter\\.compileSdkVersion',
+              r'compileSdk\s*(?:=|Version)\s*flutter\.compileSdkVersion',
               'compileSdk = 36' if gradle.suffix == ".kts" else 'compileSdkVersion 36',
               content,
               count=1,
