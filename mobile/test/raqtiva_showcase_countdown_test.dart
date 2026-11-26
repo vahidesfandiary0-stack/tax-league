@@ -48,12 +48,16 @@ void main() {
                 {
                   'title': 'آزمون تمرینی',
                   'counts_for_league': false,
+                  'kind': 'daily',
                   'starts_at': now.add(const Duration(seconds: 30)).toIso8601String(),
+                  'ends_at': now.add(const Duration(minutes: 10)).toIso8601String(),
                 },
                 {
                   'title': 'آزمون رسمی لیگ',
+                  'kind': 'night',
                   'counts_for_league': true,
                   'starts_at': now.add(const Duration(seconds: 90)).toIso8601String(),
+                  'ends_at': now.add(const Duration(minutes: 15)).toIso8601String(),
                 },
               ],
             ),
@@ -85,7 +89,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('hides countdown for an exam that has already started', (tester) async {
+    testWidgets('counts down to the end of a running official night exam', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -96,16 +100,20 @@ void main() {
               exams: [
                 {
                   'title': 'آزمون آغازشده',
+                  'kind': 'night',
                   'counts_for_league': true,
+                  'kind': 'night',
                   'starts_at': '2026-01-01T00:00:00Z',
+                  'ends_at': '2026-01-01T01:00:00Z',
                 },
               ],
             ),
           ),
         ),
       );
-      expect(find.text('شمارش معکوس آزمون بعدی'), findsNothing);
-      expect(find.text('پیام باقی می‌ماند'), findsOneWidget);
+      expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
+      expect(find.text('آزمون آغازشده'), findsOneWidget);
+      expect(find.text('پیام باقی می‌ماند'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
