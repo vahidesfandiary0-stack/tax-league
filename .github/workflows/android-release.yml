@@ -25,6 +25,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 
@@ -87,6 +88,33 @@ jobs:
       - name: Generate Android project
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+      - name: Pin Android Kotlin migration flags for plugin compatibility
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/gradle.properties")
+          if not path.is_file():
+              raise SystemExit("Generated Android gradle.properties was not found")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          required = {
+              "android.builtInKotlin": "false",
+              "android.newDsl": "false",
+          }
+          for key, value in required.items():
+              prefix = key + "="
+              lines = [line for line in lines if not line.startswith(prefix)]
+              lines.append(prefix + value)
+          path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          actual = path.read_text(encoding="utf-8")
+          for key, value in required.items():
+              if f"{key}={value}" not in actual:
+                  raise SystemExit(f"Could not enforce {key}={value}")
+          print("PASS: AGP 9 compatibility flags pinned for the selected Flutter plugins.")
+          PY
+
       - name: Cache Gradle dependencies
         uses: gradle/actions/setup-gradle@v4
 
