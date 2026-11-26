@@ -74,7 +74,7 @@ class ExamQuestion(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if Exam.objects.filter(pk=self.exam_id, status=Exam.Status.PUBLISHED).exists():
+        if Exam.objects.filter(pk=self.exam_id, status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED]).exists():
             raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
         if self.question.status != self.question.Status.PUBLISHED:
             raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
