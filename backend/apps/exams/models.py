@@ -39,6 +39,8 @@ class Exam(models.Model):
             raise ValidationError("مدت آزمون و تعداد دفعات مجاز باید حداقل یک باشد.")
         if self.counts_for_league and self.kind != self.Kind.NIGHT:
             raise ValidationError({"counts_for_league": "فقط آزمون شبانه مجاز است در رتبه‌بندی لیگ اثر بگذارد."})
+        if self.kind == self.Kind.NIGHT and not self.counts_for_league:
+            raise ValidationError({"counts_for_league": "آزمون شبانه رسمی باید در رتبه‌بندی لیگ محاسبه شود."})
         if self.kind == self.Kind.NIGHT and self.requires_purchase:
             raise ValidationError({"requires_purchase": "آزمون شبانه باید رایگان باشد."})
         if self.kind == self.Kind.NIGHT and (not self.starts_at or not self.ends_at):
