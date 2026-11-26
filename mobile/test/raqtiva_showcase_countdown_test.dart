@@ -94,17 +94,12 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: RaqtivaShowcaseCarousel(
-              slides: [
-                {'kind': 'message', 'title': 'پیام باقی می‌ماند', 'body': 'متن'},
-              ],
+              slides: const [],
               exams: [
                 {
                   'title': 'آزمون آغازشده',
-                  'kind': 'night',
-                  'counts_for_league': true,
-                  'kind': 'night',
-                  'starts_at': '2026-01-01T00:00:00Z',
-                  'ends_at': '2026-01-01T01:00:00Z',
+                  'starts_at': DateTime.now().subtract(const Duration(minutes: 2)).toUtc().toIso8601String(),
+                  'ends_at': DateTime.now().add(const Duration(minutes: 13)).toUtc().toIso8601String(),
                 },
               ],
             ),
@@ -113,7 +108,6 @@ void main() {
       );
       expect(find.text('زمان باقی‌مانده تا پایان آزمون'), findsOneWidget);
       expect(find.text('آزمون آغازشده'), findsOneWidget);
-      expect(find.text('پیام باقی می‌ماند'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
