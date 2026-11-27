@@ -436,7 +436,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [];
+      results = [],
+      topRecords = [];
+  bool topRecordsError = false;
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -632,6 +634,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [];
       exams = [];
       results = [];
+      topRecords = [];
+      topRecordsError = false;
       showcaseSlides = [];
       focusMode = false;
       focusEndsAt = null;
@@ -706,7 +710,26 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
-    if (mounted && !focusMode && stats != null) await _loadShowcaseSlides();
+    if (mounted && !focusMode && stats != null) {
+      await _loadTopRecords();
+      await _loadShowcaseSlides();
+    }
+  }
+
+  Future<void> _loadTopRecords() async {
+    try {
+      final data = await api.request('league/me/top-records/');
+      if (!mounted) return;
+      if (data is! Map || data['results'] is! List) {
+        throw const FormatException('پاسخ رکوردهای برتر معتبر نیست.');
+      }
+      setState(() {
+        topRecords = List<dynamic>.from(data['results']);
+        topRecordsError = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => topRecordsError = true);
+    }
   }
 
   @override
@@ -1559,26 +1582,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 10) {
-      // League rank/score/count come only from the official league ledger.
-      // Activity metrics below are explicitly labelled as all exam attempts.
-      final allResults = results;
-      final scores = allResults
-          .map((item) => num.tryParse(item['score']?.toString() ?? ''))
-          .whereType<num>()
-          .toList();
-      final averageScore = scores.isEmpty
-          ? '—'
-          : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
-      final correctTotal = allResults.fold<int>(
-        0,
-        (sum, item) =>
-            sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
-      );
-      final wrongTotal = allResults.fold<int>(
-        0,
-        (sum, item) =>
-            sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
-      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1593,7 +1596,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
                   const Text(
-                    'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
+                    'رتبه و امتیاز فقط از نتایج رسمی و معتبر آزمون شبانه محاسبه می‌شود.',
                     style: TextStyle(
                         color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
                   ),
@@ -1614,18 +1617,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           label: 'آزمون‌های مؤثر در لیگ',
                           value: stats?['exams_count']?.toString() ?? '۰',
                           icon: Icons.assignment_turned_in_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'میانگین امتیاز همه آزمون‌ها',
-                          value: averageScore,
-                          icon: Icons.insights_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'پاسخ صحیح همه آزمون‌ها',
-                          value: correctTotal.toString(),
-                          icon: Icons.check_circle_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'پاسخ غلط همه آزمون‌ها',
-                          value: wrongTotal.toString(),
-                          icon: Icons.cancel_rounded),
                     ],
                   ),
                 ],
@@ -1638,24 +1629,51 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('آخرین نتایج آزمون‌ها',
+                  const Text('حداکثر پنج رکورد برتر من',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'بهترین نتایج نهایی‌شده آزمون‌های رسمی شبانه از تمام فصل‌ها؛ رایگان برای همه کاربران.',
+                    style: TextStyle(fontSize: 11, height: 1.7),
+                  ),
                   const SizedBox(height: 8),
-                  if (allResults.isEmpty)
+                  if (topRecordsError) ...[
                     const Text(
-                        'پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
-                  for (final item in allResults.take(5))
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text((item['exam_title'] ?? 'آزمون').toString()),
-                      subtitle: Text(
-                          'صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
-                      trailing: Text('${item['score'] ?? 0} امتیاز',
-                          style: const TextStyle(
-                              color: RaqtivaColors.goldLight,
-                              fontWeight: FontWeight.bold)),
+                      'دریافت رکوردهای برتر با خطا مواجه شد؛ برای تلاش دوباره اقدام کنید.',
+                      style: TextStyle(color: RaqtivaColors.red),
                     ),
+                    TextButton.icon(
+                      onPressed: _loadTopRecords,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('تلاش مجدد'),
+                    ),
+                  ] else if (topRecords.isEmpty)
+                    const Text('هنوز رکورد رسمی نهایی‌شده‌ای ثبت نشده است.')
+                  else
+                    for (var i = 0; i < topRecords.length; i++)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 15,
+                          child: Text('${i + 1}'),
+                        ),
+                        title: Text(
+                          (topRecords[i]['exam_title'] ?? 'آزمون').toString(),
+                        ),
+                        subtitle: Text(
+                          '${topRecords[i]['season_title'] ?? 'فصل نامشخص'}'
+                          ' · صحیح: ${topRecords[i]['correct_count'] ?? 0}'
+                          ' · غلط: ${topRecords[i]['wrong_count'] ?? 0}',
+                        ),
+                        trailing: Text(
+                          '${topRecords[i]['adjusted_score'] ?? topRecords[i]['score'] ?? 0} امتیاز',
+                          style: const TextStyle(
+                            color: RaqtivaColors.goldLight,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                 ],
               ),
             ),
