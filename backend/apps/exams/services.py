@@ -63,6 +63,8 @@ def start_attempt(exam_id, user):
     # here would queue every participant behind one database row at the league start.
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
+    if exam.test_user_id is not None and exam.test_user_id != user.pk:
+        raise Exam.DoesNotExist
     now = timezone.now()
     is_night = exam.kind == Exam.Kind.NIGHT
     if is_night:
