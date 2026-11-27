@@ -2,9 +2,9 @@ name: Backend tests
 
 on:
   push:
-    branches: ["main", "feature/personal-demo-exam-20261127"]
+    branches: ["main", "feature/personal-demo-exam-20261127", "feature/public-demo-exam-flow-tests-20261127"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "feature/free-night-board-top5-paid-analytics-20261127"]
 
 permissions:
   contents: read
