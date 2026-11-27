@@ -53,6 +53,7 @@ def publish_question(question_id, owner):
         Question.Status.DRAFT,
         Question.Status.PENDING,
         Question.Status.APPROVED,
+        Question.Status.REJECTED,
     )
     if question.status not in publishable_statuses:
         raise ValidationError("فقط سؤال پیش‌نویس، در انتظار بررسی یا تأییدشده قابل انتشار است.")
