@@ -23,7 +23,7 @@ class QuestionOptionInline(admin.TabularInline):
     max_num = 4
 
 
-@admin.action(description="ارسال سؤالات انتخاب‌شده برای بررسی (توسط نویسنده)")
+@admin.action(description="ارسال سؤالات انتخاب‌شده برای بررسی (اختیاری)")
 def submit_selected(modeladmin, request, queryset):
     count = 0
     changed = []
@@ -68,10 +68,10 @@ def reject_selected(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} سؤال رد شد.")
 
 
-@admin.action(description="انتشار سؤالات تأییدشده")
+@admin.action(description="انتشار مستقیم سؤال‌های آماده (فقط مالک؛ بدون بازبین دوم)")
 def publish_selected(modeladmin, request, queryset):
     if not request.user.is_superuser:
-        modeladmin.message_user(request, "انتشار نهایی فقط با تأیید مالک سامانه مجاز است.", level=messages.ERROR)
+        modeladmin.message_user(request, "انتشار نهایی فقط در اختیار مالک سامانه است.", level=messages.ERROR)
         return
     count = 0
     published = []
@@ -82,7 +82,7 @@ def publish_selected(modeladmin, request, queryset):
             count += 1
         except (ValidationError, Question.DoesNotExist) as exc:
             modeladmin.message_user(request, f"{question.pk}: {exc}", level=messages.ERROR)
-    record_admin_action(request.user, published, "انتشار سؤال تأییدشده")
+    record_admin_action(request.user, published, "انتشار مستقیم سؤال توسط مالک")
     modeladmin.message_user(request, f"{count} سؤال منتشر شد.")
 
 
@@ -91,9 +91,9 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ("id", "subject", "difficulty", "provenance", "status", "author", "reviewer", "version", "created_at")
     list_filter = ("subject", "difficulty", "provenance", "status")
     search_fields = ("prompt", "source_reference", "author__phone_number")
-    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("status", "reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
-    actions = [submit_selected, approve_selected, reject_selected, publish_selected]
+    actions = [publish_selected, submit_selected, approve_selected, reject_selected]
 
     def changelist_view(self, request, extra_context=None):
         warn_admin_during_exam(request)

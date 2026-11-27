@@ -46,11 +46,15 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        owner = User.objects.filter(
+            is_active=True, is_superuser=True
+        ).order_by("pk").first()
+        if owner is None:
+            raise CommandError("برای انتشار آزمون آزمایشی، مالک فعال سامانه (superuser) وجود ندارد.")
+
         author = User.objects.filter(is_active=True, is_staff=True).order_by("pk").first()
         if author is None:
-            author = User.objects.filter(is_active=True).order_by("pk").first()
-        if author is None:
-            raise CommandError("برای ثبت سؤالات آزمون، هیچ کاربر فعالی وجود ندارد.")
+            raise CommandError("برای ثبت سؤال‌های آزمون، هیچ کاربر فعالِ دارای دسترسی مدیریتی وجود ندارد.")
 
         title = "آزمون آزمایشی عمومی RAQTIVA"
         exam, created = Exam.objects.get_or_create(
@@ -98,7 +102,7 @@ class Command(BaseCommand):
                 points_wrong=0,
             )
 
-        publish_exam(exam.pk)
+        publish_exam(exam.pk, owner)
         self.stdout.write(self.style.SUCCESS(
             f"آزمون آزمایشی عمومی با {len(DEMO_ITEMS)} سؤال منتشر شد. شناسه آزمون: {exam.pk}"
         ))
