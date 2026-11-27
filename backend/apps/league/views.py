@@ -181,3 +181,170 @@ class LeagueAppealReviewView(APIView):
         except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(LeagueAppealSerializer(appeal).data)
+
+
+class LatestNightExamLeaderboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .services import latest_night_exam_rows
+
+        exam, national_rows = latest_night_exam_rows()
+        if exam is None:
+            return Response({
+                "exam": None,
+                "national_results": [],
+                "province": None,
+                "province_verified": bool(
+                    getattr(request.user, "province_verified", False)
+                    and getattr(request.user, "province", "")
+                ),
+                "provincial_results": [],
+            })
+
+        def serialize(rows):
+            return [
+                {
+                    "rank": index,
+                    "display_name": row.user.display_name or "کاربر",
+                    "total_score": row.adjusted_score,
+                    "correct_total": row.correct_count,
+                    "wrong_total": row.wrong_count,
+                    "elapsed_seconds": row.elapsed_seconds,
+                    "attempt_id": str(row.attempt_id),
+                }
+                for index, row in enumerate(rows, start=1)
+            ]
+
+        province = (getattr(request.user, "province", "") or "").strip()
+        verified = bool(
+            getattr(request.user, "province_verified", False) and province
+        )
+
+        provincial_rows = []
+        if verified:
+            provincial_exam, provincial_rows = latest_night_exam_rows(
+                province=province
+            )
+            # Both calls must refer to the same latest exam.
+            if provincial_exam is None or provincial_exam.pk != exam.pk:
+                provincial_rows = []
+
+        return Response({
+            "exam": {
+                "id": str(exam.pk),
+                "title": exam.title,
+                "starts_at": exam.starts_at,
+                "ends_at": exam.ends_at,
+            },
+            "national_results": serialize(national_rows),
+            "province": province if verified else None,
+            "province_verified": verified,
+            "provincial_results": serialize(provincial_rows),
+        })
+
+
+class MyTopRecordsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .services import top_records_for_user
+
+        records = top_records_for_user(request.user, limit=5)
+        return Response({
+            "results": [
+                {
+                    "attempt_id": str(entry.attempt_id),
+                    "exam_id": str(entry.attempt.exam_id),
+                    "exam_title": entry.attempt.exam.title,
+                    "season_id": str(entry.season_id),
+                    "season_title": entry.season.title,
+                    "score": entry.score,
+                    "adjusted_score": entry.adjusted_score,
+                    "correct_count": entry.correct_count,
+                    "wrong_count": entry.wrong_count,
+                    "elapsed_seconds": entry.elapsed_seconds,
+                    "submitted_at": entry.attempt.submitted_at,
+                }
+                for entry in records
+            ]
+        })
+
+
+class MyPerformanceAnalyticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Avg, Count, Sum
+        from django.utils import timezone
+        from apps.exams.models import ExamAttempt
+        from apps.subscriptions.models import UserSubscription
+
+        now = timezone.now()
+        subscription = UserSubscription.objects.filter(
+            user=request.user,
+            status=UserSubscription.Status.ACTIVE,
+            starts_at__lte=now,
+            ends_at__gt=now,
+        ).select_related("plan").order_by("-ends_at").first()
+
+        if subscription is None:
+            return Response(
+                {
+                    "active": False,
+                    "subscription_required": True,
+                    "detail": "برای مشاهده تحلیل تفصیلی، اشتراک فعال لازم است.",
+                },
+                status=403,
+            )
+
+        attempts = ExamAttempt.objects.filter(
+            user=request.user,
+            status__in=[
+                ExamAttempt.Status.SUBMITTED,
+                ExamAttempt.Status.EXPIRED,
+            ],
+            submitted_at__isnull=False,
+            score__isnull=False,
+        )
+
+        summary = attempts.aggregate(
+            attempt_count=Count("id"),
+            average_score=Avg("score"),
+            total_correct=Sum("correct_count"),
+            total_wrong=Sum("wrong_count"),
+            total_blank=Sum("blank_count"),
+        )
+
+        by_kind = list(
+            attempts.values("exam__kind").annotate(
+                attempt_count=Count("id"),
+                average_score=Avg("score"),
+                total_correct=Sum("correct_count"),
+                total_wrong=Sum("wrong_count"),
+                total_blank=Sum("blank_count"),
+            ).order_by("exam__kind")
+        )
+
+        average = summary["average_score"]
+        summary["average_score"] = round(float(average), 2) if average is not None else None
+
+        for item in by_kind:
+            value = item["average_score"]
+            item["average_score"] = round(float(value), 2) if value is not None else None
+
+        return Response({
+            "active": True,
+            "subscription": {
+                "plan": subscription.plan.title,
+                "ends_at": subscription.ends_at,
+            },
+            "summary": {
+                "attempt_count": summary["attempt_count"] or 0,
+                "average_score": summary["average_score"],
+                "total_correct": summary["total_correct"] or 0,
+                "total_wrong": summary["total_wrong"] or 0,
+                "total_blank": summary["total_blank"] or 0,
+            },
+            "by_exam_kind": by_kind,
+        })

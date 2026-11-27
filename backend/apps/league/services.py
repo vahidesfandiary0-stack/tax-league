@@ -226,3 +226,136 @@ def adjust_score(entry_id, actor, score_delta, reason, idempotency_key):
         entry=entry, actor=actor, score_delta=score_delta,
         reason=reason[:500], idempotency_key=idempotency_key,
     )
+
+
+def latest_night_exam_rows(province=None):
+    """Return the best adjusted attempt per user in the latest ended official night exam."""
+    from django.db.models import (
+        IntegerField, OuterRef, Subquery, Sum, Value, F, Window
+    )
+    from django.db.models.functions import Coalesce, RowNumber
+
+    now = timezone.now()
+    exam = Exam.objects.filter(
+        kind=Exam.Kind.NIGHT,
+        counts_for_league=True,
+        status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
+        ends_at__lte=now,
+    ).order_by("-ends_at", "-created_at").first()
+
+    if exam is None:
+        return None, []
+
+    entries = LeagueScoreEntry.objects.filter(
+        attempt__exam=exam,
+        attempt__status__in=[
+            ExamAttempt.Status.SUBMITTED,
+            ExamAttempt.Status.EXPIRED,
+        ],
+    ).select_related("user", "attempt")
+
+    if province is not None:
+        entries = entries.filter(
+            user__province=province,
+            user__province_verified=True,
+        )
+
+    adjustment_totals = LeagueScoreAdjustment.objects.filter(
+        entry_id=OuterRef("pk")
+    ).values("entry_id").annotate(
+        total=Sum("score_delta")
+    ).values("total")[:1]
+
+    rows = entries.annotate(
+        adjustment_total=Coalesce(
+            Subquery(adjustment_totals, output_field=IntegerField()),
+            Value(0),
+            output_field=IntegerField(),
+        )
+    ).annotate(
+        adjusted_score=F("score") + F("adjustment_total")
+    ).annotate(
+        best_attempt_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F("user_id")],
+            order_by=[
+                F("adjusted_score").desc(),
+                F("correct_count").desc(),
+                F("wrong_count").asc(),
+                F("elapsed_seconds").asc(),
+                F("attempt_id").asc(),
+            ],
+        )
+    ).filter(
+        best_attempt_rank=1
+    ).order_by(
+        "-adjusted_score",
+        "-correct_count",
+        "wrong_count",
+        "elapsed_seconds",
+        "user_id",
+    )
+
+    return exam, list(rows)
+
+
+def top_records_for_user(user, limit=5):
+    """Best official night-exam result per exam across every season."""
+    from django.db.models import IntegerField, OuterRef, Subquery, Sum, Value, F, Window
+    from django.db.models.functions import Coalesce, RowNumber
+
+    adjustment_totals = LeagueScoreAdjustment.objects.filter(
+        entry_id=OuterRef("pk")
+    ).values("entry_id").annotate(
+        total=Sum("score_delta")
+    ).values("total")[:1]
+
+    records = LeagueScoreEntry.objects.filter(
+        user=user,
+        attempt__exam__kind=Exam.Kind.NIGHT,
+        attempt__exam__counts_for_league=True,
+        attempt__exam__status__in=[
+            Exam.Status.PUBLISHED,
+            Exam.Status.ARCHIVED,
+        ],
+        attempt__exam__ends_at__lte=timezone.now(),
+        attempt__status__in=[
+            ExamAttempt.Status.SUBMITTED,
+            ExamAttempt.Status.EXPIRED,
+        ],
+        attempt__submitted_at__isnull=False,
+        attempt__score__isnull=False,
+    ).select_related(
+        "attempt__exam", "season"
+    ).annotate(
+        adjustment_total=Coalesce(
+            Subquery(adjustment_totals, output_field=IntegerField()),
+            Value(0),
+            output_field=IntegerField(),
+        )
+    ).annotate(
+        adjusted_score=F("score") + F("adjustment_total")
+    ).annotate(
+        exam_best_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F("attempt__exam_id")],
+            order_by=[
+                F("adjusted_score").desc(),
+                F("correct_count").desc(),
+                F("wrong_count").asc(),
+                F("elapsed_seconds").asc(),
+                F("attempt_id").asc(),
+            ],
+        )
+    ).filter(
+        exam_best_rank=1
+    ).order_by(
+        "-adjusted_score",
+        "-correct_count",
+        "wrong_count",
+        "elapsed_seconds",
+        "attempt__submitted_at",
+        "attempt_id",
+    )
+
+    return list(records[:limit])

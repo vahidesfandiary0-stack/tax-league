@@ -436,7 +436,19 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [];
+      results = [],
+      latestNightNational = [],
+      latestNightProvincial = [],
+      topRecords = [];
+  bool latestNightBoardError = false;
+  bool topRecordsError = false;
+  Map<String, dynamic> latestNightExam = {};
+  Map<String, dynamic> paidAnalytics = {};
+  bool subscriptionActive = false;
+  bool subscriptionStatusLoaded = false;
+  bool subscriptionStatusError = false;
+  bool analyticsLoading = false;
+  String? analyticsError;
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -632,6 +644,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [];
       exams = [];
       results = [];
+      latestNightNational = [];
+      latestNightProvincial = [];
+      latestNightExam = {};
+      topRecords = [];
+      latestNightBoardError = false;
+      topRecordsError = false;
+      paidAnalytics = {};
+      subscriptionActive = false;
+      subscriptionStatusLoaded = false;
+      subscriptionStatusError = false;
+      analyticsLoading = false;
+      analyticsError = null;
       showcaseSlides = [];
       focusMode = false;
       focusEndsAt = null;
@@ -706,7 +730,93 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
-    if (mounted && !focusMode && stats != null) await _loadShowcaseSlides();
+    if (mounted && !focusMode && stats != null) {
+      await _loadShowcaseSlides();
+      await _loadLeagueExtras();
+    }
+  }
+
+  Future<void> _loadLeagueExtras() async {
+    Map<String, dynamic> latest = {};
+    List<dynamic> records = [];
+    Map<String, dynamic> subscription = {};
+    Map<String, dynamic> analytics = {};
+    var subscriptionLoaded = false;
+    var latestBoardFailed = false;
+    var topRecordsFailed = false;
+    String? subscriptionError;
+    String? detailError;
+
+    if (mounted) {
+      setState(() {
+        analyticsLoading = true;
+        analyticsError = null;
+        subscriptionStatusError = false;
+        latestNightBoardError = false;
+        topRecordsError = false;
+      });
+    }
+
+    try {
+      latest = Map<String, dynamic>.from(
+        await api.request('league/latest-night-exam/') as Map,
+      );
+    } catch (_) {
+      latestBoardFailed = true;
+    }
+
+    try {
+      final data = await api.request('league/me/top-records/');
+      records = List<dynamic>.from(data['results'] ?? []);
+    } catch (_) {
+      topRecordsFailed = true;
+    }
+
+    try {
+      subscription = Map<String, dynamic>.from(
+        await api.request('payments/subscription/me/') as Map,
+      );
+      subscriptionLoaded = true;
+    } catch (e) {
+      subscriptionError =
+          e.toString().replaceFirst('Exception: ', '');
+    }
+
+    final active = subscriptionLoaded && subscription['active'] == true;
+    if (active) {
+      try {
+        analytics = Map<String, dynamic>.from(
+          await api.request('league/me/analytics/') as Map,
+        );
+        if (analytics['active'] != true) {
+          throw const FormatException(
+            'وضعیت تحلیل دریافتی معتبر نیست.',
+          );
+        }
+      } catch (e) {
+        detailError = e.toString().replaceFirst('Exception: ', '');
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      latestNightExam = Map<String, dynamic>.from(
+        (latest['exam'] as Map?) ?? {},
+      );
+      latestNightNational =
+          List<dynamic>.from(latest['national_results'] ?? []);
+      latestNightProvincial =
+          List<dynamic>.from(latest['provincial_results'] ?? []);
+      topRecords = records;
+      latestNightBoardError = latestBoardFailed;
+      topRecordsError = topRecordsFailed;
+      subscriptionActive = active;
+      subscriptionStatusLoaded = subscriptionLoaded;
+      subscriptionStatusError = subscriptionError != null;
+      analyticsError = detailError ?? subscriptionError;
+      paidAnalytics = analytics;
+      analyticsLoading = false;
+    });
   }
 
   @override
@@ -1559,26 +1669,13 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 10) {
-      // League rank/score/count come only from the official league ledger.
-      // Activity metrics below are explicitly labelled as all exam attempts.
-      final allResults = results;
-      final scores = allResults
-          .map((item) => num.tryParse(item['score']?.toString() ?? ''))
-          .whereType<num>()
-          .toList();
-      final averageScore = scores.isEmpty
-          ? '—'
-          : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
-      final correctTotal = allResults.fold<int>(
-        0,
-        (sum, item) =>
-            sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
+      final summary = Map<String, dynamic>.from(
+        (paidAnalytics['summary'] as Map?) ?? {},
       );
-      final wrongTotal = allResults.fold<int>(
-        0,
-        (sum, item) =>
-            sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
+      final byKind = List<dynamic>.from(
+        paidAnalytics['by_exam_kind'] ?? [],
       );
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1588,14 +1685,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('عملکرد رسمی من در لیگ',
-                      style:
-                          TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const Text(
+                    'عملکرد رسمی من در لیگ',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  ),
                   const SizedBox(height: 6),
                   const Text(
-                    'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
+                    'رتبه و امتیاز بر اساس نتایج رسمی و معتبر لیگ محاسبه می‌شود.',
                     style: TextStyle(
-                        color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
+                      color: RaqtivaColors.muted,
+                      fontSize: 11,
+                      height: 1.7,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   Wrap(
@@ -1603,29 +1704,20 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                     runSpacing: 10,
                     children: [
                       _RaqtivaPerformanceMetric(
-                          label: 'رتبه لیگ',
-                          value: stats?['rank']?.toString() ?? '—',
-                          icon: Icons.emoji_events_rounded),
+                        label: 'رتبه لیگ',
+                        value: stats?['rank']?.toString() ?? '—',
+                        icon: Icons.emoji_events_rounded,
+                      ),
                       _RaqtivaPerformanceMetric(
-                          label: 'امتیاز کل لیگ',
-                          value: stats?['total_score']?.toString() ?? '۰',
-                          icon: Icons.stars_rounded),
+                        label: 'امتیاز کل لیگ',
+                        value: stats?['total_score']?.toString() ?? '۰',
+                        icon: Icons.stars_rounded,
+                      ),
                       _RaqtivaPerformanceMetric(
-                          label: 'آزمون‌های مؤثر در لیگ',
-                          value: stats?['exams_count']?.toString() ?? '۰',
-                          icon: Icons.assignment_turned_in_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'میانگین امتیاز همه آزمون‌ها',
-                          value: averageScore,
-                          icon: Icons.insights_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'پاسخ صحیح همه آزمون‌ها',
-                          value: correctTotal.toString(),
-                          icon: Icons.check_circle_rounded),
-                      _RaqtivaPerformanceMetric(
-                          label: 'پاسخ غلط همه آزمون‌ها',
-                          value: wrongTotal.toString(),
-                          icon: Icons.cancel_rounded),
+                        label: 'آزمون‌های مؤثر در لیگ',
+                        value: stats?['exams_count']?.toString() ?? '۰',
+                        icon: Icons.assignment_turned_in_rounded,
+                      ),
                     ],
                   ),
                 ],
@@ -1638,28 +1730,215 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('آخرین نتایج آزمون‌ها',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const Text(
+                    'پنج رکورد برتر من',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'بهترین نتایج آزمون‌های رسمی شما از تمام فصل‌ها؛ رایگان برای همه کاربران.',
+                    style: TextStyle(fontSize: 11, height: 1.7),
+                  ),
                   const SizedBox(height: 8),
-                  if (allResults.isEmpty)
+                  if (topRecordsError) ...[
                     const Text(
-                        'پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
-                  for (final item in allResults.take(5))
+                      'دریافت پنج رکورد برتر با خطا مواجه شد؛ اطلاعات فعلاً قابل تأیید نیست.',
+                      style: TextStyle(color: RaqtivaColors.red),
+                    ),
+                    TextButton.icon(
+                      onPressed: _loadLeagueExtras,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('تلاش مجدد'),
+                    ),
+                  ] else if (topRecords.isEmpty)
+                    const Text('هنوز رکورد رسمی نهایی‌شده‌ای ثبت نشده است.'),
+                  if (!topRecordsError)
+                    for (var i = 0; i < topRecords.length; i++)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text((item['exam_title'] ?? 'آزمون').toString()),
+                      leading: CircleAvatar(
+                        radius: 15,
+                        child: Text('${i + 1}'),
+                      ),
+                      title: Text(
+                        (topRecords[i]['exam_title'] ?? 'آزمون').toString(),
+                      ),
                       subtitle: Text(
-                          'صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
-                      trailing: Text('${item['score'] ?? 0} امتیاز',
-                          style: const TextStyle(
-                              color: RaqtivaColors.goldLight,
-                              fontWeight: FontWeight.bold)),
+                        '${topRecords[i]['season_title'] ?? 'فصل نامشخص'}'
+                        ' · صحیح: ${topRecords[i]['correct_count'] ?? 0}'
+                        ' · غلط: ${topRecords[i]['wrong_count'] ?? 0}',
+                      ),
+                      trailing: Text(
+                        '${topRecords[i]['adjusted_score'] ?? topRecords[i]['score'] ?? 0} امتیاز',
+                        style: const TextStyle(
+                          color: RaqtivaColors.goldLight,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                 ],
               ),
             ),
           ),
+          if (subscriptionStatusError)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    const Text(
+                      'دریافت وضعیت اشتراک با خطا مواجه شد.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton(
+                      onPressed: analyticsLoading ? null : _loadLeagueExtras,
+                      child: const Text('تلاش مجدد'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (!subscriptionStatusLoaded)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(18),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            )
+          else if (subscriptionActive)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(17),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'تحلیل تفصیلی عملکرد',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'اشتراک فعال: ${paidAnalytics['subscription']?['plan'] ?? 'ویژه'}',
+                      style: const TextStyle(
+                        color: RaqtivaColors.goldLight,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (analyticsError != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'دریافت تحلیل با خطا مواجه شد: $analyticsError',
+                            style: const TextStyle(
+                              color: RaqtivaColors.muted,
+                              fontSize: 12,
+                              height: 1.7,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: analyticsLoading
+                                ? null
+                                : _loadLeagueExtras,
+                            child: const Text('تلاش مجدد برای دریافت تحلیل'),
+                          ),
+                        ],
+                      )
+                    else
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                        _RaqtivaPerformanceMetric(
+                          label: 'تعداد آزمون‌ها',
+                          value: summary['attempt_count']?.toString() ?? '۰',
+                          icon: Icons.assignment_turned_in_rounded,
+                        ),
+                        _RaqtivaPerformanceMetric(
+                          label: 'میانگین امتیاز',
+                          value: summary['average_score']?.toString() ?? '—',
+                          icon: Icons.insights_rounded,
+                        ),
+                        _RaqtivaPerformanceMetric(
+                          label: 'پاسخ صحیح',
+                          value: summary['total_correct']?.toString() ?? '۰',
+                          icon: Icons.check_circle_rounded,
+                        ),
+                        _RaqtivaPerformanceMetric(
+                          label: 'پاسخ غلط',
+                          value: summary['total_wrong']?.toString() ?? '۰',
+                          icon: Icons.cancel_rounded,
+                        ),
+                        _RaqtivaPerformanceMetric(
+                          label: 'بدون پاسخ',
+                          value: summary['total_blank']?.toString() ?? '۰',
+                          icon: Icons.remove_circle_outline,
+                        ),
+                      ],
+                    ),
+                    if (byKind.isNotEmpty) ...[
+                      const Divider(height: 26),
+                      const Text(
+                        'تفکیک عملکرد بر اساس نوع آزمون',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      for (final item in byKind)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            (item['exam__kind'] ?? 'سایر').toString(),
+                          ),
+                          subtitle: Text(
+                            'تعداد: ${item['attempt_count'] ?? 0}'
+                            ' · میانگین: ${item['average_score'] ?? '—'}'
+                            ' · صحیح: ${item['total_correct'] ?? 0}'
+                            ' · غلط: ${item['total_wrong'] ?? 0}',
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 34,
+                      color: RaqtivaColors.gold,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'تحلیل تفصیلی ویژه اعضای دارای اشتراک',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'میانگین عملکرد، تحلیل پاسخ‌های صحیح و غلط و تفکیک نتایج آزمون‌ها با اشتراک فعال در دسترس است.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(height: 1.8, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => setState(() => accountPage = 4),
+                      child: const Text('مشاهده و تهیه اشتراک'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       );
     }
@@ -1942,7 +2221,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
 
-    Widget boardRow(dynamic row, {bool provincial = false}) {
+    Widget boardRow(dynamic row, {bool provincial = false, bool showExamCount = true}) {
       final position = (row['rank'] ?? '—').toString();
       final name = (row['display_name'] ?? 'کاربر').toString();
       final points = (row['total_score'] ?? 0).toString();
@@ -2020,7 +2299,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           : const Color(0xFFF5F1E8),
                     ),
                   ),
-                  if (provincial)
+                  if (provincial && showExamCount)
                     Text(
                       'آزمون معتبر: ${(row['exams_count'] ?? 0)}',
                       style: const TextStyle(
@@ -2356,6 +2635,57 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ]),
       )),
       Card(
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              heading(
+                Icons.nightlight_round,
+                'رتبه‌بندی آخرین آزمون شبانه',
+                subtitle: latestNightExam.isEmpty
+                    ? 'نتیجه نهایی آزمون شبانه در دسترس نیست.'
+                    : (latestNightExam['title'] ?? 'آزمون شبانه').toString(),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'رتبه‌بندی ملی آخرین آزمون شبانه؛ رایگان برای همه کاربران',
+                style: TextStyle(fontSize: 11, height: 1.7),
+              ),
+              if (latestNightBoardError) ...[
+                const Text(
+                  'دریافت رتبه‌بندی آخرین آزمون شبانه با خطا مواجه شد؛ اطلاعات فعلاً قابل تأیید نیست.',
+                  style: TextStyle(color: RaqtivaColors.red),
+                ),
+                TextButton.icon(
+                  onPressed: _loadLeagueExtras,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('تلاش مجدد'),
+                ),
+              ] else ...[
+                if (latestNightNational.isEmpty)
+                  const Text('هنوز نتیجه‌ای برای نمایش وجود ندارد.'),
+                for (final row in latestNightNational) boardRow(row),
+                if (latestNightExam.isNotEmpty) ...[
+                const Divider(height: 24),
+                const Text(
+                  'رتبه‌بندی استانی',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                if (latestNightProvincial.isEmpty)
+                  const Text(
+                    'رتبه‌بندی استانی برای این حساب در دسترس نیست؛ نمایش آن به تأیید استان کاربر وابسته است.',
+                    style: TextStyle(fontSize: 12, height: 1.7),
+                  ),
+                for (final row in latestNightProvincial)
+                  boardRow(row, provincial: true, showExamCount: false),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+      Card(
           child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2634,7 +2964,7 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   final difficulties = const {
     'hard': 'سخت',
     'very_hard': 'خیلی سخت',
-    'specialist': 'تخصصی'
+    'specialized': 'تخصصی'
   };
   List<dynamic> questions = [], revisions = [];
   String subject = 'direct_tax', difficulty = 'hard';
