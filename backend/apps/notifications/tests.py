@@ -1,8 +1,13 @@
+import tempfile
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
+
+from apps.exams.models import Exam
 
 from .models import ShowcaseSlide
 
@@ -79,3 +84,126 @@ class ShowcaseSlideApiTests(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [])
+
+
+    def test_countdown_uses_nearest_published_official_future_exam(self):
+        now = timezone.now()
+        countdown = ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.Kind.EXAM_COUNTDOWN,
+            title="شمارش معکوس",
+            sort_order=2,
+        )
+        nearest = Exam.objects.create(
+            title="آزمون رسمی نزدیک",
+            kind=Exam.Kind.MOCK,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=True,
+            starts_at=now + timedelta(hours=3),
+        )
+        Exam.objects.create(
+            title="آزمون رسمی دورتر",
+            kind=Exam.Kind.MOCK,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=True,
+            starts_at=now + timedelta(days=2),
+        )
+        Exam.objects.create(
+            title="آزمون تمرینی",
+            kind=Exam.Kind.DAILY,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=False,
+            starts_at=now + timedelta(minutes=30),
+        )
+        Exam.objects.create(
+            title="آزمون پیش‌نویس",
+            kind=Exam.Kind.MOCK,
+            status=Exam.Status.DRAFT,
+            counts_for_league=True,
+            starts_at=now + timedelta(minutes=15),
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], countdown.pk)
+        self.assertEqual(response.data[0]["exam_title"], nearest.title)
+        self.assertEqual(response.data[0]["starts_at"], nearest.starts_at)
+
+    def test_countdown_is_hidden_without_eligible_official_future_exam(self):
+        now = timezone.now()
+        countdown = ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.Kind.EXAM_COUNTDOWN,
+            title="شمارش معکوس",
+        )
+        Exam.objects.create(
+            title="آزمون رسمی منقضی",
+            kind=Exam.Kind.MOCK,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=True,
+            starts_at=now - timedelta(days=2),
+            ends_at=now - timedelta(days=1),
+        )
+        Exam.objects.create(
+            title="آزمون تمرینی آینده",
+            kind=Exam.Kind.DAILY,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=False,
+            starts_at=now + timedelta(hours=1),
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(countdown.pk, [item["id"] for item in response.data])
+
+    def test_countdown_slide_respects_its_own_active_window(self):
+        now = timezone.now()
+        hidden = ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.Kind.EXAM_COUNTDOWN,
+            title="شمارش خارج از بازه",
+            starts_at=now + timedelta(hours=1),
+        )
+        visible = ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.Kind.EXAM_COUNTDOWN,
+            title="شمارش فعال",
+            sort_order=1,
+        )
+        exam = Exam.objects.create(
+            title="آزمون رسمی",
+            kind=Exam.Kind.MOCK,
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=True,
+            starts_at=now + timedelta(hours=4),
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.data], [visible.pk])
+        self.assertEqual(response.data[0]["exam_title"], exam.title)
+        self.assertNotIn(hidden.pk, [item["id"] for item in response.data])
+
+    def test_uploaded_showcase_image_returns_root_absolute_media_url(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                self.client.force_authenticate(user=self.user)
+                slide = ShowcaseSlide.objects.create(
+                    kind=ShowcaseSlide.Kind.ADVERTISEMENT,
+                    title="تصویر آزمایشی",
+                    image=SimpleUploadedFile(
+                        "banner.jpg", b"test-image-content", content_type="image/jpeg"
+                    ),
+                )
+
+                response = self.client.get(self.url)
+
+                self.assertEqual(response.status_code, 200)
+                item = next(row for row in response.data if row["id"] == slide.pk)
+                self.assertEqual(
+                    item["image_url"],
+                    "http://testserver/media/showcase/banner.jpg",
+                )

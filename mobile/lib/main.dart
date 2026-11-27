@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'utils/showcase_slide_utils.dart';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -427,8 +426,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       // Founder content is fetched only for the authenticated home carousel.
       setState(() => showcaseSlides = List<dynamic>.from(data));
     } catch (_) {
-      if (!mounted || stats == null || showcaseSlides.isNotEmpty) return;
-      setState(() => showcaseSlides = fallbackBrandSlides());
+      // Keep the last server response; never invent fallback showcase content.
     }
   }
 
@@ -2199,7 +2197,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
       if (selectedHomeSection != null) return [accountStrip(), cards[sectionCards[selectedHomeSection!]]];
       return [
-        RaqtivaShowcaseCarousel(slides: showcaseSlides, exams: exams),
+        RaqtivaShowcaseCarousel(slides: showcaseSlides),
         const SizedBox(height: 14),
         accountStrip(),
         GridView.count(

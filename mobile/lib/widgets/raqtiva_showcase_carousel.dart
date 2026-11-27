@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class RaqtivaShowcaseCarousel extends StatefulWidget {
-  const RaqtivaShowcaseCarousel({super.key, required this.slides, this.exams = const <dynamic>[]});
+  const RaqtivaShowcaseCarousel({super.key, required this.slides});
 
   final List<dynamic> slides;
-  final List<dynamic> exams;
 
   @override
-  State<RaqtivaShowcaseCarousel> createState() => _RaqtivaShowcaseCarouselState();
+  State<RaqtivaShowcaseCarousel> createState() =>
+      _RaqtivaShowcaseCarouselState();
 }
 
 class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
@@ -18,60 +18,19 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   Timer? _clockTimer;
   int _index = 0;
 
-  Map<String, dynamic>? get _nextExam {
+  List<Map<String, dynamic>> get _allSlides {
     final now = DateTime.now();
-    DateTime? nearest;
-    Map<String, dynamic>? result;
-    for (final raw in widget.exams) {
-      if (raw is! Map || raw['counts_for_league'] != true || raw['starts_at'] == null) continue;
-      final start = DateTime.tryParse(raw['starts_at'].toString())?.toLocal();
-      if (start == null || !start.isAfter(now)) continue;
-      if (nearest == null || start.isBefore(nearest)) {
-        nearest = start;
-        result = Map<String, dynamic>.from(raw);
-      }
-    }
-    return result;
-  }
-
-  List<dynamic> get _allSlides {
-    // The three official slides are mandatory and always come first.
-    // Server-managed content is appended, never allowed to replace them.
-    final customSlides = widget.slides.where((raw) {
-      if (raw is! Map) return false;
-      final kind = raw['kind']?.toString();
-      return kind != 'founder' &&
-          kind != 'logo' &&
-          kind != 'exam_countdown';
-    }).toList();
-
-    final nextExam = _nextExam;
-
-    return [
-      <String, dynamic>{
-        'id': 'builtin-founder',
-        'kind': 'founder',
-        'title': 'بنیانگذار لیگ : وحید اسفندیاری',
-        'body': 'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
-        'duration_seconds': 5,
-      },
-      <String, dynamic>{
-        'id': 'builtin-logo',
-        'kind': 'logo',
-        'title': '',
-        'body': '',
-        'duration_seconds': 5,
-      },
-      <String, dynamic>{
-        'id': 'builtin-exam-countdown',
-        'kind': 'exam_countdown',
-        'title': 'آزمون بعدی',
-        'starts_at': nextExam?['starts_at'],
-        'exam_title': nextExam?['title'],
-        'duration_seconds': 8,
-      },
-      ...customSlides,
-    ];
+    return widget.slides
+        .whereType<Map>()
+        .map((raw) => Map<String, dynamic>.from(raw))
+        .where((slide) {
+          if (slide['kind']?.toString() != 'exam_countdown') return true;
+          final rawStart = slide['starts_at'];
+          if (rawStart == null) return false;
+          final startsAt = DateTime.tryParse(rawStart.toString())?.toLocal();
+          return startsAt != null && startsAt.isAfter(now);
+        })
+        .toList();
   }
 
   int get _count => _allSlides.length;
@@ -79,7 +38,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   int _durationFor(int index) {
     if (index < 0 || index >= _count) return 5;
     final slide = _allSlides[index];
-    if (slide is Map && slide['duration_seconds'] is num) {
+    if (slide['duration_seconds'] is num) {
       return (slide['duration_seconds'] as num).toInt().clamp(3, 15).toInt();
     }
     return 5;
@@ -91,8 +50,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     _scheduleNext();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      // Refresh the countdown every second. The mandatory countdown slide
-      // remains visible and switches to the no-schedule message after start.
+      // Refresh only time-dependent content; expired countdown slides are filtered out.
       if (_index >= _count) {
         _index = 0;
         if (_controller.hasClients) _controller.jumpToPage(0);
@@ -105,8 +63,7 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
   @override
   void didUpdateWidget(covariant RaqtivaShowcaseCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.slides.toString() != widget.slides.toString() ||
-        oldWidget.exams.toString() != widget.exams.toString()) {
+    if (oldWidget.slides.toString() != widget.slides.toString()) {
       if (_index >= _count) {
         _index = 0;
         if (_controller.hasClients) _controller.jumpToPage(0);
@@ -230,18 +187,31 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 112,
-                height: 158,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox(
-                  width: 112,
-                  height: 158,
-                  child: Icon(Icons.person_rounded,
-                      color: Color(0xFFFFD76A), size: 58),
-                ),
-              ),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: 112,
+                      height: 158,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox(
+                        width: 112,
+                        height: 158,
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: Color(0xFFFFD76A),
+                          size: 58,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(
+                      width: 112,
+                      height: 158,
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: Color(0xFFFFD76A),
+                        size: 58,
+                      ),
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -249,43 +219,41 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      title.isEmpty
-                          ? 'بنیانگذار لیگ : وحید اسفندیاری'
-                          : title,
-                      maxLines: 1,
-                      softWrap: false,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Color(0xFFFFE4A8),
-                        fontSize: 17,
-                        height: 1.5,
-                        fontWeight: FontWeight.w900,
+                  if (title.isNotEmpty)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        softWrap: false,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Color(0xFFFFE4A8),
+                          fontSize: 17,
+                          height: 1.5,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      body.isEmpty
-                          ? 'مالک و بنیان‌گذار لیگ نخبگان مالیاتی'
-                          : body,
-                      textAlign: TextAlign.right,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: const TextStyle(
-                        color: Color(0xFFD7E4FA),
-                        fontSize: 12,
-                        height: 1.7,
-                        fontWeight: FontWeight.w700,
+                  if (body.isNotEmpty) const SizedBox(height: 8),
+                  if (body.isNotEmpty)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        body,
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: const TextStyle(
+                          color: Color(0xFFD7E4FA),
+                          fontSize: 12,
+                          height: 1.7,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -295,7 +263,9 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     }
 
     if (kind == 'exam_countdown') {
-      final startsAt = DateTime.tryParse(slide['starts_at']?.toString() ?? '')?.toLocal();
+      final startsAt = DateTime.tryParse(
+        slide['starts_at']?.toString() ?? '',
+      )?.toLocal();
       final remaining = startsAt == null
           ? Duration.zero
           : startsAt.difference(DateTime.now());
@@ -315,9 +285,14 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               children: [
                 Icon(Icons.timer_rounded, color: Color(0xFFFFD76A), size: 27),
                 SizedBox(width: 9),
-                Text('شمارش معکوس آزمون بعدی', style: TextStyle(
-                  color: Color(0xFFFFE4A8), fontSize: 16, fontWeight: FontWeight.w900,
-                )),
+                Text(
+                  'شمارش معکوس آزمون بعدی',
+                  style: TextStyle(
+                    color: Color(0xFFFFE4A8),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -325,7 +300,11 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
               const Text(
                 'زمان آزمون رسمی بعدی هنوز در سامانه زمان‌بندی نشده است.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.8,
+                ),
               )
             else ...[
               if ((slide['exam_title'] ?? '').toString().isNotEmpty)
@@ -364,34 +343,52 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
         child: Row(
           children: [
             Expanded(
-              child: Image.asset(
-                'assets/brand/logo_full.png',
-                fit: BoxFit.contain,
-                height: 160,
-              ),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      height: 160,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Color(0xFFFFD76A),
+                        size: 54,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Color(0xFFFFD76A),
+                      size: 54,
+                    ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'رقابت کن، رتبه بگیر، نخبه شو!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFFFFE4A8),
-                      fontSize: 17,
-                      height: 1.8,
-                      fontWeight: FontWeight.w900,
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFFFE4A8),
+                        fontSize: 17,
+                        height: 1.8,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  if (title.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                  ],
                   if (body.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 10, height: 1.4)),
+                    Text(
+                      body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -446,12 +443,19 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
                 if (title.isNotEmpty) const SizedBox(height: 7),
                 Text(
                   body,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.8),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    height: 1.8,
+                  ),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   kind == 'advertisement' ? 'تبلیغات' : 'پیام مدیریت',
-                  style: const TextStyle(color: Color(0xFFB8C5D6), fontSize: 10),
+                  style: const TextStyle(
+                    color: Color(0xFFB8C5D6),
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -461,7 +465,6 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     );
   }
 }
-
 
 class _CountdownUnit extends StatelessWidget {
   const _CountdownUnit({required this.value, required this.label});
@@ -480,9 +483,19 @@ class _CountdownUnit extends StatelessWidget {
     ),
     child: Column(
       children: [
-        Text(value, style: const TextStyle(color: Color(0xFFFFD76A), fontSize: 17, fontWeight: FontWeight.w900)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFFFFD76A),
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Color(0xFFD7E4FA), fontSize: 9)),
+        Text(
+          label,
+          style: const TextStyle(color: Color(0xFFD7E4FA), fontSize: 9),
+        ),
       ],
     ),
   );

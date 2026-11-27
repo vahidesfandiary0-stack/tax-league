@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.exams.models import Exam
+
 from .models import Notification, ShowcaseSlide
 from .serializers import NotificationSerializer
 
@@ -38,22 +40,33 @@ class ShowcaseSlideListView(APIView):
 
     def get(self, request):
         now = timezone.now()
+        next_exam = Exam.objects.filter(
+            status=Exam.Status.PUBLISHED,
+            counts_for_league=True,
+            starts_at__gt=now,
+        ).filter(
+            Q(ends_at__isnull=True) | Q(ends_at__gt=now)
+        ).order_by("starts_at", "pk").first()
+
         slides = ShowcaseSlide.objects.filter(is_active=True).filter(
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gt=now),
         ).order_by("sort_order", "pk")
-        return Response([
-            {
+
+        result = []
+        for slide in slides:
+            if slide.kind == ShowcaseSlide.Kind.EXAM_COUNTDOWN and next_exam is None:
+                continue
+            item = {
                 "id": slide.pk,
                 "kind": slide.kind,
                 "title": slide.title,
                 "body": slide.body,
-                "image_url": (
-                    request.build_absolute_uri(slide.image.url)
-                    if slide.image
-                    else slide.image_url
-                ),
+                "image_url": request.build_absolute_uri("/" + slide.image.url.lstrip("/")) if slide.image else slide.image_url,
                 "duration_seconds": slide.duration_seconds,
             }
-            for slide in slides
-        ])
+            if slide.kind == ShowcaseSlide.Kind.EXAM_COUNTDOWN:
+                item["starts_at"] = next_exam.starts_at
+                item["exam_title"] = next_exam.title
+            result.append(item)
+        return Response(result)
