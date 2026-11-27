@@ -96,6 +96,24 @@ class DesignerQuestionApiTests(TestCase):
         published = publish_question(question_id, self.owner)
         self.assertEqual(published.status, Question.Status.PUBLISHED)
 
+    def test_owner_can_publish_complete_draft_without_second_reviewer(self):
+        response = self.client.post("/api/v1/questions/designer/", self.payload, format="json")
+        self.assertEqual(response.status_code, 201)
+        question = Question.objects.get(pk=response.data["id"])
+
+        published = publish_question(question.pk, self.owner)
+
+        self.assertEqual(published.status, Question.Status.PUBLISHED)
+        self.assertIsNone(published.reviewer_id)
+        self.assertEqual(published.review_decision, "owner_published")
+
+    def test_non_owner_cannot_publish_draft_directly(self):
+        response = self.client.post("/api/v1/questions/designer/", self.payload, format="json")
+        question = Question.objects.get(pk=response.data["id"])
+
+        with self.assertRaises(Exception):
+            publish_question(question.pk, self.reviewer)
+
     def test_submission_requires_exactly_four_options_and_one_correct(self):
         invalid = dict(self.payload)
         invalid["options"] = invalid["options"][:3]
