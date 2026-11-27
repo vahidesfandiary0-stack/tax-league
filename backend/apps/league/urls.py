@@ -3,6 +3,7 @@ from django.urls import path
 from .views import ActiveSeasonView, LeaderboardView, MyLeagueStatsView, ProvincialLeaderboardView, LeagueAppealListCreateView, LeagueAppealReviewView
 
 urlpatterns = [
+    path("me/top-records/", MyTopRecordsView.as_view(), name="league-my-top-records"),
     path("season/", ActiveSeasonView.as_view(), name="league-active-season"),
     path("leaderboard/", LeaderboardView.as_view(), name="league-leaderboard"),
     path("provincial-leaderboard/", ProvincialLeaderboardView.as_view(), name="league-provincial-leaderboard"),
