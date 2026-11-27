@@ -42,26 +42,23 @@ DEMO_ITEMS = [
 
 
 class Command(BaseCommand):
-    help = "Create a private, non-league demo exam visible only to the specified account."
-
-    def add_arguments(self, parser):
-        parser.add_argument("--phone-number", required=True, help="Exact phone number of the account that will see the test.")
+    help = "Create a public, non-league demo exam for all authenticated users."
 
     @transaction.atomic
     def handle(self, *args, **options):
-        phone = options["phone_number"].strip()
-        try:
-            user = User.objects.get(phone_number=phone, is_active=True)
-        except User.DoesNotExist as exc:
-            raise CommandError("کاربر فعال با این شماره پیدا نشد.") from exc
+        author = User.objects.filter(is_active=True, is_staff=True).order_by("pk").first()
+        if author is None:
+            author = User.objects.filter(is_active=True).order_by("pk").first()
+        if author is None:
+            raise CommandError("برای ثبت سؤالات آزمون، هیچ کاربر فعالی وجود ندارد.")
 
-        title = "آزمون آزمایشی شخصی RAQTIVA"
+        title = "آزمون آزمایشی عمومی RAQTIVA"
         exam, created = Exam.objects.get_or_create(
             title=title,
-            test_user=user,
+            test_user=None,
             defaults={
                 "kind": Exam.Kind.MOCK,
-                "description": "آزمون موقت برای بررسی شروع، پاسخ‌گویی، ثبت نتیجه و نمایش سوابق؛ فاقد اثر بر رتبه‌بندی لیگ.",
+                "description": "آزمون عمومی و موقت برای بررسی شروع، پاسخ‌گویی، ثبت نتیجه و نمایش سوابق؛ فاقد اثر بر رتبه‌بندی لیگ.",
                 "duration_minutes": 10,
                 "max_attempts": 20,
                 "counts_for_league": False,
@@ -70,7 +67,7 @@ class Command(BaseCommand):
             },
         )
         if not created and exam.status == Exam.Status.PUBLISHED:
-            self.stdout.write(self.style.SUCCESS(f"آزمون آزمایشی از قبل فعال است: {exam.pk}"))
+            self.stdout.write(self.style.SUCCESS(f"آزمون آزمایشی عمومی از قبل فعال است: {exam.pk}"))
             return
         if not created and exam.status != Exam.Status.DRAFT:
             raise CommandError("آزمون موجود در وضعیت قابل انتشار نیست.")
@@ -84,7 +81,7 @@ class Command(BaseCommand):
                 provenance=Question.Provenance.AUTHORED,
                 provenance_note="محتوای ساده و صرفاً آزمایشی؛ غیرقابل استفاده در آزمون رسمی شبانه.",
                 status=Question.Status.PUBLISHED,
-                author=user,
+                author=author,
             )
             for position, choice in enumerate(choices, start=1):
                 QuestionOption.objects.create(
@@ -103,6 +100,5 @@ class Command(BaseCommand):
 
         publish_exam(exam.pk)
         self.stdout.write(self.style.SUCCESS(
-            f"آزمون آزمایشی با {len(DEMO_ITEMS)} سؤال فقط برای حساب {phone} منتشر شد. "
-            f"شناسه آزمون: {exam.pk}"
+            f"آزمون آزمایشی عمومی با {len(DEMO_ITEMS)} سؤال منتشر شد. شناسه آزمون: {exam.pk}"
         ))
