@@ -91,7 +91,7 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ("id", "subject", "difficulty", "provenance", "status", "author", "reviewer", "version", "created_at")
     list_filter = ("subject", "difficulty", "provenance", "status")
     search_fields = ("prompt", "source_reference", "author__phone_number")
-    readonly_fields = ("reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
+    readonly_fields = ("status", "reviewer", "review_decision", "review_reason", "reviewed_at", "published_at", "created_at", "updated_at")
     inlines = [QuestionOptionInline]
     actions = [publish_selected, submit_selected, approve_selected, reject_selected]
 
