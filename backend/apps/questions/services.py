@@ -76,11 +76,16 @@ def publish_question(question_id, owner):
         raise ValidationError("فقط سؤال سخت، خیلی سخت یا تخصصی قابل انتشار است.")
 
     now = timezone.now()
+    was_rejected = question.status == Question.Status.REJECTED
+    previous_review_reason = question.review_reason
     question.status = Question.Status.PUBLISHED
     question.published_at = now
-    # Record that the owner made the final decision without fabricating a reviewer.
+    # Record the owner's decision without erasing prior reviewer feedback.
     question.review_decision = "owner_published"
-    question.review_reason = "انتشار مستقیم توسط مالک سامانه"
+    if not was_rejected:
+        question.review_reason = "انتشار مستقیم توسط مالک سامانه"
+    else:
+        question.review_reason = previous_review_reason
     question.reviewed_at = now
     question.save(update_fields=[
         "status", "published_at", "review_decision", "review_reason",
