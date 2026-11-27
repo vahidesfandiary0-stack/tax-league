@@ -59,8 +59,6 @@ def _build_attempt_question(attempt, item, rng, position):
 
 @transaction.atomic
 def start_attempt(exam_id, user):
-    # Serialize starts only for the same participant. Locking the shared Exam row
-    # here would queue every participant behind one database row at the league start.
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
     exam = Exam.objects.get(pk=exam_id, status=Exam.Status.PUBLISHED)
     if exam.test_user_id is not None and exam.test_user_id != user.pk:
@@ -80,7 +78,6 @@ def start_attempt(exam_id, user):
     else:
         if exam.starts_at and now < exam.starts_at:
             raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
-        # Other scheduled exams retain their shared start/deadline behavior.
         if exam.starts_at:
             shared_deadline = exam.starts_at + timedelta(minutes=exam.duration_minutes)
             if exam.ends_at:
@@ -156,7 +153,6 @@ def finalize_attempt(attempt_id, user):
     now = timezone.now()
     if now < attempt.deadline_at and attempt.exam.starts_at and attempt.exam.kind != Exam.Kind.NIGHT:
         raise ValidationError("تحویل آزمون سراسری پیش از زمان پایان مجاز نیست.")
-    # Unscheduled practice exams may be submitted early.
     score = correct = wrong = blank = 0
     for question in attempt.questions.prefetch_related("options", "answer__selected_option"):
         answer = getattr(question, "answer", None)
@@ -195,9 +191,11 @@ def finalize_attempt(attempt_id, user):
     return attempt
 
 
-
 @transaction.atomic
-def publish_exam(exam_id):
+def publish_exam(exam_id, owner):
+    """Owner-only publication with all league and question integrity checks retained."""
+    if not getattr(owner, "is_superuser", False):
+        raise ValidationError("انتشار نهایی آزمون فقط در اختیار مالک سامانه است.")
     exam = Exam.objects.select_for_update().get(pk=exam_id)
     if exam.status != Exam.Status.DRAFT:
         raise ValidationError("فقط آزمون پیش‌نویس قابل انتشار است.")
@@ -213,8 +211,6 @@ def publish_exam(exam_id):
     items = list(exam.exam_questions.select_related("question").prefetch_related("question__options"))
     if exam.kind == Exam.Kind.NIGHT:
         question_ids = [item.question_id for item in items]
-        # Serialize publication of overlapping source questions to prevent
-        # concurrent admins from publishing the same question in two night exams.
         from apps.questions.models import Question
         list(
             Question.objects.select_for_update()
