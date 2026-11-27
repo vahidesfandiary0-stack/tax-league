@@ -10,6 +10,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   http: ^1.2.2
+  # Keep secure storage 10.x with file_picker 12.x: v12 provides FilePicker.pickFile()
+  # and its Windows implementation uses the win32 6.x dependency line.
   flutter_secure_storage: ^10.3.4
   file_picker: ^12.3.0
 dev_dependencies:
