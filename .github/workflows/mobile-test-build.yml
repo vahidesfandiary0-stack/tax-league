@@ -46,6 +46,12 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Generate Android platform files
         working-directory: mobile
         run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
@@ -64,7 +70,8 @@ jobs:
           for key, value in required.items():
               lines = [line for line in lines if not line.startswith(key + "=")]
               lines.append(key + "=" + value)
-          path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          lines = [("org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=1G -XX:ReservedCodeCacheSize=256m -Dfile.encoding=UTF-8" if line.startswith("org.gradle.jvmargs=") else line) for line in lines]
+          path.write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
           PY
 
       - name: Install dependencies
