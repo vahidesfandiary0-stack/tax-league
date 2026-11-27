@@ -25,7 +25,7 @@ class LeagueLedgerTests(TestCase):
         )
         self.exam = Exam.objects.create(
             title="آزمون رسمی",
-            kind=Exam.Kind.WEEKLY,
+            kind=Exam.Kind.NIGHT,
             duration_minutes=30,
             counts_for_league=True,
             status=Exam.Status.PUBLISHED,
