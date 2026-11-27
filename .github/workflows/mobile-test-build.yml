@@ -1,0 +1,123 @@
+name: RAQTIVA mobile and web test artifacts
+
+on:
+  push:
+    branches:
+      - "feature/free-night-board-top5-paid-analytics-20261127"
+    paths:
+      - ".github/workflows/mobile-test-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Analyze Flutter code
+        working-directory: mobile
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter tests
+        working-directory: mobile
+        run: flutter test
+
+  android-test-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files
+        working-directory: mobile
+        run: flutter create --platforms=android --org ir.raqtiva --project-name tax_league .
+
+      - name: Pin Android Gradle compatibility flags
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("android/gradle.properties")
+          if not path.is_file():
+              raise SystemExit("Generated Android gradle.properties not found")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          required = {"android.builtInKotlin": "false", "android.newDsl": "false"}
+          for key, value in required.items():
+              lines = [line for line in lines if not line.startswith(key + "=")]
+              lines.append(key + "=" + value)
+          path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          PY
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build debug APK for device testing
+        working-directory: mobile
+        run: flutter build apk --debug --dart-define=API_BASE_URL=https://raqtiva.ir
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqtiva-android-test-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  web-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Generate Flutter web platform files
+        working-directory: mobile
+        run: flutter create --platforms=web --org ir.raqtiva --project-name tax_league .
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build web PWA for test review
+        working-directory: mobile
+        run: flutter build web --release --base-href /app/ --dart-define=API_BASE_URL=https://raqtiva.ir
+
+      - name: Verify web output
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          test -s build/web/index.html
+          test -s build/web/manifest.json
+          test -s build/web/flutter_bootstrap.js
+
+      - name: Upload web test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqtiva-web-test-build
+          path: mobile/build/web/
+          if-no-files-found: error
+          retention-days: 14
