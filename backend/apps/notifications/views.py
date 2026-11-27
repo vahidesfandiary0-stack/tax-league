@@ -1,4 +1,9 @@
+import mimetypes
+from pathlib import Path
+
+from django.conf import settings
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +14,21 @@ from apps.exams.models import Exam
 
 from .models import Notification, ShowcaseSlide
 from .serializers import NotificationSerializer
+
+
+def showcase_image(request, path):
+    root = (Path(settings.MEDIA_ROOT) / "showcase").resolve()
+    target = (root / path).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        raise Http404
+    if not target.is_file() or target.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise Http404
+    return FileResponse(
+        target.open("rb"),
+        content_type=mimetypes.guess_type(target.name)[0] or "application/octet-stream",
+    )
 
 
 class NotificationListView(generics.ListAPIView):
