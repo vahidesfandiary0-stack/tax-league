@@ -283,7 +283,10 @@ def test_published_night_exam_question_cannot_be_reused_in_another_night_exam():
         counts_for_league=True, requires_purchase=False,
     )
     ExamQuestion.objects.create(exam=first, question=question, position=1)
-    publish_exam(first.pk)
+    user.is_staff = True
+    user.is_superuser = True
+    user.save(update_fields=["is_staff", "is_superuser"])
+    publish_exam(first.pk, user)
 
     second = Exam.objects.create(
         title="آزمون شبانه دوم", kind=Exam.Kind.NIGHT,
@@ -292,5 +295,5 @@ def test_published_night_exam_question_cannot_be_reused_in_another_night_exam():
     )
     ExamQuestion.objects.create(exam=second, question=question, position=1)
     with pytest.raises(DjangoValidationError):
-        publish_exam(second.pk)
+        publish_exam(second.pk, user)
 
