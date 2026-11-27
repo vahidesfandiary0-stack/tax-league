@@ -42,7 +42,7 @@ class PublicDemoExamVisibilityTests(TestCase):
             difficulty=Question.Difficulty.EASY,
             prompt="سؤال آزمایشی",
             explanation="توضیح پاسخ آزمایشی",
-            status=Question.Status.PUBLISHED,
+            status=Question.Status.DRAFT,
             author=user,
         )
         correct_option = None
@@ -55,6 +55,9 @@ class PublicDemoExamVisibilityTests(TestCase):
             )
             if option.is_correct:
                 correct_option = option
+
+        question.status = Question.Status.PUBLISHED
+        question.save(update_fields=["status"])
 
         exam = Exam.objects.create(
             title="آزمون آزمایشی جریان کامل",
