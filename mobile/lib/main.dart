@@ -2141,8 +2141,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
             Text('پایان رسمی: ${DateTime.parse(focusEndsAt!).toLocal()}'),
         ]),
       )),
-      cards[1],
-      cards[2],
+      cards[3],
     ];
   }
 
