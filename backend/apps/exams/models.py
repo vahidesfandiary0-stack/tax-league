@@ -19,6 +19,7 @@ class Exam(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200)
+    test_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="private_test_exams", help_text="اگر تعیین شود، آزمون فقط برای همین کاربر نمایش داده می‌شود.")
     kind = models.CharField(max_length=16, choices=Kind.choices)
     description = models.TextField(blank=True)
     duration_minutes = models.PositiveSmallIntegerField(default=30)

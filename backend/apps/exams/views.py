@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status
+from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -36,7 +37,10 @@ class ExamFocusStatusView(APIView):
 class ExamListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ExamListSerializer
-    queryset = Exam.objects.filter(status=Exam.Status.PUBLISHED).prefetch_related("exam_questions")
+    def get_queryset(self):
+        return Exam.objects.filter(status=Exam.Status.PUBLISHED).filter(
+            Q(test_user__isnull=True) | Q(test_user=self.request.user)
+        ).prefetch_related("exam_questions")
 
 
 class StartAttemptView(APIView):
