@@ -56,7 +56,7 @@ def publish_question(question_id, owner):
         Question.Status.REJECTED,
     )
     if question.status not in publishable_statuses:
-        raise ValidationError("فقط سؤال پیش‌نویس، در انتظار بررسی یا تأییدشده قابل انتشار است.")
+        raise ValidationError("فقط سؤال پیش‌نویس، در انتظار بررسی، تأییدشده یا ردشده قابل انتشار است.")
     options = list(question.options.all())
     if len(options) != 4:
         raise ValidationError("سؤال باید دقیقاً چهار گزینه داشته باشد.")
