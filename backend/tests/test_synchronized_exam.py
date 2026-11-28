@@ -86,3 +86,51 @@ def test_scheduled_exam_cannot_be_finalized_before_shared_deadline(monkeypatch):
         finalize_attempt(attempt.pk, participant)
     attempt.refresh_from_db()
     assert attempt.status == ExamAttempt.Status.IN_PROGRESS
+
+@pytest.mark.django_db
+def test_night_exam_late_joiners_share_the_original_deadline(monkeypatch):
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(phone_number="09120000021")
+    first = user_model.objects.create_user(phone_number="09120000022")
+    late = user_model.objects.create_user(phone_number="09120000023")
+    question = Question.objects.create(
+        subject=Question.Subject.DIRECT_TAX, prompt="سؤال شبانه مشترک", author=owner,
+    )
+    for position in range(1, 5):
+        QuestionOption.objects.create(
+            question=question, position=position, text=f"گزینه {position}",
+            is_correct=(position == 1),
+        )
+    question.status = Question.Status.PUBLISHED
+    question.save(update_fields=["status"])
+
+    scheduled_start = timezone.now() - timedelta(minutes=2)
+    scheduled_end = scheduled_start + timedelta(minutes=45)
+    exam = Exam.objects.create(
+        title="آزمون شبانه با مهلت مشترک", kind=Exam.Kind.NIGHT,
+        duration_minutes=30, starts_at=scheduled_start, ends_at=scheduled_end,
+        counts_for_league=True, requires_purchase=False,
+    )
+    ExamQuestion.objects.create(exam=exam, question=question, position=1)
+    exam.status = Exam.Status.PUBLISHED
+    exam.save(update_fields=["status"])
+
+    first_now = scheduled_start + timedelta(minutes=2)
+    monkeypatch.setattr("apps.exams.services.timezone.now", lambda: first_now)
+    first_attempt = start_attempt(exam.pk, first)
+
+    late_now = scheduled_start + timedelta(minutes=12)
+    monkeypatch.setattr("apps.exams.services.timezone.now", lambda: late_now)
+    late_attempt = start_attempt(exam.pk, late)
+
+    expected_deadline = scheduled_start + timedelta(minutes=30)
+    assert first_attempt.deadline_at == expected_deadline
+    assert late_attempt.deadline_at == expected_deadline
+    assert late_attempt.started_at == late_now
+
+    after_deadline = scheduled_start + timedelta(minutes=31)
+    monkeypatch.setattr("apps.exams.services.timezone.now", lambda: after_deadline)
+    too_late = user_model.objects.create_user(phone_number="09120000024")
+    with pytest.raises(ValidationError, match="مهلت آزمون شبانه"):
+        start_attempt(exam.pk, too_late)
+
