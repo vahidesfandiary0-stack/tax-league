@@ -132,6 +132,7 @@ class AttemptQuestion(models.Model):
     position = models.PositiveSmallIntegerField()
     prompt = models.TextField()
     explanation = models.TextField(blank=True)
+    source_reference = models.CharField(max_length=500, blank=True)
     premium_analysis = models.JSONField(default=dict, blank=True)
     subject = models.CharField(max_length=32)
     points_correct = models.SmallIntegerField(default=10)
