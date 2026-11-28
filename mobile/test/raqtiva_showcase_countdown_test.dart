@@ -227,11 +227,12 @@ void main() {
       ),
     );
 
-    expect(find.text('اسلاید نخست مدیر'), findsOneWidget);
-    expect(find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'), findsNothing);
+    // Founder is always the first slide, even if its admin sort_order is later.
+    expect(find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'), findsOneWidget);
+    expect(find.text('اسلاید نخست مدیر'), findsNothing);
     await tester.drag(find.byType(PageView), const Offset(-500, 0));
     await tester.pumpAndSettle();
-    expect(find.text('رقابت کن، رتبه بگیر، نخبه شو!'), findsOneWidget);
+    expect(find.text('اسلاید نخست مدیر'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
