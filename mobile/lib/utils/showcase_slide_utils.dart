@@ -5,6 +5,7 @@ List<dynamic> fallbackBrandSlides() => const <dynamic>[
         'title': 'بنیانگذار لیگ : وحید اسفندیاری نژاد',
         'body': '',
         'duration_seconds': 5,
+        'sort_order': 0,
       },
       <String, dynamic>{
         'id': 'builtin-logo',
@@ -12,5 +13,6 @@ List<dynamic> fallbackBrandSlides() => const <dynamic>[
         'title': '',
         'body': '',
         'duration_seconds': 5,
+        'sort_order': 1,
       },
     ];
