@@ -63,10 +63,8 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
-  // The API returns slides in administrator-controlled sort_order.
-  // Keep that order exactly; enrich only the countdown slide with live exam timing.
-  // Server sort_order is authoritative. Required brand/countdown slides are
-  // supplied only as fallbacks when the administrator has not configured them.
+  // The founder slide is a fixed first slide. The administrator controls the
+  // order of every remaining slide; countdown data is enriched at runtime.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
     final slides = <Map<String, dynamic>>[];
@@ -136,7 +134,8 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
       });
     }
 
-    // Preserve the server's order when administrators reuse an order value.
+    // Sort all slides by the administrator's order, then pin the founder
+    // slide at index zero regardless of its configured sort_order.
     final indexed = slides.asMap().entries.toList();
     indexed.sort((left, right) {
       final leftOrder = left.value['sort_order'] is num
@@ -148,7 +147,15 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
       final byOrder = leftOrder.compareTo(rightOrder);
       return byOrder != 0 ? byOrder : left.key.compareTo(right.key);
     });
-    return indexed.map((entry) => entry.value).toList();
+    final ordered = indexed.map((entry) => entry.value).toList();
+    final founderIndex = ordered.indexWhere(
+      (slide) => slide['kind']?.toString() == 'founder',
+    );
+    if (founderIndex > 0) {
+      final founder = ordered.removeAt(founderIndex);
+      ordered.insert(0, founder);
+    }
+    return ordered;
   }
 
   int get _count => _allSlides.length;
