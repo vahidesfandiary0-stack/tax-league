@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 
 from .models import LeagueSeason
 from .serializers import LeagueSeasonSerializer
-from .services import leaderboard_for_season, league_rows_for_season
+from .services import leaderboard_for_season, league_rows_for_season, top_records_for_user
 
 
 def requested_season(request):
@@ -181,3 +181,10 @@ class LeagueAppealReviewView(APIView):
         except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(LeagueAppealSerializer(appeal).data)
+
+
+class MyTopRecordsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"results": top_records_for_user(request.user, limit=5)})
