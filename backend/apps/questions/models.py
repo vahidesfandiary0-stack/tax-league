@@ -40,6 +40,8 @@ class Question(models.Model):
     # Safe numeric/text placeholders: {"variables":{"amount":{"min":100,"max":500,"step":50}}}
     variant_config = models.JSONField(default=dict, blank=True)
     explanation = models.TextField(blank=True)
+    # Subscriber-only post-exam learning content; never included in active-attempt payloads.
+    premium_analysis = models.JSONField(default=dict, blank=True)
     source_reference = models.CharField(max_length=500, blank=True)
     valid_from = models.DateField(null=True, blank=True)
     valid_until = models.DateField(null=True, blank=True)
