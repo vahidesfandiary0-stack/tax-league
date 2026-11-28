@@ -76,7 +76,10 @@ class ExamQuestion(models.Model):
     def save(self, *args, **kwargs):
         if Exam.objects.filter(pk=self.exam_id, status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED]).exists():
             raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
-        if self.question.status != self.question.Status.PUBLISHED:
+        if self.exam.kind == Exam.Kind.NIGHT:
+            if self.question.status == self.question.Status.REJECTED:
+                raise ValidationError("سؤال ردشده قابل استفاده در آزمون شبانه نیست.")
+        elif self.question.status != self.question.Status.PUBLISHED:
             raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
         super().save(*args, **kwargs)
 
