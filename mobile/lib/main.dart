@@ -1582,6 +1582,26 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       );
     }
     if (accountPage == 10) {
+      // League rank/score/count come only from the official league ledger.
+      // Activity metrics below are explicitly labelled as all exam attempts.
+      final allResults = results;
+      final scores = allResults
+          .map((item) => num.tryParse(item['score']?.toString() ?? ''))
+          .whereType<num>()
+          .toList();
+      final averageScore = scores.isEmpty
+          ? '—'
+          : (scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1);
+      final correctTotal = allResults.fold<int>(
+        0,
+        (sum, item) =>
+            sum + (int.tryParse(item['correct_count']?.toString() ?? '') ?? 0),
+      );
+      final wrongTotal = allResults.fold<int>(
+        0,
+        (sum, item) =>
+            sum + (int.tryParse(item['wrong_count']?.toString() ?? '') ?? 0),
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1596,7 +1616,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
                   const Text(
-                    'رتبه و امتیاز فقط از نتایج رسمی و معتبر آزمون شبانه محاسبه می‌شود.',
+                    'آمار رتبه و امتیاز فقط از آزمون‌های رسمیِ مؤثر بر لیگ محاسبه می‌شود.',
                     style: TextStyle(
                         color: RaqtivaColors.muted, fontSize: 11, height: 1.7),
                   ),
@@ -1617,6 +1637,18 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           label: 'آزمون‌های مؤثر در لیگ',
                           value: stats?['exams_count']?.toString() ?? '۰',
                           icon: Icons.assignment_turned_in_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'میانگین امتیاز همه آزمون‌ها',
+                          value: averageScore,
+                          icon: Icons.insights_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'پاسخ صحیح همه آزمون‌ها',
+                          value: correctTotal.toString(),
+                          icon: Icons.check_circle_rounded),
+                      _RaqtivaPerformanceMetric(
+                          label: 'پاسخ غلط همه آزمون‌ها',
+                          value: wrongTotal.toString(),
+                          icon: Icons.cancel_rounded),
                     ],
                   ),
                 ],
@@ -1629,9 +1661,35 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('حداکثر پنج رکورد برتر من',
+                  const Text('آخرین نتایج آزمون‌ها',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  if (allResults.isEmpty)
+                    const Text(
+                        'پس از شرکت در آزمون‌ها، نتایج و جزئیات عملکرد شما اینجا نمایش داده می‌شود.'),
+                  for (final item in allResults.take(5))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((item['exam_title'] ?? 'آزمون').toString()),
+                      subtitle: Text(
+                          'صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · نزده: ${item['blank_count'] ?? 0}'),
+                      trailing: Text('${item['score'] ?? 0} امتیاز',
+                          style: const TextStyle(
+                              color: RaqtivaColors.goldLight,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('حداکثر پنج رکورد برتر من',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
                   const Text(
                     'بهترین نتایج نهایی‌شده آزمون‌های رسمی شبانه از تمام فصل‌ها؛ رایگان برای همه کاربران.',
@@ -1677,6 +1735,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ],
               ),
             ),
+          ),
           ),
         ],
       );
