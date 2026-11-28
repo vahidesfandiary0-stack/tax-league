@@ -633,6 +633,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [];
       exams = [];
       results = [];
+      topRecords = [];
       showcaseSlides = [];
       focusMode = false;
       focusEndsAt = null;
@@ -655,7 +656,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         final data = await Future.wait([
           api.request('exams/'),
           api.request('exams/results/'),
-          api.request('league/me/top-records/'),
         ]);
         if (!mounted) return;
         setState(() {
@@ -672,6 +672,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           api.request('league/appeals/'),
           api.request('exams/'),
           api.request('exams/results/'),
+          api.request('league/me/top-records/'),
         ]);
         List<dynamic> provincialRows = [];
         String? province;
