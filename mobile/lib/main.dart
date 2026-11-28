@@ -436,8 +436,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [];
-  List<dynamic> showcaseSlides = [];
+      results = [],\n      topRecords = [];
+  List<dynamic> showcaseSlides = [];\n  List<dynamic> topRecords = [];
   String? provincialName;
   String? provincialMessage;
 
@@ -697,7 +697,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           provincialMessage = provinceNotice;
           appeals = List<dynamic>.from(data[2] as List);
           exams = _stampExams(data[3]);
-          results = List<dynamic>.from(data[4] as List);
+          results = List<dynamic>.from(data[4] as List);\n          topRecords = List<dynamic>.from((data[5] as Map)['results'] ?? []);
         });
       }
     } catch (e) {
@@ -1612,6 +1612,31 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                           icon: Icons.cancel_rounded),
                     ],
                   ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('پنج رکورد برتر آزمون‌های شبانه من',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  const Text('این بخش برای همه کاربران رایگان است و از بهترین نتیجه هر آزمون شبانه رسمی تشکیل می‌شود.',
+                      style: TextStyle(color: RaqtivaColors.muted, fontSize: 11, height: 1.7)),
+                  if (topRecords.isEmpty)
+                    const Text('هنوز رکورد رسمی شبانه‌ای برای نمایش ثبت نشده است.'),
+                  for (final item in topRecords)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((item['exam_title'] ?? 'آزمون شبانه').toString()),
+                      subtitle: Text('صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · زمان: ${item['elapsed_seconds'] ?? 0} ثانیه'),
+                      trailing: Text('${item['score'] ?? 0} امتیاز',
+                          style: const TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.bold)),
+                    ),
                 ],
               ),
             ),
