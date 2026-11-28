@@ -74,7 +74,10 @@ def start_attempt(exam_id, user):
             raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
         if now >= exam.ends_at:
             raise ValidationError("مهلت آزمون شبانه به پایان رسیده است.")
-        shared_deadline = min(now + timedelta(minutes=exam.duration_minutes), exam.ends_at)
+        shared_deadline = min(
+            exam.starts_at + timedelta(minutes=exam.duration_minutes),
+            exam.ends_at,
+        )
     else:
         if exam.starts_at and now < exam.starts_at:
             raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
