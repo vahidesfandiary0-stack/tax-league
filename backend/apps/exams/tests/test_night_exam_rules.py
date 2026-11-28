@@ -121,3 +121,39 @@ class NightExamRulesTests(TestCase):
         self.assertEqual(result.score, 10)
         self.assertTrue(LeagueScoreEntry.objects.filter(attempt=result, season=season).exists())
 
+
+
+    def test_user_cannot_start_same_night_exam_twice_after_finalization(self):
+        now = timezone.now()
+        question = Question.objects.create(
+            subject=Question.Subject.DIRECT_TAX,
+            prompt="سؤال آزمون شبانه",
+            explanation="توضیح پاسخ",
+            status=Question.Status.PENDING,
+            author=self.user,
+        )
+        for position in range(1, 5):
+            QuestionOption.objects.create(
+                question=question,
+                position=position,
+                text=f"گزینه {position}",
+                is_correct=(position == 1),
+            )
+
+        exam = Exam.objects.create(
+            title="آزمون شبانه با یک نوبت شرکت",
+            kind=Exam.Kind.NIGHT,
+            duration_minutes=30,
+            starts_at=now - timedelta(minutes=1),
+            ends_at=now + timedelta(minutes=30),
+            counts_for_league=True,
+            requires_purchase=False,
+        )
+        ExamQuestion.objects.create(exam=exam, question=question, position=1)
+        publish_exam(exam.pk)
+
+        first_attempt = start_attempt(exam.pk, self.user)
+        finalize_attempt(first_attempt.pk, self.user)
+
+        with self.assertRaises(ValidationError):
+            start_attempt(exam.pk, self.user)
