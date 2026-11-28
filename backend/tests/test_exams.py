@@ -253,7 +253,7 @@ def test_expired_night_attempt_is_finalized_and_shared_window_is_closed():
         "apps.exams.services.timezone.now",
         return_value=first.deadline_at + timedelta(seconds=1),
     ):
-        with pytest.raises(ValidationError, match="مهلت آزمون شبانه"):
+        with pytest.raises(DjangoValidationError, match="مهلت آزمون شبانه"):
             start_attempt(exam.pk, user)
     first.refresh_from_db()
     assert first.status == ExamAttempt.Status.EXPIRED
