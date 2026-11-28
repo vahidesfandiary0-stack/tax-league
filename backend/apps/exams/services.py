@@ -78,8 +78,6 @@ def start_attempt(exam_id, user):
             exam.starts_at + timedelta(minutes=exam.duration_minutes),
             exam.ends_at,
         )
-        if now >= shared_deadline:
-            raise ValidationError("مهلت آزمون شبانه به پایان رسیده است.")
     else:
         if exam.starts_at and now < exam.starts_at:
             raise ValidationError("زمان شروع آزمون فرا نرسیده است.")
@@ -113,6 +111,8 @@ def start_attempt(exam_id, user):
         if existing.deadline_at > now:
             return existing
         finalize_attempt(existing.pk, user)
+    if is_night and now >= shared_deadline:
+        raise ValidationError("مهلت آزمون شبانه به پایان رسیده است.")
     if not is_night and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
     started_at = now if is_night else (exam.starts_at if exam.starts_at else now)
