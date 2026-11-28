@@ -65,34 +65,90 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
 
   // The API returns slides in administrator-controlled sort_order.
   // Keep that order exactly; enrich only the countdown slide with live exam timing.
+  // Server sort_order is authoritative. Required brand/countdown slides are
+  // supplied only as fallbacks when the administrator has not configured them.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    return widget.slides.map((raw) {
-      if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
-        return raw;
+    final slides = <Map<String, dynamic>>[];
+    for (final raw in widget.slides) {
+      if (raw is Map) {
+        slides.add(Map<String, dynamic>.from(raw));
       }
-      final countdown = Map<String, dynamic>.from(raw);
-      if (exam == null) {
-        for (final key in <String>[
-          'target_at',
-          'countdown_phase',
-          'server_now',
-          'received_at',
-          'exam_title',
-        ]) {
-          countdown.remove(key);
-        }
-      } else {
-        countdown.addAll(<String, dynamic>{
-          'target_at': exam['target_at'],
-          'countdown_phase': exam['countdown_phase'],
-          'server_now': exam['server_now'],
-          'received_at': exam['received_at'],
-          'exam_title': exam['title'],
-        });
+    }
+
+    bool hasKind(String kind) =>
+        slides.any((slide) => slide['kind']?.toString() == kind);
+
+    if (!hasKind('founder')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-founder',
+        'kind': 'founder',
+        'title': 'بنیانگذار لیگ : وحید اسفندیاری نژاد',
+        'body': '',
+        'duration_seconds': 5,
+        'sort_order': 0,
+      });
+    }
+    if (!hasKind('logo')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-logo',
+        'kind': 'logo',
+        'title': '',
+        'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
+        'duration_seconds': 5,
+        'sort_order': 1,
+      });
+    }
+    if (!hasKind('exam_countdown')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-countdown',
+        'kind': 'exam_countdown',
+        'title': 'شمارش معکوس آزمون شبانه',
+        'body': '',
+        'duration_seconds': 8,
+        'sort_order': 2,
+      });
+    }
+
+    final countdown = slides.firstWhere(
+      (slide) => slide['kind']?.toString() == 'exam_countdown',
+    );
+    if ((countdown['title'] ?? '').toString().isEmpty) {
+      countdown['title'] = 'شمارش معکوس آزمون شبانه';
+    }
+    if (exam == null) {
+      for (final key in <String>[
+        'target_at',
+        'countdown_phase',
+        'server_now',
+        'received_at',
+        'exam_title',
+      ]) {
+        countdown.remove(key);
       }
-      return countdown;
-    }).toList(growable: false);
+    } else {
+      countdown.addAll(<String, dynamic>{
+        'target_at': exam['target_at'],
+        'countdown_phase': exam['countdown_phase'],
+        'server_now': exam['server_now'],
+        'received_at': exam['received_at'],
+        'exam_title': exam['title'],
+      });
+    }
+
+    // Preserve the server's order when administrators reuse an order value.
+    final indexed = slides.asMap().entries.toList();
+    indexed.sort((left, right) {
+      final leftOrder = left.value['sort_order'] is num
+          ? (left.value['sort_order'] as num).toInt()
+          : 10000;
+      final rightOrder = right.value['sort_order'] is num
+          ? (right.value['sort_order'] as num).toInt()
+          : 10000;
+      final byOrder = leftOrder.compareTo(rightOrder);
+      return byOrder != 0 ? byOrder : left.key.compareTo(right.key);
+    });
+    return indexed.map((entry) => entry.value).toList();
   }
 
   int get _count => _allSlides.length;
