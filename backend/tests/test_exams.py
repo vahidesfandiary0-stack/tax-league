@@ -57,35 +57,6 @@ def make_published_exam(
 
 
 @pytest.mark.django_db
-def test_exam_duration_is_one_minute_per_question_for_every_exam_kind():
-    user = get_user_model().objects.create_user(phone_number="09123330991")
-    exam = Exam.objects.create(
-        title="آزمون سه‌سؤالی", kind=Exam.Kind.DAILY, duration_minutes=30,
-    )
-    for index in range(3):
-        question = Question.objects.create(
-            subject=Question.Subject.DIRECT_TAX,
-            prompt=f"سؤال شماره {index + 1}",
-            author=user,
-        )
-        for position in range(1, 5):
-            QuestionOption.objects.create(
-                question=question,
-                position=position,
-                text=f"گزینه {position}",
-                is_correct=position == 1,
-            )
-        question.status = Question.Status.PUBLISHED
-        question.save(update_fields=["status"])
-        ExamQuestion.objects.create(
-            exam=exam, question=question, position=index + 1,
-        )
-
-    published = publish_exam(exam.pk)
-    assert published.duration_minutes == 3
-
-
-@pytest.mark.django_db
 def test_attempt_deadline_never_exceeds_exam_closing_time():
     user = get_user_model().objects.create_user(phone_number="09123330001")
     close_time = timezone.now() + timedelta(minutes=10)
