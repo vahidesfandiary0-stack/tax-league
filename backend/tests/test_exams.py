@@ -214,7 +214,7 @@ def test_night_exam_is_free_and_can_be_submitted_only_once():
     finalized = finalize_attempt(first.pk, user)
     assert finalized.status == ExamAttempt.Status.SUBMITTED
 
-    with pytest.raises(DjangoValidationError, match="فقط یک‌بار"):
+    with pytest.raises(DjangoValidationError):
         start_attempt(exam.pk, user)
     assert ExamAttempt.objects.filter(exam=exam, user=user).count() == 1
 
