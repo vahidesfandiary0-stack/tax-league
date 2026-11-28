@@ -192,4 +192,47 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  testWidgets('renders administrator-configured slide order', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: RaqtivaShowcaseCarousel(
+            slides: [
+              {
+                'kind': 'founder',
+                'title': 'بنیانگذار لیگ : وحید اسفندیاری نژاد',
+                'sort_order': 2,
+              },
+              {
+                'kind': 'logo',
+                'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
+                'sort_order': 1,
+              },
+              {
+                'kind': 'message',
+                'title': 'اسلاید نخست مدیر',
+                'body': 'این اسلاید باید اول باشد.',
+                'sort_order': 0,
+              },
+              {
+                'kind': 'exam_countdown',
+                'title': 'شمارش معکوس',
+                'sort_order': 3,
+              },
+            ],
+            exams: [],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('اسلاید نخست مدیر'), findsOneWidget);
+    expect(find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'), findsNothing);
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('رقابت کن، رتبه بگیر، نخبه شو!'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
