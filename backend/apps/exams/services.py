@@ -233,7 +233,10 @@ def publish_exam(exam_id):
     if not items:
         raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
     for item in items:
-        if item.question.status != item.question.Status.PUBLISHED:
+        if exam.kind == Exam.Kind.NIGHT:
+            if item.question.status == item.question.Status.REJECTED:
+                raise ValidationError("سؤال ردشده قابل استفاده در آزمون شبانه نیست.")
+        elif item.question.status != item.question.Status.PUBLISHED:
             raise ValidationError("همه سؤال‌های آزمون باید منتشرشده باشند.")
         if item.question.options.count() != 4 or item.question.options.filter(is_correct=True).count() != 1:
             raise ValidationError("هر سؤال باید چهار گزینه و دقیقاً یک پاسخ صحیح داشته باشد.")
