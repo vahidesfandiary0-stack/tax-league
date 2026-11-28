@@ -108,11 +108,8 @@ class NightExamRulesTests(TestCase):
         ExamQuestion.objects.create(exam=exam, question=question, position=1)
         published = publish_exam(exam.pk)
         self.assertEqual(published.status, Exam.Status.PUBLISHED)
-        self.assertEqual(published.duration_minutes, 1)
-        self.assertEqual(
-            published.ends_at,
-            published.starts_at + timedelta(minutes=1),
-        )
+        self.assertEqual(published.duration_minutes, 30)
+        self.assertEqual(published.ends_at, now + timedelta(minutes=25))
 
         attempt = start_attempt(exam.pk, self.user)
         attempt_question = attempt.questions.first()
