@@ -67,7 +67,7 @@ def test_scheduled_exam_cannot_be_finalized_before_shared_deadline(monkeypatch):
         )
     question.status = Question.Status.PUBLISHED
     question.save(update_fields=["status"])
-    scheduled_start = timezone.now() - timezone.timedelta(minutes=1)
+    scheduled_start = timezone.now() - timezone.timedelta(seconds=10)
     exam = Exam.objects.create(
         title="آزمون پایان مشترک", kind=Exam.Kind.WEEKLY, duration_minutes=20,
         starts_at=scheduled_start,
