@@ -120,6 +120,8 @@ def _start_attempt(exam_id, user):
             return existing, True
     if is_night and now >= shared_deadline:
         return None, True
+    if is_night and ExamAttempt.objects.filter(exam=exam, user=user).exists():
+        raise ValidationError("هر کاربر فقط یک‌بار می‌تواند در هر آزمون شبانه شرکت کند.")
     if not is_night and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
     started_at = now if is_night else (exam.starts_at if exam.starts_at else now)
