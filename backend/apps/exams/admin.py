@@ -40,7 +40,7 @@ class ExamAdmin(admin.ModelAdmin):
     search_fields = ("title",)
     inlines = [ExamQuestionInline]
     actions = [publish_selected_exams]
-    readonly_fields = ("created_at", "status", "duration_minutes")
+    readonly_fields = ("created_at", "status")
 
     def changelist_view(self, request, extra_context=None):
         warn_admin_during_exam(request)
