@@ -5,8 +5,10 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.exams.models import Exam, ExamAttempt
+from apps.exams.models import Exam, ExamAttempt, ExamQuestion
 from apps.league.services import record_attempt_score
+from apps.questions.models import Question, QuestionOption
+from apps.exams.services import finalize_attempt, publish_exam, start_attempt
 
 
 class NightExamRulesTests(TestCase):
@@ -68,3 +70,39 @@ class NightExamRulesTests(TestCase):
             correct_count=1,
         )
         self.assertIsNone(record_attempt_score(attempt.pk))
+
+    def test_night_exam_can_publish_and_score_a_pending_review_question(self):
+        now = timezone.now()
+        question = Question.objects.create(
+            subject=Question.Subject.DIRECT_TAX,
+            prompt="سؤال در انتظار بررسی",
+            explanation="توضیح پاسخ",
+            status=Question.Status.PENDING,
+            author=self.user,
+        )
+        for position in range(1, 5):
+            QuestionOption.objects.create(
+                question=question,
+                position=position,
+                text=f"گزینه {position}",
+                is_correct=(position == 2),
+            )
+
+        exam = Exam.objects.create(
+            title="آزمون شبانه با سؤال بررسی‌نشده",
+            kind=Exam.Kind.NIGHT,
+            duration_minutes=30,
+            starts_at=now - timedelta(minutes=5),
+            ends_at=now + timedelta(minutes=25),
+            counts_for_league=True,
+            requires_purchase=False,
+        )
+        ExamQuestion.objects.create(exam=exam, question=question, position=1)
+        published = publish_exam(exam.pk)
+        self.assertEqual(published.status, Exam.Status.PUBLISHED)
+
+        attempt = start_attempt(exam.pk, self.user)
+        result = finalize_attempt(attempt.pk, self.user)
+        self.assertEqual(result.status, ExamAttempt.Status.SUBMITTED)
+        self.assertEqual(result.blank_count, 1)
+
