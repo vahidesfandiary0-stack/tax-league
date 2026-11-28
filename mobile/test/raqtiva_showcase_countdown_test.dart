@@ -16,7 +16,7 @@ void main() {
       final slides = fallbackBrandSlides();
       expect(slides, hasLength(2));
       expect(slides[0]['kind'], 'founder');
-      expect(slides[0]['title'], 'بنیانگذار لیگ : وحید اسفندیاری');
+      expect(slides[0]['title'], 'بنیانگذار لیگ : وحید اسفندیاری نژاد');
       expect(
         slides[0]['body'],
         '',
@@ -36,7 +36,7 @@ void main() {
       );
 
       final title = tester.widget<Text>(
-        find.text('بنیانگذار لیگ : وحید اسفندیاری'),
+        find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'),
       );
       expect(title.maxLines, 1);
       expect(title.softWrap, isFalse);
