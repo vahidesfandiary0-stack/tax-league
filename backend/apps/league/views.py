@@ -181,3 +181,31 @@ class LeagueAppealReviewView(APIView):
         except (DjangoValidationError, LeagueAppeal.DoesNotExist, ValueError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(LeagueAppealSerializer(appeal).data)
+
+
+class MyTopRecordsView(APIView):
+    """Free endpoint: up to five best official NIGHT exam records for the user."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .services import top_records_for_user
+
+        records = top_records_for_user(request.user, limit=5)
+        return Response({
+            "results": [
+                {
+                    "attempt_id": str(entry.attempt_id),
+                    "exam_id": str(entry.attempt.exam_id),
+                    "exam_title": entry.attempt.exam.title,
+                    "season_id": str(entry.season_id),
+                    "season_title": entry.season.title,
+                    "score": entry.score,
+                    "adjusted_score": entry.adjusted_score,
+                    "correct_count": entry.correct_count,
+                    "wrong_count": entry.wrong_count,
+                    "elapsed_seconds": entry.elapsed_seconds,
+                    "submitted_at": entry.attempt.submitted_at,
+                }
+                for entry in records
+            ]
+        })

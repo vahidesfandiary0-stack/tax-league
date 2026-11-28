@@ -226,3 +226,67 @@ def adjust_score(entry_id, actor, score_delta, reason, idempotency_key):
         entry=entry, actor=actor, score_delta=score_delta,
         reason=reason[:500], idempotency_key=idempotency_key,
     )
+
+
+def top_records_for_user(user, limit=5):
+    """Return up to five best finalized official NIGHT results, one per exam."""
+    from django.db.models import Window
+    from django.db.models.functions import RowNumber
+
+    adjustment_totals = LeagueScoreAdjustment.objects.filter(
+        entry_id=OuterRef("pk")
+    ).values("entry_id").annotate(
+        total=Sum("score_delta")
+    ).values("total")[:1]
+
+    records = LeagueScoreEntry.objects.filter(
+        user=user,
+        attempt__exam__kind=Exam.Kind.NIGHT,
+        attempt__exam__counts_for_league=True,
+        attempt__exam__requires_purchase=False,
+        attempt__exam__price_irr=0,
+        attempt__exam__status__in=[
+            Exam.Status.PUBLISHED,
+            Exam.Status.ARCHIVED,
+        ],
+        attempt__exam__ends_at__lte=timezone.now(),
+        attempt__status__in=[
+            ExamAttempt.Status.SUBMITTED,
+            ExamAttempt.Status.EXPIRED,
+        ],
+        attempt__submitted_at__isnull=False,
+        attempt__score__isnull=False,
+    ).select_related(
+        "attempt__exam", "season"
+    ).annotate(
+        adjustment_total=Coalesce(
+            Subquery(adjustment_totals, output_field=IntegerField()),
+            Value(0),
+            output_field=IntegerField(),
+        )
+    ).annotate(
+        adjusted_score=F("score") + F("adjustment_total")
+    ).annotate(
+        exam_best_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F("attempt__exam_id")],
+            order_by=[
+                F("adjusted_score").desc(),
+                F("correct_count").desc(),
+                F("wrong_count").asc(),
+                F("elapsed_seconds").asc(),
+                F("attempt_id").asc(),
+            ],
+        )
+    ).filter(
+        exam_best_rank=1
+    ).order_by(
+        "-adjusted_score",
+        "-correct_count",
+        "wrong_count",
+        "elapsed_seconds",
+        "attempt__submitted_at",
+        "attempt_id",
+    )
+
+    return list(records[:max(0, min(int(limit), 5))])

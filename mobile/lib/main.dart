@@ -436,7 +436,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [];
+      results = [],
+      topRecords = [];
+  bool topRecordsError = false;
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -632,6 +634,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [];
       exams = [];
       results = [];
+      topRecords = [];
+      topRecordsError = false;
       showcaseSlides = [];
       focusMode = false;
       focusEndsAt = null;
@@ -706,7 +710,26 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
-    if (mounted && !focusMode && stats != null) await _loadShowcaseSlides();
+    if (mounted && !focusMode && stats != null) {
+      await _loadTopRecords();
+      await _loadShowcaseSlides();
+    }
+  }
+
+  Future<void> _loadTopRecords() async {
+    try {
+      final data = await api.request('league/me/top-records/');
+      if (!mounted) return;
+      if (data is! Map || data['results'] is! List) {
+        throw const FormatException('پاسخ رکوردهای برتر معتبر نیست.');
+      }
+      setState(() {
+        topRecords = List<dynamic>.from(data['results']);
+        topRecordsError = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => topRecordsError = true);
+    }
   }
 
   @override
@@ -1656,6 +1679,60 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                               color: RaqtivaColors.goldLight,
                               fontWeight: FontWeight.bold)),
                     ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('حداکثر پنج رکورد برتر من',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'بهترین نتایج نهایی‌شده آزمون‌های رسمی شبانه از تمام فصل‌ها؛ رایگان برای همه کاربران.',
+                    style: TextStyle(fontSize: 11, height: 1.7),
+                  ),
+                  const SizedBox(height: 8),
+                  if (topRecordsError) ...[
+                    const Text(
+                      'دریافت رکوردهای برتر با خطا مواجه شد؛ برای تلاش دوباره اقدام کنید.',
+                      style: TextStyle(color: RaqtivaColors.red),
+                    ),
+                    TextButton.icon(
+                      onPressed: _loadTopRecords,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('تلاش مجدد'),
+                    ),
+                  ] else if (topRecords.isEmpty)
+                    const Text('هنوز رکورد رسمی نهایی‌شده‌ای ثبت نشده است.')
+                  else
+                    for (var i = 0; i < topRecords.length; i++)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 15,
+                          child: Text('${i + 1}'),
+                        ),
+                        title: Text(
+                          (topRecords[i]['exam_title'] ?? 'آزمون').toString(),
+                        ),
+                        subtitle: Text(
+                          '${topRecords[i]['season_title'] ?? 'فصل نامشخص'}'
+                          ' · صحیح: ${topRecords[i]['correct_count'] ?? 0}'
+                          ' · غلط: ${topRecords[i]['wrong_count'] ?? 0}',
+                        ),
+                        trailing: Text(
+                          '${topRecords[i]['adjusted_score'] ?? topRecords[i]['score'] ?? 0} امتیاز',
+                          style: const TextStyle(
+                            color: RaqtivaColors.goldLight,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                 ],
               ),
             ),
