@@ -43,6 +43,7 @@ def _build_attempt_question(attempt, item, rng, position):
         attempt=attempt, source_question_id=question.pk, position=position,
         prompt=_render_variant_text(question.prompt, values),
         explanation=_render_variant_text(question.explanation, values),
+        source_reference=question.source_reference,
         premium_analysis=question.premium_analysis or {},
         subject=question.subject, points_correct=item.points_correct,
         points_wrong=item.points_wrong,
