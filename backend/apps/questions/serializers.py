@@ -33,7 +33,7 @@ class DesignerQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            "id", "subject", "difficulty", "prompt", "options", "explanation",
+            "id", "subject", "difficulty", "prompt", "options", "explanation", "premium_analysis",
             "source_reference", "valid_from", "valid_until", "status",
             "review_status", "review_feedback", "version", "created_at", "updated_at",
         ]
@@ -76,6 +76,7 @@ class DesignerQuestionSerializer(serializers.ModelSerializer):
             "difficulty": question.difficulty,
             "prompt": question.prompt,
             "explanation": question.explanation,
+            "premium_analysis": question.premium_analysis,
             "source_reference": question.source_reference,
             "valid_from": question.valid_from.isoformat() if question.valid_from else None,
             "valid_until": question.valid_until.isoformat() if question.valid_until else None,
