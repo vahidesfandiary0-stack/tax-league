@@ -97,10 +97,6 @@ def _start_attempt(exam_id, user):
             shared_deadline = None
             if exam.ends_at and now >= exam.ends_at:
                 raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
-            if exam.ends_at and exam.ends_at < now + timedelta(minutes=exam.duration_minutes):
-                raise ValidationError(
-                    "زمان باقی‌مانده برای اختصاص یک دقیقه به هر سؤال کافی نیست."
-                )
     if exam.requires_purchase:
         from apps.payments.models import PurchasedExamAccess
         from apps.subscriptions.models import UserSubscription
@@ -128,8 +124,8 @@ def _start_attempt(exam_id, user):
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
     started_at = now if is_night else (exam.starts_at if exam.starts_at else now)
     deadline_at = shared_deadline or (now + timedelta(minutes=exam.duration_minutes))
-    # Unscheduled exams were checked above to ensure the full per-question
-    # duration fits before their optional closing time.
+    if not is_night and not exam.starts_at and exam.ends_at:
+        deadline_at = min(deadline_at, exam.ends_at)
     attempt = ExamAttempt.objects.create(
         exam=exam, user=user, started_at=started_at, deadline_at=deadline_at,
     )
