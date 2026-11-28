@@ -230,24 +230,19 @@ def adjust_score(entry_id, actor, score_delta, reason, idempotency_key):
 
 def top_records_for_user(user, limit=5):
     """Return up to five best finalized free official NIGHT results, one per exam."""
-    attempts = list(
-        ExamAttempt.objects.filter(
-            user=user,
-            exam__kind=Exam.Kind.NIGHT,
-            exam__counts_for_league=True,
-            exam__requires_purchase=False,
-            exam__status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
-            status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
-            score__isnull=False,
-            submitted_at__isnull=False,
-        ).select_related("exam").order_by(
-            "-score", "-correct_count", "wrong_count", "submitted_at", "id"
-        )
-    )
+    attempts = ExamAttempt.objects.filter(
+        user=user,
+        exam__kind=Exam.Kind.NIGHT,
+        exam__counts_for_league=True,
+        exam__requires_purchase=False,
+        exam__status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED],
+        status__in=[ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED],
+        score__isnull=False,
+        submitted_at__isnull=False,
+    ).select_related("exam").order_by("submitted_at", "id")
+
     best_by_exam = {}
     for attempt in attempts:
-        if attempt.exam_id in best_by_exam:
-            continue
         adjusted_score = attempt.score
         try:
             adjusted_score += sum(
@@ -256,7 +251,10 @@ def top_records_for_user(user, limit=5):
             )
         except LeagueScoreEntry.DoesNotExist:
             pass
-        best_by_exam[attempt.exam_id] = {
+        elapsed = max(
+            0, int((attempt.submitted_at - attempt.started_at).total_seconds())
+        )
+        row = {
             "attempt_id": str(attempt.pk),
             "exam_id": str(attempt.exam_id),
             "exam_title": attempt.exam.title,
@@ -265,11 +263,17 @@ def top_records_for_user(user, limit=5):
             "wrong_count": attempt.wrong_count,
             "blank_count": attempt.blank_count,
             "submitted_at": attempt.submitted_at,
-            "elapsed_seconds": max(
-                0, int((attempt.submitted_at - attempt.started_at).total_seconds())
-            ),
+            "elapsed_seconds": elapsed,
         }
-    rows = list(best_by_exam.values())
+        key = (
+            adjusted_score, attempt.correct_count, -attempt.wrong_count,
+            -elapsed, str(attempt.pk)
+        )
+        previous = best_by_exam.get(attempt.exam_id)
+        if previous is None or key > previous[0]:
+            best_by_exam[attempt.exam_id] = (key, row)
+
+    rows = [item[1] for item in best_by_exam.values()]
     rows.sort(key=lambda row: (
         -row["score"], -row["correct_count"], row["wrong_count"],
         row["elapsed_seconds"], row["attempt_id"]
