@@ -76,7 +76,10 @@ class ExamQuestion(models.Model):
     def save(self, *args, **kwargs):
         if Exam.objects.filter(pk=self.exam_id, status__in=[Exam.Status.PUBLISHED, Exam.Status.ARCHIVED]).exists():
             raise ValidationError("ترکیب سؤال‌های آزمون منتشرشده قابل تغییر نیست.")
-        if self.question.status != self.question.Status.PUBLISHED:
+        if self.exam.kind == Exam.Kind.NIGHT:
+            if self.question.status == self.question.Status.REJECTED:
+                raise ValidationError("سؤال ردشده قابل استفاده در آزمون شبانه نیست.")
+        elif self.question.status != self.question.Status.PUBLISHED:
             raise ValidationError("فقط سؤال منتشرشده را می‌توان به آزمون افزود.")
         super().save(*args, **kwargs)
 
@@ -129,6 +132,8 @@ class AttemptQuestion(models.Model):
     position = models.PositiveSmallIntegerField()
     prompt = models.TextField()
     explanation = models.TextField(blank=True)
+    source_reference = models.CharField(max_length=500, blank=True)
+    premium_analysis = models.JSONField(default=dict, blank=True)
     subject = models.CharField(max_length=32)
     points_correct = models.SmallIntegerField(default=10)
     points_wrong = models.SmallIntegerField(default=-3)

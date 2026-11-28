@@ -16,7 +16,7 @@ void main() {
       final slides = fallbackBrandSlides();
       expect(slides, hasLength(2));
       expect(slides[0]['kind'], 'founder');
-      expect(slides[0]['title'], 'بنیانگذار لیگ : وحید اسفندیاری');
+      expect(slides[0]['title'], 'بنیانگذار لیگ : وحید اسفندیاری نژاد');
       expect(
         slides[0]['body'],
         '',
@@ -36,7 +36,7 @@ void main() {
       );
 
       final title = tester.widget<Text>(
-        find.text('بنیانگذار لیگ : وحید اسفندیاری'),
+        find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'),
       );
       expect(title.maxLines, 1);
       expect(title.softWrap, isFalse);
@@ -192,4 +192,48 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  testWidgets('renders administrator-configured slide order', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: RaqtivaShowcaseCarousel(
+            slides: [
+              {
+                'kind': 'founder',
+                'title': 'بنیانگذار لیگ : وحید اسفندیاری نژاد',
+                'sort_order': 2,
+              },
+              {
+                'kind': 'logo',
+                'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
+                'sort_order': 1,
+              },
+              {
+                'kind': 'message',
+                'title': 'اسلاید نخست مدیر',
+                'body': 'این اسلاید باید اول باشد.',
+                'sort_order': 0,
+              },
+              {
+                'kind': 'exam_countdown',
+                'title': 'شمارش معکوس',
+                'sort_order': 3,
+              },
+            ],
+            exams: [],
+          ),
+        ),
+      ),
+    );
+
+    // Founder is always the first slide, even if its admin sort_order is later.
+    expect(find.text('بنیانگذار لیگ : وحید اسفندیاری نژاد'), findsOneWidget);
+    expect(find.text('اسلاید نخست مدیر'), findsNothing);
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('اسلاید نخست مدیر'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }

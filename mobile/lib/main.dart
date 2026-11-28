@@ -437,6 +437,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [],
       exams = [],
       results = [];
+  List<dynamic> topRecords = [];
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -632,6 +633,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       appeals = [];
       exams = [];
       results = [];
+      topRecords = [];
       showcaseSlides = [];
       focusMode = false;
       focusEndsAt = null;
@@ -670,6 +672,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           api.request('league/appeals/'),
           api.request('exams/'),
           api.request('exams/results/'),
+          api.request('league/me/top-records/'),
         ]);
         List<dynamic> provincialRows = [];
         String? province;
@@ -698,6 +701,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           appeals = List<dynamic>.from(data[2] as List);
           exams = _stampExams(data[3]);
           results = List<dynamic>.from(data[4] as List);
+          topRecords = List<dynamic>.from((data[5] as Map)['results'] ?? []);
         });
       }
     } catch (e) {
@@ -727,10 +731,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                                   ? 0
                                   : accountPage == 9
                                       ? 1
-                                      : accountPage == 3
-                                          ? 2
-                                          : accountPage == 2 ||
-                                                  accountPage == 6 ||
+                                      : accountPage == 6 ||
                                                   accountPage == 7 ||
                                                   accountPage == 8
                                               ? 1
@@ -755,11 +756,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                             ][selectedHomeSection!])
                       : accountPage == 1
                           ? 'حساب کاربری'
-                          : accountPage == 2
-                              ? 'درباره لیگ'
-                              : accountPage == 3
-                                  ? 'معرفی بنیان‌گذار'
-                                  : accountPage == 4
+                          : accountPage == 4
                                       ? 'اشتراک ویژه'
                                       : accountPage == 5
                                           ? 'آکادمی'
@@ -1478,15 +1475,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               onTap: () => setState(() => accountPage = 9),
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('درباره لیگ'),
-              subtitle: const Text('اطلاعات و معرفی مجموعه'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 2),
-            ),
-          ),
         ],
       );
     }
@@ -1638,6 +1626,31 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('پنج رکورد برتر آزمون‌های شبانه من',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  const Text('این بخش برای همه کاربران رایگان است و از بهترین نتیجه هر آزمون شبانه رسمی تشکیل می‌شود.',
+                      style: TextStyle(color: RaqtivaColors.muted, fontSize: 11, height: 1.7)),
+                  if (topRecords.isEmpty)
+                    const Text('هنوز رکورد رسمی شبانه‌ای برای نمایش ثبت نشده است.'),
+                  for (final item in topRecords)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((item['exam_title'] ?? 'آزمون شبانه').toString()),
+                      subtitle: Text('صحیح: ${item['correct_count'] ?? 0} · غلط: ${item['wrong_count'] ?? 0} · زمان: ${item['elapsed_seconds'] ?? 0} ثانیه'),
+                      trailing: Text('${item['score'] ?? 0} امتیاز',
+                          style: const TextStyle(color: RaqtivaColors.goldLight, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text('آخرین نتایج آزمون‌ها',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
@@ -1753,7 +1766,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
-                    'شناسه: ${item['id']}\n'
+                    'شناسه: ${item['id']}'
                     'صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
@@ -1809,46 +1822,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ),
       );
     }
-    if (accountPage == 2) {
-      return Card(
-        child: ListTile(
-          leading: const Icon(Icons.person_outline),
-          title: const Text('معرفی بنیان‌گذار'),
-          subtitle: const Text('آشنایی با بنیان‌گذار لیگ نخبگان مالیاتی'),
-          trailing: const Icon(Icons.chevron_left),
-          onTap: () => setState(() => accountPage = 3),
-        ),
-      );
-    }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 150,
-                height: 170,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'وحید اسفندیاری',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   List<Widget> _content() {
@@ -2367,7 +2341,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               contentPadding: EdgeInsets.zero,
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
-                'شناسه: ${item['id']}\n'
+                'شناسه: ${item['id']}'
                 'صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
@@ -2662,7 +2636,10 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   }
 
   Future<void> load() async {
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      error = null;
+    });
     try {
       final d = await widget.api.request('questions/designer/');
       if (mounted) setState(() => questions = List<dynamic>.from(d));
@@ -3119,16 +3096,59 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: const Text('آزمون پایان یافت'),
-            content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('امتیاز: ${result['score']}'),
-                  Text('پاسخ صحیح: ${result['correct_count']}'),
-                  Text('پاسخ غلط: ${result['wrong_count']}'),
-                  Text('بدون پاسخ: ${result['blank_count']}'),
-                  if (auto) const Text('زمان آزمون به پایان رسیده بود.'),
-                ]),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('امتیاز: ${result['score']}'),
+                    Text('پاسخ صحیح: ${result['correct_count']}'),
+                    Text('پاسخ غلط: ${result['wrong_count']}'),
+                    Text('بدون پاسخ: ${result['blank_count']}'),
+                    if (auto) const Text('زمان آزمون به پایان رسیده بود.'),
+                    const Divider(height: 24),
+                    const Text('بررسی پاسخ‌ها', style: TextStyle(fontWeight: FontWeight.w900)),
+                    for (final raw in (result['question_reviews'] ?? const []))
+                      if (raw is Map)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${raw['position']}. ${raw['prompt']}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 6),
+                              for (final option in (raw['options'] ?? const []))
+                                if (option is Map)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 5),
+                                    child: Text(
+                                      '${option['is_correct'] == true ? '✓ ' : ''}${option['selected'] == true ? 'انتخاب شما: ' : ''}${option['text']}'
+                                      '${(option['premium_analysis'] ?? '').toString().isNotEmpty ? '\\nتحلیل اختصاصی: ${option['premium_analysis']}' : ''}',
+                                      style: TextStyle(
+                                        color: option['is_correct'] == true ? Colors.green : null,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                              Text('توضیح پاسخ: ${raw['explanation'] ?? ''}', style: const TextStyle(fontSize: 12)),
+                              Text('مستند: ${raw['source_reference'] ?? ''}', style: const TextStyle(fontSize: 11)),
+                              if ((raw['premium_analysis'] ?? {}) is Map &&
+                                  (raw['premium_analysis'] as Map).isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text('دام سؤال: ${raw['premium_analysis']['trap'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                                Text('نکته آموزشی: ${raw['premium_analysis']['learning'] ?? ''}', style: const TextStyle(fontSize: 12)),
+                                Text('پیشنهاد مطالعه: ${raw['premium_analysis']['study_recommendation'] ?? ''}', style: const TextStyle(fontSize: 12)),
+                              ],
+                              const Divider(height: 20),
+                            ],
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+            ),
             actions: [
               FilledButton(
                   onPressed: () => Navigator.pop(dialogContext),

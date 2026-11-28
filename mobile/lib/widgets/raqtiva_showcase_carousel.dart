@@ -63,24 +63,56 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
-  // The three core carousel slides are product requirements, not CMS content.
-  // Always render them in this fixed order; append only additional admin slides.
+  // The founder slide is a fixed first slide. The administrator controls the
+  // order of every remaining slide; countdown data is enriched at runtime.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    final configuredCountdown = widget.slides.cast<dynamic>().firstWhere(
-          (raw) => raw is Map && raw['kind']?.toString() == 'exam_countdown',
-          orElse: () => null,
-        );
-    final countdown = <String, dynamic>{
-      'kind': 'exam_countdown',
-      'title': 'شمارش معکوس آزمون شبانه',
-    };
-    if (configuredCountdown is Map) {
-      countdown.addAll(Map<String, dynamic>.from(configuredCountdown));
-      countdown['kind'] = 'exam_countdown';
-      if ((countdown['title'] ?? '').toString().isEmpty) {
-        countdown['title'] = 'شمارش معکوس آزمون شبانه';
+    final slides = <Map<String, dynamic>>[];
+    for (final raw in widget.slides) {
+      if (raw is Map) {
+        slides.add(Map<String, dynamic>.from(raw));
       }
+    }
+
+    bool hasKind(String kind) =>
+        slides.any((slide) => slide['kind']?.toString() == kind);
+
+    if (!hasKind('founder')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-founder',
+        'kind': 'founder',
+        'title': 'بنیانگذار لیگ : وحید اسفندیاری نژاد',
+        'body': '',
+        'duration_seconds': 5,
+        'sort_order': 0,
+      });
+    }
+    if (!hasKind('logo')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-logo',
+        'kind': 'logo',
+        'title': '',
+        'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
+        'duration_seconds': 5,
+        'sort_order': 1,
+      });
+    }
+    if (!hasKind('exam_countdown')) {
+      slides.add(<String, dynamic>{
+        'id': 'builtin-countdown',
+        'kind': 'exam_countdown',
+        'title': 'شمارش معکوس آزمون شبانه',
+        'body': '',
+        'duration_seconds': 8,
+        'sort_order': 2,
+      });
+    }
+
+    final countdown = slides.firstWhere(
+      (slide) => slide['kind']?.toString() == 'exam_countdown',
+    );
+    if ((countdown['title'] ?? '').toString().isEmpty) {
+      countdown['title'] = 'شمارش معکوس آزمون شبانه';
     }
     if (exam == null) {
       for (final key in <String>[
@@ -101,23 +133,29 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
         'exam_title': exam['title'],
       });
     }
-    final mandatory = <Map<String, dynamic>>[
-      <String, dynamic>{
-        'kind': 'founder',
-        'title': 'بنیانگذار لیگ : وحید اسفندیاری',
-      },
-      <String, dynamic>{
-        'kind': 'logo',
-        'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
-      },
-      countdown,
-    ];
-    final adminSlides = widget.slides.where((raw) {
-      if (raw is! Map) return true;
-      final kind = raw['kind']?.toString();
-      return kind != 'founder' && kind != 'logo' && kind != 'exam_countdown';
+
+    // Sort all slides by the administrator's order, then pin the founder
+    // slide at index zero regardless of its configured sort_order.
+    final indexed = slides.asMap().entries.toList();
+    indexed.sort((left, right) {
+      final leftOrder = left.value['sort_order'] is num
+          ? (left.value['sort_order'] as num).toInt()
+          : 10000;
+      final rightOrder = right.value['sort_order'] is num
+          ? (right.value['sort_order'] as num).toInt()
+          : 10000;
+      final byOrder = leftOrder.compareTo(rightOrder);
+      return byOrder != 0 ? byOrder : left.key.compareTo(right.key);
     });
-    return <dynamic>[...mandatory, ...adminSlides];
+    final ordered = indexed.map((entry) => entry.value).toList();
+    final founderIndex = ordered.indexWhere(
+      (slide) => slide['kind']?.toString() == 'founder',
+    );
+    if (founderIndex > 0) {
+      final founder = ordered.removeAt(founderIndex);
+      ordered.insert(0, founder);
+    }
+    return ordered;
   }
 
   int get _count => _allSlides.length;

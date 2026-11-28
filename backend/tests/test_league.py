@@ -424,3 +424,20 @@ def test_provincial_leaderboard_includes_only_verified_users_in_own_province():
     assert hidden.data["results"] == []
     assert hidden.data["verified"] is False
 
+
+
+@pytest.mark.django_db
+def test_top_five_records_are_free_and_one_per_official_night_exam():
+    user = get_user_model().objects.create_user(phone_number="09124440101")
+    for score in range(10, 70, 10):
+        attempt = make_official_attempt(user, score=score)
+        Exam.objects.filter(pk=attempt.exam_id).update(status=Exam.Status.PUBLISHED)
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    response = client.get("/api/v1/league/me/top-records/")
+
+    assert response.status_code == 200
+    assert len(response.data["results"]) == 5
+    assert [row["score"] for row in response.data["results"]] == [60, 50, 40, 30, 20]
+    assert len({row["exam_id"] for row in response.data["results"]}) == 5

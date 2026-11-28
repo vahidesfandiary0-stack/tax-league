@@ -5,8 +5,11 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.exams.models import Exam, ExamAttempt
-from apps.league.services import record_attempt_score
+from apps.exams.models import Exam, ExamAttempt, ExamQuestion
+from apps.league.models import LeagueScoreEntry, LeagueSeason
+from apps.league.services import activate_season, record_attempt_score
+from apps.questions.models import Question, QuestionOption
+from apps.exams.services import finalize_attempt, publish_exam, save_answer, start_attempt
 
 
 class NightExamRulesTests(TestCase):
@@ -68,3 +71,89 @@ class NightExamRulesTests(TestCase):
             correct_count=1,
         )
         self.assertIsNone(record_attempt_score(attempt.pk))
+
+    def test_night_exam_can_publish_and_score_a_pending_review_question(self):
+        now = timezone.now()
+        question = Question.objects.create(
+            subject=Question.Subject.DIRECT_TAX,
+            prompt="سؤال در انتظار بررسی",
+            explanation="توضیح پاسخ",
+            status=Question.Status.PENDING,
+            author=self.user,
+        )
+        for position in range(1, 5):
+            QuestionOption.objects.create(
+                question=question,
+                position=position,
+                text=f"گزینه {position}",
+                is_correct=(position == 2),
+            )
+
+        season = LeagueSeason.objects.create(
+            title="فصل آزمایشی آزمون بررسی‌نشده",
+            starts_at=now - timedelta(minutes=10),
+            ends_at=now + timedelta(hours=1),
+        )
+        activate_season(season.pk, self.user)
+
+        exam = Exam.objects.create(
+            title="آزمون شبانه با سؤال بررسی‌نشده",
+            kind=Exam.Kind.NIGHT,
+            duration_minutes=30,
+            starts_at=now - timedelta(seconds=10),
+            ends_at=now + timedelta(minutes=25),
+            counts_for_league=True,
+            requires_purchase=False,
+        )
+        ExamQuestion.objects.create(exam=exam, question=question, position=1)
+        published = publish_exam(exam.pk)
+        self.assertEqual(published.status, Exam.Status.PUBLISHED)
+        self.assertEqual(published.duration_minutes, 30)
+        self.assertEqual(published.ends_at, now + timedelta(minutes=25))
+
+        attempt = start_attempt(exam.pk, self.user)
+        attempt_question = attempt.questions.first()
+        correct_option = attempt_question.options.get(is_correct=True)
+        save_answer(attempt.pk, attempt_question.pk, correct_option.pk, self.user)
+        result = finalize_attempt(attempt.pk, self.user)
+        self.assertEqual(result.status, ExamAttempt.Status.SUBMITTED)
+        self.assertEqual(result.correct_count, 1)
+        self.assertEqual(result.score, 10)
+        self.assertTrue(LeagueScoreEntry.objects.filter(attempt=result, season=season).exists())
+
+
+
+    def test_user_cannot_start_same_night_exam_twice_after_finalization(self):
+        now = timezone.now()
+        question = Question.objects.create(
+            subject=Question.Subject.DIRECT_TAX,
+            prompt="سؤال آزمون شبانه",
+            explanation="توضیح پاسخ",
+            status=Question.Status.PENDING,
+            author=self.user,
+        )
+        for position in range(1, 5):
+            QuestionOption.objects.create(
+                question=question,
+                position=position,
+                text=f"گزینه {position}",
+                is_correct=(position == 1),
+            )
+
+        exam = Exam.objects.create(
+            title="آزمون شبانه با یک نوبت شرکت",
+            kind=Exam.Kind.NIGHT,
+            duration_minutes=30,
+            starts_at=now - timedelta(minutes=1),
+            ends_at=now + timedelta(minutes=30),
+            counts_for_league=True,
+            requires_purchase=False,
+        )
+        ExamQuestion.objects.create(exam=exam, question=question, position=1)
+        publish_exam(exam.pk)
+
+        first_attempt = start_attempt(exam.pk, self.user)
+        finalize_attempt(first_attempt.pk, self.user)
+
+        with self.assertRaises(ValidationError):
+            start_attempt(exam.pk, self.user)
