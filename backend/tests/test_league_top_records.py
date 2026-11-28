@@ -28,7 +28,7 @@ class MyTopRecordsTests(TestCase):
             status=LeagueSeason.Status.ACTIVE,
         )
 
-    def add_result(self, title, score, correct, wrong=0, elapsed=600):
+    def add_result(self, title, score, correct, wrong=0, elapsed=600, paid=False):
         now = timezone.now()
         exam = Exam.objects.create(
             title=title,
@@ -42,6 +42,9 @@ class MyTopRecordsTests(TestCase):
             requires_purchase=False,
             price_irr=0,
         )
+        if paid:
+            # Simulate a legacy/inconsistent paid NIGHT record; the endpoint must still exclude it.
+            Exam.objects.filter(pk=exam.pk).update(requires_purchase=True, price_irr=100)
         attempt = ExamAttempt.objects.create(
             exam=exam,
             user=self.user,
@@ -109,6 +112,17 @@ class MyTopRecordsTests(TestCase):
         returned_ids = [row["attempt_id"] for row in response.data["results"]]
         self.assertNotIn(str(attempts[0].pk), returned_ids)
         self.assertNotIn(str(attempts[6].pk), returned_ids)
+
+
+    def test_paid_night_exam_record_is_excluded(self):
+        self.add_result("آزمون رایگان", 70, 7)
+        self.add_result("آزمون پولی", 100, 10, paid=True)
+
+        response = self.get_records()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["exam_title"], "آزمون رایگان")
 
     def test_endpoint_requires_authentication(self):
         self.client.force_authenticate(user=None)
