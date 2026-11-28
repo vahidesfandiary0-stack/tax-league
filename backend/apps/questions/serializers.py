@@ -55,6 +55,16 @@ class DesignerQuestionSerializer(serializers.ModelSerializer):
             value = attrs.get(field, getattr(self.instance, field, "") if self.instance else "")
             if not str(value or "").strip():
                 raise serializers.ValidationError({field: f"{label} الزامی است."})
+        premium = attrs.get("premium_analysis", getattr(self.instance, "premium_analysis", {})) or {}
+        option_analyses = premium.get("option_analyses", []) if isinstance(premium, dict) else []
+        if not isinstance(premium, dict) or len(option_analyses) != 4 or any(
+            not isinstance(item, dict) or not str(item.get("option_text", "")).strip()
+            or not str(item.get("analysis", "")).strip()
+            for item in option_analyses
+        ):
+            raise serializers.ValidationError({
+                "premium_analysis": "برای هر سؤال باید تحلیل اختصاصی و تحلیل جداگانه هر چهار گزینه ثبت شود."
+            })
         if attrs.get("difficulty", getattr(self.instance, "difficulty", None)) not in {
             Question.Difficulty.HARD, Question.Difficulty.VERY_HARD, Question.Difficulty.SPECIALIST
         }:
