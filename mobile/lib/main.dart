@@ -1682,6 +1682,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ],
               ),
             ),
+          ),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(17),
@@ -1735,7 +1736,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                 ],
               ),
             ),
-          ),
           ),
         ],
       );
