@@ -436,8 +436,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [],\n      topRecords = [];
-  List<dynamic> showcaseSlides = [];\n  List<dynamic> topRecords = [];
+      results = [];\n  List<dynamic> topRecords = [];
+  List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
 
