@@ -97,6 +97,10 @@ def _start_attempt(exam_id, user):
             shared_deadline = None
             if exam.ends_at and now >= exam.ends_at:
                 raise ValidationError("مهلت شروع این آزمون به پایان رسیده است.")
+            if exam.ends_at and exam.ends_at < now + timedelta(minutes=exam.duration_minutes):
+                raise ValidationError(
+                    "زمان باقی‌مانده برای اختصاص یک دقیقه به هر سؤال کافی نیست."
+                )
     if exam.requires_purchase:
         from apps.payments.models import PurchasedExamAccess
         from apps.subscriptions.models import UserSubscription
