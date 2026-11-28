@@ -2607,7 +2607,10 @@ class _DesignerClubPageState extends State<DesignerClubPage> {
   }
 
   Future<void> load() async {
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      error = null;
+    });
     try {
       final d = await widget.api.request('questions/designer/');
       if (mounted) setState(() => questions = List<dynamic>.from(d));
