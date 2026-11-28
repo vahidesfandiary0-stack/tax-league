@@ -234,6 +234,19 @@ def publish_exam(exam_id):
             raise ValidationError("سؤال استفاده‌شده در آزمون شبانه منتشرشده، دوباره قابل انتشار نیست.")
     if not items:
         raise ValidationError("برای انتشار، آزمون باید حداقل یک سؤال داشته باشد.")
+
+    # Exam time is derived from its question count: exactly one minute per question.
+    question_count = len(items)
+    if question_count > 65535:
+        raise ValidationError("تعداد سؤال‌های آزمون از سقف مجاز بیشتر است.")
+    calculated_duration = question_count
+    if exam.starts_at and exam.ends_at:
+        required_end = exam.starts_at + timedelta(minutes=calculated_duration)
+        if exam.kind != Exam.Kind.NIGHT and exam.ends_at < required_end:
+            raise ValidationError(
+                "زمان پایان آزمون برای اختصاص یک دقیقه به هر سؤال کافی نیست."
+            )
+
     for item in items:
         if exam.kind == Exam.Kind.NIGHT:
             if item.question.status == item.question.Status.REJECTED:
@@ -242,6 +255,10 @@ def publish_exam(exam_id):
             raise ValidationError("همه سؤال‌های آزمون باید منتشرشده باشند.")
         if item.question.options.count() != 4 or item.question.options.filter(is_correct=True).count() != 1:
             raise ValidationError("هر سؤال باید چهار گزینه و دقیقاً یک پاسخ صحیح داشته باشد.")
+    exam.duration_minutes = calculated_duration
+    if exam.kind == Exam.Kind.NIGHT:
+        # The official night exam has one shared window for everyone.
+        exam.ends_at = exam.starts_at + timedelta(minutes=calculated_duration)
     exam.status = Exam.Status.PUBLISHED
-    exam.save(update_fields=["status"])
+    exam.save(update_fields=["duration_minutes", "ends_at", "status"])
     return exam
