@@ -6,9 +6,10 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.exams.models import Exam, ExamAttempt, ExamQuestion
-from apps.league.services import record_attempt_score
+from apps.league.models import LeagueScoreEntry, LeagueSeason
+from apps.league.services import activate_season, record_attempt_score
 from apps.questions.models import Question, QuestionOption
-from apps.exams.services import finalize_attempt, publish_exam, start_attempt
+from apps.exams.services import finalize_attempt, publish_exam, save_answer, start_attempt
 
 
 class NightExamRulesTests(TestCase):
@@ -88,6 +89,13 @@ class NightExamRulesTests(TestCase):
                 is_correct=(position == 2),
             )
 
+        season = LeagueSeason.objects.create(
+            title="فصل آزمایشی آزمون بررسی‌نشده",
+            starts_at=now - timedelta(minutes=10),
+            ends_at=now + timedelta(hours=1),
+        )
+        activate_season(season.pk, self.user)
+
         exam = Exam.objects.create(
             title="آزمون شبانه با سؤال بررسی‌نشده",
             kind=Exam.Kind.NIGHT,
@@ -102,7 +110,12 @@ class NightExamRulesTests(TestCase):
         self.assertEqual(published.status, Exam.Status.PUBLISHED)
 
         attempt = start_attempt(exam.pk, self.user)
+        attempt_question = attempt.questions.first()
+        correct_option = attempt_question.options.get(is_correct=True)
+        save_answer(attempt.pk, attempt_question.pk, correct_option.pk, self.user)
         result = finalize_attempt(attempt.pk, self.user)
         self.assertEqual(result.status, ExamAttempt.Status.SUBMITTED)
-        self.assertEqual(result.blank_count, 1)
+        self.assertEqual(result.correct_count, 1)
+        self.assertEqual(result.score, 10)
+        self.assertTrue(LeagueScoreEntry.objects.filter(attempt=result, season=season).exists())
 
