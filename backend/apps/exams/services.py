@@ -248,7 +248,7 @@ def publish_exam(exam_id):
 
     # Exam time is derived from its question count: exactly one minute per question.
     question_count = len(items)
-    if question_count > 65535:
+    if question_count > 32767:
         raise ValidationError("تعداد سؤال‌های آزمون از سقف مجاز بیشتر است.")
     calculated_duration = question_count
     if exam.starts_at and exam.ends_at:
