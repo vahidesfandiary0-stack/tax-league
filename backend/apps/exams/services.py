@@ -57,8 +57,15 @@ def _build_attempt_question(attempt, item, rng, position):
     return snapshot
 
 
-@transaction.atomic
 def start_attempt(exam_id, user):
+    attempt, shared_window_closed = _start_attempt(exam_id, user)
+    if shared_window_closed:
+        raise ValidationError("مهلت آزمون شبانه به پایان رسیده است.")
+    return attempt
+
+
+@transaction.atomic
+def _start_attempt(exam_id, user):
     # Serialize starts only for the same participant. Locking the shared Exam row
     # here would queue every participant behind one database row at the league start.
     user = user.__class__.objects.select_for_update().get(pk=user.pk)
@@ -109,10 +116,12 @@ def start_attempt(exam_id, user):
     ).first()
     if existing:
         if existing.deadline_at > now:
-            return existing
+            return existing, False
         finalize_attempt(existing.pk, user)
+        if is_night and now >= shared_deadline:
+            return existing, True
     if is_night and now >= shared_deadline:
-        raise ValidationError("مهلت آزمون شبانه به پایان رسیده است.")
+        return None, True
     if not is_night and ExamAttempt.objects.filter(exam=exam, user=user).count() >= exam.max_attempts:
         raise ValidationError("تعداد دفعات مجاز شرکت در آزمون تمام شده است.")
     started_at = now if is_night else (exam.starts_at if exam.starts_at else now)
@@ -130,7 +139,7 @@ def start_attempt(exam_id, user):
     rng.shuffle(items)
     for position, item in enumerate(items, start=1):
         _build_attempt_question(attempt, item, rng, position)
-    return attempt
+    return attempt, False
 
 
 @transaction.atomic
