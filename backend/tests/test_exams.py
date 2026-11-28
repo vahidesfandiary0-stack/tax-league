@@ -237,14 +237,14 @@ def test_night_exam_start_rejects_outside_published_schedule():
 
 
 @pytest.mark.django_db
-def test_expired_night_attempt_is_finalized_before_a_new_unlimited_attempt():
+def test_expired_night_attempt_is_finalized_and_shared_window_is_closed():
     user = get_user_model().objects.create_user(phone_number="09123330013")
     now = timezone.now()
     exam = make_published_exam(
         user,
         kind=Exam.Kind.NIGHT,
         starts_at=now - timedelta(minutes=1),
-        ends_at=now + timedelta(hours=2),
+        ends_at=now + timedelta(minutes=29),
         counts_for_league=True,
         max_attempts=1,
     )
@@ -253,10 +253,10 @@ def test_expired_night_attempt_is_finalized_before_a_new_unlimited_attempt():
         "apps.exams.services.timezone.now",
         return_value=first.deadline_at + timedelta(seconds=1),
     ):
-        second = start_attempt(exam.pk, user)
+        with pytest.raises(DjangoValidationError, match="مهلت آزمون شبانه"):
+            start_attempt(exam.pk, user)
     first.refresh_from_db()
     assert first.status == ExamAttempt.Status.EXPIRED
-    assert second.pk != first.pk
 
 @pytest.mark.django_db
 def test_published_night_exam_question_cannot_be_reused_in_another_night_exam():
