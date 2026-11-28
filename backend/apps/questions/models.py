@@ -112,7 +112,7 @@ class QuestionOption(models.Model):
 
 
 class QuestionRevision(models.Model):
-    """Immutable snapshot of every authoring version; never contains private trap notes."""
+    """Immutable authoring snapshot, including the subscriber-only post-exam analysis."""
     question = models.ForeignKey(Question, on_delete=models.PROTECT, related_name="revisions")
     version = models.PositiveIntegerField()
     snapshot = models.JSONField()
