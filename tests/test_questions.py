@@ -58,6 +58,18 @@ class DesignerQuestionApiTests(TestCase):
             "prompt": "در فرض مستقل آزمون، کدام حکم مالیاتی صحیح است؟",
             "explanation": "استدلال مستند پاسخ صحیح در این بخش درج شده است.",
             "source_reference": "قانون مالیات‌های مستقیم، ماده نمونه؛ regulation.tax.gov.ir",
+            "premium_analysis": {
+                "trap": "تشخیص استثنای قانونی از قاعده عمومی.",
+                "learning": "ابتدا موضوع حکم و سپس شرایط اعمال آن را بررسی کنید.",
+                "study_recommendation": "متن ماده و تبصره‌های مرتبط را مرور کنید.",
+                "confidence": "بالا",
+                "option_analyses": [
+                    {"option_text": "گزینه نخست", "analysis": "این گزینه شرط اصلی حکم را نادیده می‌گیرد."},
+                    {"option_text": "گزینه دوم", "analysis": "این گزینه با فرض سؤال و مستند قانونی منطبق است."},
+                    {"option_text": "گزینه سوم", "analysis": "این گزینه دامنه حکم را بیش از متن قانون توسعه می‌دهد."},
+                    {"option_text": "گزینه چهارم", "analysis": "این گزینه دو مفهوم حقوقی مستقل را با هم خلط می‌کند."}
+                ]
+            },
             "options": [
                 {"position": 1, "text": "گزینه نخست", "is_correct": False},
                 {"position": 2, "text": "گزینه دوم", "is_correct": True},
