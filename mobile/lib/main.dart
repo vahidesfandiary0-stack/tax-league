@@ -436,7 +436,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
       provincialBoard = [],
       appeals = [],
       exams = [],
-      results = [];\n  List<dynamic> topRecords = [];
+      results = [];
+  List<dynamic> topRecords = [];
   List<dynamic> showcaseSlides = [];
   String? provincialName;
   String? provincialMessage;
@@ -654,6 +655,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         final data = await Future.wait([
           api.request('exams/'),
           api.request('exams/results/'),
+          api.request('league/me/top-records/'),
         ]);
         if (!mounted) return;
         setState(() {
@@ -697,7 +699,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           provincialMessage = provinceNotice;
           appeals = List<dynamic>.from(data[2] as List);
           exams = _stampExams(data[3]);
-          results = List<dynamic>.from(data[4] as List);\n          topRecords = List<dynamic>.from((data[5] as Map)['results'] ?? []);
+          results = List<dynamic>.from(data[4] as List);
+          topRecords = List<dynamic>.from((data[5] as Map)['results'] ?? []);
         });
       }
     } catch (e) {
@@ -1762,7 +1765,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text((item['exam_title'] ?? 'آزمون').toString()),
                   subtitle: Text(
-                    'شناسه: ${item['id']}\n'
+                    'شناسه: ${item['id']}
+'
                     'صحیح: ${item['correct_count']}'
                     ' · غلط: ${item['wrong_count']}'
                     ' · نزده: ${item['blank_count']}',
@@ -2337,7 +2341,8 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               contentPadding: EdgeInsets.zero,
               title: Text((item['exam_title'] ?? 'آزمون').toString()),
               subtitle: Text(
-                'شناسه: ${item['id']}\n'
+                'شناسه: ${item['id']}
+'
                 'صحیح: ${item['correct_count']}'
                 ' · غلط: ${item['wrong_count']}'
                 ' · نزده: ${item['blank_count']}',
@@ -2474,7 +2479,9 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
           childAspectRatio: .98,
           children: [
             tile(0, Icons.emoji_events_rounded, 'وضعیت من در لیگ',
-                'رتبه: $rank\nامتیاز: $score\nآزمون رسمی: $examCount'),
+                'رتبه: $rank
+امتیاز: $score
+آزمون رسمی: $examCount'),
             tile(
                 1,
                 Icons.school_rounded,
