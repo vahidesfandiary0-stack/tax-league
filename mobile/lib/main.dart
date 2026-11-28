@@ -727,10 +727,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                                   ? 0
                                   : accountPage == 9
                                       ? 1
-                                      : accountPage == 3
-                                          ? 2
-                                          : accountPage == 2 ||
-                                                  accountPage == 6 ||
+                                      : accountPage == 6 ||
                                                   accountPage == 7 ||
                                                   accountPage == 8
                                               ? 1
@@ -755,11 +752,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
                             ][selectedHomeSection!])
                       : accountPage == 1
                           ? 'حساب کاربری'
-                          : accountPage == 2
-                              ? 'درباره لیگ'
-                              : accountPage == 3
-                                  ? 'معرفی بنیان‌گذار'
-                                  : accountPage == 4
+                          : accountPage == 4
                                       ? 'اشتراک ویژه'
                                       : accountPage == 5
                                           ? 'آکادمی'
@@ -1478,15 +1471,6 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
               onTap: () => setState(() => accountPage = 9),
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('درباره لیگ'),
-              subtitle: const Text('اطلاعات و معرفی مجموعه'),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () => setState(() => accountPage = 2),
-            ),
-          ),
         ],
       );
     }
@@ -1809,46 +1793,7 @@ class _LeagueHomePageState extends State<LeagueHomePage> {
         ),
       );
     }
-    if (accountPage == 2) {
-      return Card(
-        child: ListTile(
-          leading: const Icon(Icons.person_outline),
-          title: const Text('معرفی بنیان‌گذار'),
-          subtitle: const Text('آشنایی با بنیان‌گذار لیگ نخبگان مالیاتی'),
-          trailing: const Icon(Icons.chevron_left),
-          onTap: () => setState(() => accountPage = 3),
-        ),
-      );
-    }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                'assets/brand/founder_vahid_esfandiary.jpg',
-                width: 150,
-                height: 170,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'وحید اسفندیاری',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'مالک و بنیان‌گذار لیگ نخبگان مالیاتی',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   List<Widget> _content() {
