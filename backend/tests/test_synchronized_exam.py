@@ -26,7 +26,7 @@ def test_scheduled_exam_gives_every_participant_the_same_server_deadline(monkeyp
     question.status = Question.Status.PUBLISHED
     question.save(update_fields=["status"])
 
-    scheduled_start = timezone.now() - timedelta(seconds=10)
+    scheduled_start = timezone.now() - timedelta(minutes=2)
     exam = Exam.objects.create(
         title="آزمون سراسری", kind=Exam.Kind.WEEKLY, duration_minutes=30,
         starts_at=scheduled_start, ends_at=scheduled_start + timezone.timedelta(minutes=30),
@@ -34,17 +34,17 @@ def test_scheduled_exam_gives_every_participant_the_same_server_deadline(monkeyp
     ExamQuestion.objects.create(exam=exam, question=question, position=1)
     publish_exam(exam.pk)
 
-    first_now = scheduled_start + timezone.timedelta(seconds=5)
+    first_now = scheduled_start + timezone.timedelta(minutes=2)
     monkeypatch.setattr("apps.exams.services.timezone.now", lambda: first_now)
     first_attempt = start_attempt(exam.pk, first)
 
-    later_now = scheduled_start + timezone.timedelta(seconds=25)
+    later_now = scheduled_start + timezone.timedelta(minutes=12)
     monkeypatch.setattr("apps.exams.services.timezone.now", lambda: later_now)
     second_attempt = start_attempt(exam.pk, second)
     # Repeated starts by the same participant resume the existing attempt.
     repeated_first_attempt = start_attempt(exam.pk, first)
 
-    expected_deadline = scheduled_start + timezone.timedelta(minutes=1)
+    expected_deadline = scheduled_start + timezone.timedelta(minutes=30)
     assert first_attempt.started_at == scheduled_start
     assert second_attempt.started_at == scheduled_start
     assert first_attempt.deadline_at == expected_deadline
@@ -120,12 +120,12 @@ def test_night_exam_late_joiners_share_the_original_deadline(monkeypatch):
     monkeypatch.setattr("apps.exams.services.timezone.now", lambda: late_now)
     late_attempt = start_attempt(exam.pk, late)
 
-    expected_deadline = scheduled_start + timedelta(minutes=1)
+    expected_deadline = scheduled_start + timedelta(minutes=30)
     assert first_attempt.deadline_at == expected_deadline
     assert late_attempt.deadline_at == expected_deadline
     assert late_attempt.started_at == late_now
 
-    after_deadline = scheduled_start + timedelta(seconds=61)
+    after_deadline = scheduled_start + timedelta(minutes=30, seconds=1)
     monkeypatch.setattr("apps.exams.services.timezone.now", lambda: after_deadline)
     too_late = user_model.objects.create_user(phone_number="09120000024")
     with pytest.raises(ValidationError, match="مهلت آزمون شبانه"):
