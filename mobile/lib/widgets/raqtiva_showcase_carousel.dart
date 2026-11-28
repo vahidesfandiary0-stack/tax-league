@@ -63,61 +63,36 @@ class _RaqtivaShowcaseCarouselState extends State<RaqtivaShowcaseCarousel> {
     return activeExam ?? upcomingExam;
   }
 
-  // The three core carousel slides are product requirements, not CMS content.
-  // Always render them in this fixed order; append only additional admin slides.
+  // The API returns slides in administrator-controlled sort_order.
+  // Keep that order exactly; enrich only the countdown slide with live exam timing.
   List<dynamic> get _allSlides {
     final exam = _nextExam;
-    final configuredCountdown = widget.slides.cast<dynamic>().firstWhere(
-          (raw) => raw is Map && raw['kind']?.toString() == 'exam_countdown',
-          orElse: () => null,
-        );
-    final countdown = <String, dynamic>{
-      'kind': 'exam_countdown',
-      'title': 'شمارش معکوس آزمون شبانه',
-    };
-    if (configuredCountdown is Map) {
-      countdown.addAll(Map<String, dynamic>.from(configuredCountdown));
-      countdown['kind'] = 'exam_countdown';
-      if ((countdown['title'] ?? '').toString().isEmpty) {
-        countdown['title'] = 'شمارش معکوس آزمون شبانه';
+    return widget.slides.map((raw) {
+      if (raw is! Map || raw['kind']?.toString() != 'exam_countdown') {
+        return raw;
       }
-    }
-    if (exam == null) {
-      for (final key in <String>[
-        'target_at',
-        'countdown_phase',
-        'server_now',
-        'received_at',
-        'exam_title',
-      ]) {
-        countdown.remove(key);
+      final countdown = Map<String, dynamic>.from(raw);
+      if (exam == null) {
+        for (final key in <String>[
+          'target_at',
+          'countdown_phase',
+          'server_now',
+          'received_at',
+          'exam_title',
+        ]) {
+          countdown.remove(key);
+        }
+      } else {
+        countdown.addAll(<String, dynamic>{
+          'target_at': exam['target_at'],
+          'countdown_phase': exam['countdown_phase'],
+          'server_now': exam['server_now'],
+          'received_at': exam['received_at'],
+          'exam_title': exam['title'],
+        });
       }
-    } else {
-      countdown.addAll(<String, dynamic>{
-        'target_at': exam['target_at'],
-        'countdown_phase': exam['countdown_phase'],
-        'server_now': exam['server_now'],
-        'received_at': exam['received_at'],
-        'exam_title': exam['title'],
-      });
-    }
-    final mandatory = <Map<String, dynamic>>[
-      <String, dynamic>{
-        'kind': 'founder',
-        'title': 'بنیانگذار لیگ : وحید اسفندیاری',
-      },
-      <String, dynamic>{
-        'kind': 'logo',
-        'body': 'رقابت کن، رتبه بگیر، نخبه شو!',
-      },
-      countdown,
-    ];
-    final adminSlides = widget.slides.where((raw) {
-      if (raw is! Map) return true;
-      final kind = raw['kind']?.toString();
-      return kind != 'founder' && kind != 'logo' && kind != 'exam_countdown';
-    });
-    return <dynamic>[...mandatory, ...adminSlides];
+      return countdown;
+    }).toList(growable: false);
   }
 
   int get _count => _allSlides.length;
