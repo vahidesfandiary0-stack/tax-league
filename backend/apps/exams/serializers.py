@@ -1,4 +1,5 @@
 from django.utils import timezone
+from apps.subscriptions.models import UserSubscription
 from rest_framework import serializers
 
 from .models import AttemptAnswer, AttemptQuestion, Exam, ExamAttempt
@@ -52,9 +53,47 @@ class AnswerInputSerializer(serializers.Serializer):
 
 
 class ResultSerializer(serializers.ModelSerializer):
+    question_reviews = serializers.SerializerMethodField()
+
     class Meta:
         model = ExamAttempt
-        fields = ["id", "status", "score", "correct_count", "wrong_count", "blank_count", "submitted_at"]
+        fields = ["id", "status", "score", "correct_count", "wrong_count", "blank_count", "submitted_at", "question_reviews"]
+
+    def get_question_reviews(self, obj):
+        if obj.status not in (ExamAttempt.Status.SUBMITTED, ExamAttempt.Status.EXPIRED):
+            return []
+        now = timezone.now()
+        is_subscriber = UserSubscription.objects.filter(
+            user=obj.user, status=UserSubscription.Status.ACTIVE,
+            starts_at__lte=now, ends_at__gt=now,
+        ).exists()
+        reviews = []
+        for question in obj.questions.prefetch_related("options", "answer__selected_option"):
+            answer = getattr(question, "answer", None)
+            selected = answer.selected_option if answer else None
+            options = []
+            for option in question.options.all():
+                row = {
+                    "id": option.pk, "position": option.position, "text": option.text,
+                    "is_correct": option.is_correct,
+                    "selected": bool(selected and selected.pk == option.pk),
+                }
+                if is_subscriber:
+                    premium = question.premium_analysis or {}
+                    for note in premium.get("option_analyses", []):
+                        if note.get("option_text") == option.text:
+                            row["premium_analysis"] = note.get("analysis", "")
+                            break
+                options.append(row)
+            item = {
+                "id": question.pk, "position": question.position, "prompt": question.prompt,
+                "explanation": question.explanation, "source_reference": question.source_reference,
+                "options": options,
+            }
+            if is_subscriber:
+                item["premium_analysis"] = question.premium_analysis
+            reviews.append(item)
+        return reviews
 
 
 class ResultListSerializer(serializers.ModelSerializer):
