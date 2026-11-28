@@ -244,7 +244,7 @@ def test_expired_night_attempt_is_finalized_and_shared_window_is_closed():
         user,
         kind=Exam.Kind.NIGHT,
         starts_at=now - timedelta(minutes=1),
-        ends_at=now + timedelta(hours=2),
+        ends_at=now + timedelta(minutes=29),
         counts_for_league=True,
         max_attempts=1,
     )
