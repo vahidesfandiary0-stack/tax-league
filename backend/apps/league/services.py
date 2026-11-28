@@ -243,6 +243,8 @@ def top_records_for_user(user, limit=5):
         user=user,
         attempt__exam__kind=Exam.Kind.NIGHT,
         attempt__exam__counts_for_league=True,
+        attempt__exam__requires_purchase=False,
+        attempt__exam__price_irr=0,
         attempt__exam__status__in=[
             Exam.Status.PUBLISHED,
             Exam.Status.ARCHIVED,
